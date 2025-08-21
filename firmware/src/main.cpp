@@ -56,7 +56,7 @@ void resetDailyCounts();
  */
 void setup() {
     Serial.begin(SERIAL_BAUD_RATE);
-    delay(1000);  // Allow serial to initialize
+    delay(SERIAL_INIT_DELAY);  // Allow serial to initialize
     
     DEBUG_PRINTLN("\n========================================");
     DEBUG_PRINTLN("ESP32 Wildlife Camera Starting...");

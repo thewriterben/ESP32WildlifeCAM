@@ -140,9 +140,85 @@
 #define DEBUG_PRINTLN(x) if(DEBUG_ENABLED) Serial.println(x)
 #define DEBUG_PRINTF(format, ...) if(DEBUG_ENABLED) Serial.printf(format, ##__VA_ARGS__)
 
+// ===========================
+// TIMING CONFIGURATION
+// ===========================
+
+// System Update Intervals
+#define VOLTAGE_CHECK_INTERVAL 5000      // ms - interval for reading battery/solar voltages
+#define POWER_LOG_INTERVAL 60000         // ms - interval for logging power status
+#define SENSOR_READ_INTERVAL 1000        // ms - interval for reading environmental sensors
+#define HEARTBEAT_INTERVAL 30000         // ms - interval for sending network heartbeats
+
+// Communication Timeouts and Delays
+#define SERIAL_INIT_DELAY 1000           // ms - delay for serial initialization
+#define NETWORK_RETRY_DELAY 2000         // ms - delay between network transmission attempts
+#define SATELLITE_RESPONSE_DELAY 2000    // ms - delay waiting for satellite module response
+#define SATELLITE_WAKEUP_DELAY 100       // ms - delay for satellite module wake up
+#define LORA_TRANSMISSION_DELAY 1000     // ms - simulated delay for LoRa transmission
+
+// ===========================
+// HARDWARE CONFIGURATION
+// ===========================
+
+// ADC and Voltage Measurement
+#define ADC_RESOLUTION 12                // bits - ADC resolution (12-bit = 0-4095)
+#define VOLTAGE_DIVIDER_RATIO 2.0        // ratio for voltage divider circuits
+#define ADC_REFERENCE_VOLTAGE 3.3        // V - reference voltage for ADC
+#define VOLTAGE_CALIBRATION_SAMPLES 10   // number of samples for voltage averaging
+
+// ===========================
+// COMMUNICATION CONFIGURATION
+// ===========================
+
+// Satellite Communication
+#define SATELLITE_BAUD_RATE 19200        // baud rate for satellite module communication
+#define SATELLITE_RETRY_COUNT 5          // number of retry attempts for satellite commands
+#define SATELLITE_MESSAGE_MAX_LENGTH 100 // max bytes per satellite message
+#define SAT_SLEEP_PIN 12                 // pin for satellite module sleep control
+#define SAT_RING_PIN 13                  // pin for satellite module ring indicator
+
+// LoRa Mesh Network
+#define LORA_MESSAGE_QUEUE_SIZE 10       // maximum queued messages
+#define LORA_ROUTING_TABLE_SIZE MAX_MESH_NODES // size of routing table
+
+// Network Performance
+#define NETWORK_SCORE_EXCELLENT 100      // score for highest priority network
+#define CELLULAR_DATA_CHUNK_SIZE 512     // bytes per cellular transmission chunk
+
+// ===========================
+// ALGORITHM CONFIGURATION
+// ===========================
+
+// Motion Detection
+#define MOTION_CONSECUTIVE_THRESHOLD 3   // consecutive motions needed for valid detection
+#define DEFAULT_TEMPERATURE 20.0         // °C - default temperature for motion compensation
+
+// Data Compression
+#define RLE_MAX_COUNT 255                // maximum run-length encoding count
+#define COMPRESSION_MIN_EFFICIENCY 3     // minimum bytes for RLE compression
+#define BASE64_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+// Image Processing
+#define THUMBNAIL_GENERATION_ENABLED true // enable thumbnail creation
+#define IMAGE_METADATA_ENABLED true      // enable image metadata embedding
+
+// ===========================
+// SYSTEM CONFIGURATION
+// ===========================
+
+// CPU Performance
+#define NORMAL_CPU_FREQUENCY 240         // MHz - normal operation frequency
+#define POWER_SAVE_CPU_FREQUENCY 80      // MHz - power saving mode frequency
+
+// Memory Management
+#define BUFFER_SIZE_SMALL 256            // bytes - small buffer size
+#define BUFFER_SIZE_MEDIUM 1024          // bytes - medium buffer size  
+#define BUFFER_SIZE_LARGE 4096           // bytes - large buffer size
+
 // Function-like macros for common operations
-#define VOLTAGE_TO_ADC(voltage) ((voltage) * 4095 / 3.3)
-#define ADC_TO_VOLTAGE(adc) ((adc) * 3.3 / 4095)
+#define VOLTAGE_TO_ADC(voltage) ((voltage) * 4095 / ADC_REFERENCE_VOLTAGE)
+#define ADC_TO_VOLTAGE(adc) ((adc) * ADC_REFERENCE_VOLTAGE / 4095)
 #define PERCENTAGE(value, max_value) ((value) * 100 / (max_value))
 
 #endif // CONFIG_H

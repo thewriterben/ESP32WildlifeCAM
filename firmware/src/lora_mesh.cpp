@@ -23,7 +23,7 @@ static MeshNetworkStatus networkStatus;
 
 // Message queue for outgoing packets
 static struct {
-    String messages[10];
+    String messages[LORA_MESSAGE_QUEUE_SIZE];
     int count = 0;
 } messageQueue;
 
