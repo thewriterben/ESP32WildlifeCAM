@@ -12,60 +12,70 @@
 #ifdef BME280_ENABLED
 #include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
+#include <Wire.h>
 #endif
 
-namespace MotionFilter {
+// Static instance for interrupt handling
+MotionFilter* MotionFilter::instance = nullptr;
 
-// Static variables
-static bool initialized = false;
-static unsigned long lastMotionTime = 0;
-static bool motionDetected = false;
-static int consecutiveMotions = 0;
-static float currentWindSpeed = 0.0;
-static float currentRainfall = 0.0;
-static float currentTemperature = 20.0;
+// Constructor
+MotionFilter::MotionFilter() 
+    : initialized(false), lastMotionTime(0), motionDetected(false),
+      consecutiveMotions(0), currentWindSpeed(0.0), currentRainfall(0.0),
+      currentTemperature(20.0), motionSensitivity(MOTION_SENSITIVITY),
+      weatherFilteringEnabled(WEATHER_FILTERING_ENABLED), weatherSensorInitialized(false),
+      lastWeatherReading(0) {
+    instance = this;
+    applyConfigurationSettings();
+}
 
-#ifdef BME280_ENABLED
-static Adafruit_BME280 bme;
-static bool bmeInitialized = false;
-#endif
+// Destructor
+MotionFilter::~MotionFilter() {
+    cleanup();
+    instance = nullptr;
+}
 
-// Function prototypes
-static void updateWeatherData();
-static bool isWeatherSuitable();
-static void pirInterrupt();
-static float estimateWindSpeed();
-static bool isTemperatureStable();
+/**
+ * Apply configuration settings from config.h
+ */
+void MotionFilter::applyConfigurationSettings() {
+    motionSensitivity = MOTION_SENSITIVITY;
+    weatherFilteringEnabled = WEATHER_FILTERING_ENABLED;
+}
 
 /**
  * Initialize motion detection system
  */
-bool init() {
+bool MotionFilter::init() {
     DEBUG_PRINTLN("Initializing motion filter system...");
     
     // Configure PIR sensor pin
     pinMode(PIR_PIN, INPUT);
     
     // Attach interrupt for motion detection
-    attachInterrupt(digitalPinToInterrupt(PIR_PIN), pirInterrupt, RISING);
+    attachInterrupt(digitalPinToInterrupt(PIR_PIN), pirInterrupt, PIR_TRIGGER_MODE);
     
     #ifdef BME280_ENABLED
-    // Initialize BME280 weather sensor
-    Wire.begin(BME280_SDA, BME280_SCL);
-    bmeInitialized = bme.begin(BME280_ADDRESS);
-    
-    if (bmeInitialized) {
-        DEBUG_PRINTLN("BME280 weather sensor initialized");
+    // Initialize BME280 weather sensor if enabled
+    if (BME280_ENABLED) {
+        Wire.begin(BME280_SDA, BME280_SCL);
         
-        // Configure BME280 settings
-        bme.setSampling(Adafruit_BME280::MODE_NORMAL,     // Operating Mode
-                       Adafruit_BME280::SAMPLING_X2,      // Temp. oversampling
-                       Adafruit_BME280::SAMPLING_X16,     // Pressure oversampling
-                       Adafruit_BME280::SAMPLING_X1,      // Humidity oversampling
-                       Adafruit_BME280::FILTER_X16,       // Filtering
-                       Adafruit_BME280::STANDBY_MS_500);  // Standby time
-    } else {
-        DEBUG_PRINTLN("Warning: BME280 initialization failed - using estimated values");
+        static Adafruit_BME280 bme;
+        weatherSensorInitialized = bme.begin(BME280_ADDRESS);
+        
+        if (weatherSensorInitialized) {
+            DEBUG_PRINTLN("BME280 weather sensor initialized");
+            
+            // Configure BME280 settings
+            bme.setSampling(Adafruit_BME280::MODE_NORMAL,     // Operating Mode
+                           Adafruit_BME280::SAMPLING_X2,      // Temp. oversampling
+                           Adafruit_BME280::SAMPLING_X16,     // Pressure oversampling
+                           Adafruit_BME280::SAMPLING_X1,      // Humidity oversampling
+                           Adafruit_BME280::FILTER_X16,       // Filtering
+                           Adafruit_BME280::STANDBY_MS_500);  // Standby time
+        } else {
+            DEBUG_PRINTLN("Warning: BME280 initialization failed - using estimated values");
+        }
     }
     #endif
     
@@ -78,7 +88,7 @@ bool init() {
 /**
  * Check if motion is currently detected
  */
-bool isMotionDetected() {
+bool MotionFilter::isMotionDetected() {
     if (!initialized) return false;
     
     // Check if enough time has passed since last detection (debounce)
@@ -96,8 +106,8 @@ bool isMotionDetected() {
 /**
  * Validate motion against weather conditions and other filters
  */
-bool isValidMotion() {
-    if (!WEATHER_FILTERING_ENABLED) {
+bool MotionFilter::isValidMotion() {
+    if (!weatherFilteringEnabled) {
         return true;  // Accept all motion if filtering disabled
     }
     
@@ -118,7 +128,7 @@ bool isValidMotion() {
     
     // Consecutive motion validation (reduces false positives)
     consecutiveMotions++;
-    if (consecutiveMotions < 2) {
+    if (consecutiveMotions < MOTION_CONSECUTIVE_THRESHOLD) {
         DEBUG_PRINTLN("Motion filtered: awaiting confirmation");
         return false;
     }
@@ -130,32 +140,100 @@ bool isValidMotion() {
 /**
  * Get current motion detection statistics
  */
-MotionStats getMotionStats() {
+MotionStats MotionFilter::getMotionStats() const {
     MotionStats stats;
     stats.lastMotionTime = lastMotionTime;
     stats.consecutiveCount = consecutiveMotions;
     stats.windSpeed = currentWindSpeed;
     stats.rainfall = currentRainfall;
     stats.temperature = currentTemperature;
-    stats.filteringEnabled = WEATHER_FILTERING_ENABLED;
+    stats.filteringEnabled = weatherFilteringEnabled;
     
     return stats;
 }
 
 /**
- * PIR interrupt handler
+ * Set motion sensitivity (0-100)
  */
-static void IRAM_ATTR pirInterrupt() {
-    motionDetected = true;
-    lastMotionTime = millis();
+void MotionFilter::setMotionSensitivity(int sensitivity) {
+    motionSensitivity = CLAMP(sensitivity, 0, 100);
+    
+    DEBUG_PRINTF("Motion sensitivity set to %d%%\n", motionSensitivity);
+}
+
+/**
+ * Enable or disable weather filtering
+ */
+void MotionFilter::setWeatherFiltering(bool enabled) {
+    weatherFilteringEnabled = enabled;
+    DEBUG_PRINTF("Weather filtering %s\n", enabled ? "enabled" : "disabled");
+}
+
+/**
+ * Get detailed motion filter status
+ */
+MotionFilterStatus MotionFilter::getStatus() const {
+    MotionFilterStatus status;
+    status.initialized = initialized;
+    status.lastMotionTime = lastMotionTime;
+    status.currentlyDetecting = (millis() - lastMotionTime) < PIR_DEBOUNCE_TIME;
+    status.weatherSensorActive = weatherSensorInitialized;
+    status.filteringActive = weatherFilteringEnabled;
+    status.consecutiveMotions = consecutiveMotions;
+    
+    return status;
+}
+
+/**
+ * Reset motion detection statistics
+ */
+void MotionFilter::resetStats() {
+    consecutiveMotions = 0;
+    lastMotionTime = 0;
+    currentWindSpeed = 0.0;
+    currentRainfall = 0.0;
+    currentTemperature = 20.0;
+    DEBUG_PRINTLN("Motion detection statistics reset");
+}
+
+/**
+ * Cleanup motion filter resources
+ */
+void MotionFilter::cleanup() {
+    if (initialized) {
+        detachInterrupt(digitalPinToInterrupt(PIR_PIN));
+        initialized = false;
+        DEBUG_PRINTLN("Motion filter system cleaned up");
+    }
+}
+
+/**
+ * PIR interrupt handler (static)
+ */
+void IRAM_ATTR MotionFilter::pirInterrupt() {
+    if (instance) {
+        instance->motionDetected = true;
+        instance->lastMotionTime = millis();
+    }
 }
 
 /**
  * Update weather data from sensors
  */
-static void updateWeatherData() {
+void MotionFilter::updateWeatherData() {
+    unsigned long now = millis();
+    
+    // Only update weather data at configured intervals
+    if (now - lastWeatherReading < WEATHER_READING_INTERVAL) {
+        return;
+    }
+    
+    lastWeatherReading = now;
+    
     #ifdef BME280_ENABLED
-    if (bmeInitialized) {
+    if (weatherSensorInitialized) {
+        static Adafruit_BME280 bme;
+        
         currentTemperature = bme.readTemperature();
         float pressure = bme.readPressure() / 100.0F;  // Convert to hPa
         float humidity = bme.readHumidity();
@@ -189,10 +267,10 @@ static void updateWeatherData() {
 /**
  * Check if weather conditions are suitable for motion detection
  */
-static bool isWeatherSuitable() {
+bool MotionFilter::isWeatherSuitable() {
     // Check wind threshold
     if (currentWindSpeed > WIND_THRESHOLD) {
-        DEBUG_PRINTF("Wind too strong: %.1f km/h (threshold: %d)\n", 
+        DEBUG_PRINTF("Wind too strong: %.1f km/h (threshold: %.1f)\n", 
                     currentWindSpeed, WIND_THRESHOLD);
         return false;
     }
@@ -210,7 +288,7 @@ static bool isWeatherSuitable() {
 /**
  * Estimate wind speed from motion sensor behavior
  */
-static float estimateWindSpeed() {
+float MotionFilter::estimateWindSpeed() {
     static unsigned long lastWindCheck = 0;
     static int falseMotionCount = 0;
     
@@ -235,7 +313,7 @@ static float estimateWindSpeed() {
 /**
  * Check if temperature is stable enough for reliable PIR operation
  */
-static bool isTemperatureStable() {
+bool MotionFilter::isTemperatureStable() {
     static float lastTemperature = currentTemperature;
     static unsigned long lastTempCheck = 0;
     
@@ -248,7 +326,7 @@ static bool isTemperatureStable() {
         lastTempCheck = now;
         
         // PIR sensors can be affected by rapid temperature changes
-        if (tempDelta > 3.0) {  // More than 3°C change in 30 seconds
+        if (tempDelta > TEMP_STABILITY_THRESHOLD) {
             DEBUG_PRINTF("Rapid temperature change: %.1f°C\n", tempDelta);
             return false;
         }
@@ -256,68 +334,3 @@ static bool isTemperatureStable() {
     
     return true;
 }
-
-/**
- * Set motion sensitivity (0-100)
- */
-void setMotionSensitivity(int sensitivity) {
-    if (sensitivity < 0) sensitivity = 0;
-    if (sensitivity > 100) sensitivity = 100;
-    
-    // This would typically adjust analog threshold or digital filtering
-    // For now, we'll adjust the consecutive motion requirement
-    int requiredConsecutive = map(sensitivity, 0, 100, 5, 1);
-    
-    DEBUG_PRINTF("Motion sensitivity set to %d%% (consecutive: %d)\n", 
-                sensitivity, requiredConsecutive);
-}
-
-/**
- * Enable or disable weather filtering
- */
-void setWeatherFiltering(bool enabled) {
-    // This would typically update a global flag
-    DEBUG_PRINTF("Weather filtering %s\n", enabled ? "enabled" : "disabled");
-}
-
-/**
- * Get detailed motion filter status
- */
-MotionFilterStatus getStatus() {
-    MotionFilterStatus status;
-    status.initialized = initialized;
-    status.lastMotionTime = lastMotionTime;
-    status.currentlyDetecting = (millis() - lastMotionTime) < PIR_DEBOUNCE_TIME;
-    status.weatherSensorActive = false;
-    
-    #ifdef BME280_ENABLED
-    status.weatherSensorActive = bmeInitialized;
-    #endif
-    
-    status.filteringActive = WEATHER_FILTERING_ENABLED;
-    status.consecutiveMotions = consecutiveMotions;
-    
-    return status;
-}
-
-/**
- * Reset motion detection statistics
- */
-void resetStats() {
-    consecutiveMotions = 0;
-    lastMotionTime = 0;
-    DEBUG_PRINTLN("Motion detection statistics reset");
-}
-
-/**
- * Cleanup motion filter resources
- */
-void cleanup() {
-    if (initialized) {
-        detachInterrupt(digitalPinToInterrupt(PIR_PIN));
-        initialized = false;
-        DEBUG_PRINTLN("Motion filter system cleaned up");
-    }
-}
-
-} // namespace MotionFilter
