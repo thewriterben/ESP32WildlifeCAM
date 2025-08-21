@@ -26,41 +26,53 @@ struct CameraStatus {
     const char* sensorName;
 };
 
-namespace CameraHandler {
+/**
+ * @class CameraHandler
+ * @brief Manages ESP32 camera initialization, configuration, and image capture
+ * 
+ * This class encapsulates all camera-related functionality for the wildlife
+ * monitoring system, providing a clean interface for camera operations.
+ */
+class CameraHandler {
+public:
     /**
-     * Initialize camera with optimal settings for wildlife photography
+     * @brief Constructor
+     */
+    CameraHandler();
+
+    /**
+     * @brief Destructor
+     */
+    ~CameraHandler();
+
+    /**
+     * @brief Initialize camera with optimal settings for wildlife photography
      * Uses HAL for automatic board detection and configuration
      * @return true if initialization successful, false otherwise
      */
     bool init();
     
     /**
-     * Initialize camera with specific board type
+     * @brief Initialize camera with specific board type
      * @param boardType Specific board type to use
      * @return true if initialization successful, false otherwise
      */
     bool init(BoardType boardType);
     
     /**
-     * Get the current camera board instance
+     * @brief Get the current camera board instance
      * @return Pointer to camera board, or nullptr if not initialized
      */
     CameraBoard* getBoard();
     
     /**
-     * Configure camera sensor settings optimized for wildlife detection
-     * @param sensor Pointer to camera sensor
-     */
-    void configureSensorSettings(sensor_t* sensor);
-    
-    /**
-     * Capture a single image
+     * @brief Capture a single image
      * @return Camera frame buffer pointer, or nullptr on failure
      */
     camera_fb_t* captureImage();
     
     /**
-     * Save image to SD card with timestamp and metadata
+     * @brief Save image to SD card with timestamp and metadata
      * @param fb Camera frame buffer
      * @param folder Target folder path
      * @return Filename of saved image, or empty string on failure
@@ -68,53 +80,70 @@ namespace CameraHandler {
     String saveImage(camera_fb_t* fb, const char* folder);
     
     /**
-     * Generate timestamped filename
+     * @brief Generate timestamped filename
      * @param folder Target folder path
      * @return Generated filename
      */
     String generateFilename(const char* folder);
     
     /**
-     * Save image metadata as JSON
+     * @brief Save image metadata as JSON
      * @param imageFilename Path to image file
      * @param fb Camera frame buffer
      */
     void saveImageMetadata(const String& imageFilename, camera_fb_t* fb);
     
     /**
-     * Configure camera sensor settings optimized for wildlife detection
-     * (Legacy function for backward compatibility)
-     * @param sensor Pointer to camera sensor
-     */
-    void configureSensorSettings(sensor_t* sensor);
-    
-    /**
-     * Get camera status information
+     * @brief Get camera status information
      * @return Camera status structure
      */
-    CameraStatus getStatus();
+    CameraStatus getStatus() const;
     
     /**
-     * Take a test image and return basic info
+     * @brief Take a test image and return basic info
      * @return true if test successful, false otherwise
      */
     bool testCamera();
     
     /**
-     * Adjust camera settings for different lighting conditions
+     * @brief Adjust camera settings for different lighting conditions
      * @param condition Lighting condition to optimize for
      */
     void adjustForLighting(LightingCondition condition);
     
     /**
-     * Flash camera LED briefly
+     * @brief Flash camera LED briefly
      */
     void flashLED();
     
     /**
-     * Cleanup camera resources
+     * @brief Cleanup camera resources
      */
     void cleanup();
-}
+
+    /**
+     * @brief Check if camera is initialized
+     * @return true if initialized, false otherwise
+     */
+    bool isInitialized() const { return initialized; }
+
+    /**
+     * @brief Get total number of images captured
+     * @return Image counter value
+     */
+    int getImageCount() const { return imageCounter; }
+
+private:
+    // Member variables
+    camera_config_t camera_config;
+    bool initialized;
+    int imageCounter;
+    std::unique_ptr<CameraBoard> board;
+    
+    // Private methods
+    bool initializeCamera();
+    void configureSensorSettings(sensor_t* sensor);
+    void applyConfigurationSettings();
+};
 
 #endif // CAMERA_HANDLER_H
