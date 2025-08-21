@@ -27,28 +27,69 @@
 #include "config.h"
 #include "camera_handler.h"
 #include "motion_filter.h"
-#include "solar_manager.h"
+#include "power_manager.h"
+#include "wifi_manager.h"
 #include "lora_mesh.h"
 
-// Global variables
-bool cameraInitialized = false;
-bool sdCardInitialized = false;
-bool loraInitialized = false;
-unsigned long lastMotionTime = 0;
-unsigned long bootTime = 0;
-int dailyTriggerCount = 0;
+/**
+ * @class SystemManager
+ * @brief Central coordinator for all wildlife camera subsystems
+ * 
+ * This class manages the initialization, coordination, and lifecycle
+ * of all camera subsystems, providing a clean interface for the main loop.
+ */
+class SystemManager {
+public:
+    SystemManager();
+    ~SystemManager();
+    
+    bool init();
+    void update();
+    void handleMotionDetection();
+    void enterDeepSleep();
+    void handleLowPower();
+    void logSystemStatus();
+    void cleanup();
+    
+    // Subsystem access methods
+    CameraHandler& getCamera() { return cameraHandler; }
+    MotionFilter& getMotionFilter() { return motionFilter; }
+    PowerManager& getPowerManager() { return powerManager; }
+    WiFiManager& getWiFiManager() { return wifiManager; }
+    
+    // Status methods
+    bool isCameraInitialized() const { return cameraHandler.isInitialized(); }
+    bool isSDCardInitialized() const { return sdCardInitialized; }
+    bool isLoRaInitialized() const { return loraInitialized; }
+    int getDailyTriggerCount() const { return dailyTriggerCount; }
+    unsigned long getBootTime() const { return bootTime; }
 
-// Function prototypes
-void initializeSystem();
-void initializeCamera();
-void initializeSDCard();
-void initializeFileSystem();
-void handleMotionDetection();
-void enterDeepSleep();
-void logSystemStatus();
-void handleLowPower();
-bool isWithinActiveHours();
-void resetDailyCounts();
+private:
+    // Subsystem instances
+    CameraHandler cameraHandler;
+    MotionFilter motionFilter;
+    PowerManager powerManager;
+    WiFiManager wifiManager;
+    
+    // System state
+    bool sdCardInitialized;
+    bool loraInitialized;
+    unsigned long lastMotionTime;
+    unsigned long bootTime;
+    int dailyTriggerCount;
+    unsigned long lastStatusCheck;
+    
+    // Private methods
+    bool initializeFileSystem();
+    bool initializeSDCard();
+    bool initializeLoRa();
+    bool isWithinActiveHours();
+    void resetDailyCounts();
+    String createImageFilename();
+};
+
+// Global system manager instance
+SystemManager systemManager;
 
 /**
  * Arduino Setup Function
@@ -64,13 +105,15 @@ void setup() {
     DEBUG_PRINTF("Build Date: %s %s\n", BUILD_DATE, BUILD_TIME);
     DEBUG_PRINTLN("========================================\n");
     
-    bootTime = millis();
-    
-    // Initialize all system components
-    initializeSystem();
+    // Initialize system manager
+    if (!systemManager.init()) {
+        DEBUG_PRINTLN("CRITICAL: System initialization failed!");
+        DEBUG_PRINTLN("Entering emergency deep sleep...");
+        esp_deep_sleep(60 * 1000000); // Sleep for 1 minute and retry
+    }
     
     // Log initial system status
-    logSystemStatus();
+    systemManager.logSystemStatus();
     
     DEBUG_PRINTLN("System initialization complete!");
     DEBUG_PRINTLN("Wildlife camera ready for operation.\n");
@@ -81,11 +124,105 @@ void setup() {
  * Handles motion detection, power management, and system monitoring
  */
 void loop() {
-    static unsigned long lastStatusCheck = 0;
+    // Update all subsystems
+    systemManager.update();
+    
+    // Small delay to prevent excessive CPU usage
+    delay(100);
+}
+
+// SystemManager implementation
+
+/**
+ * SystemManager Constructor
+ */
+SystemManager::SystemManager() 
+    : sdCardInitialized(false), loraInitialized(false), lastMotionTime(0),
+      bootTime(0), dailyTriggerCount(0), lastStatusCheck(0) {
+}
+
+/**
+ * SystemManager Destructor
+ */
+SystemManager::~SystemManager() {
+    cleanup();
+}
+
+/**
+ * Initialize all system components
+ */
+bool SystemManager::init() {
+    DEBUG_PRINTLN("Initializing system components...");
+    
+    bootTime = millis();
+    
+    // Initialize file system first
+    if (!initializeFileSystem()) {
+        DEBUG_PRINTLN("File system initialization failed");
+        return false;
+    }
+    
+    // Initialize power management
+    if (!powerManager.init()) {
+        DEBUG_PRINTLN("Power management initialization failed");
+        return false;
+    }
+    
+    // Initialize motion detection
+    if (!motionFilter.init()) {
+        DEBUG_PRINTLN("Motion filter initialization failed");
+        return false;
+    }
+    
+    // Initialize camera
+    if (!cameraHandler.init()) {
+        DEBUG_PRINTLN("Camera initialization failed");
+        return false;
+    }
+    
+    // Initialize SD card storage
+    if (!initializeSDCard()) {
+        DEBUG_PRINTLN("Warning: SD card initialization failed");
+        // Not critical - system can continue without SD card
+    }
+    
+    // Initialize WiFi if enabled
+    if (WIFI_ENABLED) {
+        if (!wifiManager.init()) {
+            DEBUG_PRINTLN("Warning: WiFi initialization failed");
+            // Not critical - system can continue without WiFi
+        }
+    }
+    
+    // Initialize LoRa mesh networking if enabled
+    if (LORA_ENABLED) {
+        loraInitialized = initializeLoRa();
+        if (loraInitialized) {
+            DEBUG_PRINTLN("LoRa mesh network initialized");
+        } else {
+            DEBUG_PRINTLN("Warning: LoRa initialization failed");
+        }
+    }
+    
+    return true;
+}
+
+/**
+ * Update all subsystems
+ */
+void SystemManager::update() {
     unsigned long currentTime = millis();
     
+    // Update power management
+    powerManager.update();
+    
+    // Update WiFi if enabled
+    if (WIFI_ENABLED) {
+        wifiManager.update();
+    }
+    
     // Check system status every 30 seconds
-    if (currentTime - lastStatusCheck > 30000) {
+    if (currentTime - lastStatusCheck > STATUS_REPORT_INTERVAL) {
         logSystemStatus();
         lastStatusCheck = currentTime;
         
@@ -93,18 +230,18 @@ void loop() {
         resetDailyCounts();
         
         // Handle low power situations
-        if (SolarManager::getBatteryVoltage() < BATTERY_CRITICAL_THRESHOLD) {
+        if (powerManager.getBatteryVoltage() < BATTERY_CRITICAL_THRESHOLD) {
             handleLowPower();
             return;
         }
     }
     
     // Check for motion detection
-    if (MotionFilter::isMotionDetected()) {
+    if (motionFilter.isMotionDetected()) {
         DEBUG_PRINTLN("Motion detected!");
         
         // Apply weather filtering
-        if (MotionFilter::isValidMotion()) {
+        if (motionFilter.isValidMotion()) {
             DEBUG_PRINTLN("Valid motion after filtering");
             handleMotionDetection();
         } else {
@@ -117,146 +254,17 @@ void loop() {
         LoraMesh::processMessages();
     }
     
-    // Update solar manager
-    SolarManager::update();
-    
-    // Small delay to prevent excessive CPU usage
-    delay(100);
-    
     // Enter deep sleep if no activity and low power
     if (currentTime - lastMotionTime > DEEP_SLEEP_DURATION * 1000 && 
-        SolarManager::getBatteryVoltage() < SOLAR_VOLTAGE_THRESHOLD) {
+        powerManager.shouldEnterLowPower()) {
         enterDeepSleep();
     }
 }
 
 /**
- * Initialize all system components
- */
-void initializeSystem() {
-    DEBUG_PRINTLN("Initializing system components...");
-    
-    // Initialize file system first
-    initializeFileSystem();
-    
-    // Initialize power management
-    SolarManager::init();
-    
-    // Initialize motion detection
-    MotionFilter::init();
-    
-    // Initialize camera
-    initializeCamera();
-    
-    // Initialize SD card storage
-    initializeSDCard();
-    
-    // Initialize LoRa mesh networking
-    if (LORA_ENABLED) {
-        loraInitialized = LoraMesh::init();
-        if (loraInitialized) {
-            DEBUG_PRINTLN("LoRa mesh network initialized");
-        } else {
-            DEBUG_PRINTLN("Warning: LoRa initialization failed");
-        }
-    }
-    
-    // Set up PIR interrupt
-    pinMode(PIR_PIN, INPUT);
-    
-    // Initialize status LED
-    pinMode(CHARGING_LED_PIN, OUTPUT);
-    digitalWrite(CHARGING_LED_PIN, LOW);
-}
-
-/**
- * Initialize camera module
- */
-void initializeCamera() {
-    DEBUG_PRINTLN("Initializing camera...");
-    
-    cameraInitialized = CameraHandler::init();
-    
-    if (cameraInitialized) {
-        DEBUG_PRINTLN("Camera initialized successfully");
-        
-        // Test camera by taking a sample photo
-        camera_fb_t* fb = CameraHandler::captureImage();
-        if (fb) {
-            DEBUG_PRINTF("Test image captured: %dx%d, %d bytes\n", 
-                        fb->width, fb->height, fb->len);
-            esp_camera_fb_return(fb);
-        } else {
-            DEBUG_PRINTLN("Warning: Test image capture failed");
-        }
-    } else {
-        DEBUG_PRINTLN("Error: Camera initialization failed!");
-    }
-}
-
-/**
- * Initialize SD card storage
- */
-void initializeSDCard() {
-    DEBUG_PRINTLN("Initializing SD card...");
-    
-    if (!SD_MMC.begin()) {
-        DEBUG_PRINTLN("Warning: SD card initialization failed");
-        sdCardInitialized = false;
-        return;
-    }
-    
-    uint8_t cardType = SD_MMC.cardType();
-    if (cardType == CARD_NONE) {
-        DEBUG_PRINTLN("Warning: No SD card attached");
-        sdCardInitialized = false;
-        return;
-    }
-    
-    // Create necessary directories
-    if (!SD_MMC.exists(IMAGE_FOLDER)) {
-        SD_MMC.mkdir(IMAGE_FOLDER);
-        DEBUG_PRINTF("Created directory: %s\n", IMAGE_FOLDER);
-    }
-    
-    if (!SD_MMC.exists(LOG_FOLDER)) {
-        SD_MMC.mkdir(LOG_FOLDER);
-        DEBUG_PRINTF("Created directory: %s\n", LOG_FOLDER);
-    }
-    
-    uint64_t cardSize = SD_MMC.cardSize() / (1024 * 1024);
-    DEBUG_PRINTF("SD card initialized: %lluMB\n", cardSize);
-    
-    sdCardInitialized = true;
-}
-
-/**
- * Initialize LittleFS file system
- */
-void initializeFileSystem() {
-    DEBUG_PRINTLN("Initializing file system...");
-    
-    if (!LittleFS.begin()) {
-        DEBUG_PRINTLN("LittleFS mount failed, formatting...");
-        if (LittleFS.format()) {
-            DEBUG_PRINTLN("LittleFS formatted successfully");
-            if (!LittleFS.begin()) {
-                DEBUG_PRINTLN("Error: LittleFS mount failed after format");
-                return;
-            }
-        } else {
-            DEBUG_PRINTLN("Error: LittleFS format failed");
-            return;
-        }
-    }
-    
-    DEBUG_PRINTLN("File system initialized");
-}
-
-/**
  * Handle motion detection event
  */
-void handleMotionDetection() {
+void SystemManager::handleMotionDetection() {
     lastMotionTime = millis();
     
     // Check if within active hours
@@ -272,14 +280,14 @@ void handleMotionDetection() {
     }
     
     // Capture image
-    if (cameraInitialized) {
-        camera_fb_t* fb = CameraHandler::captureImage();
+    if (cameraHandler.isInitialized()) {
+        camera_fb_t* fb = cameraHandler.captureImage();
         if (fb) {
             dailyTriggerCount++;
             
             // Save image to SD card
             if (sdCardInitialized) {
-                String filename = CameraHandler::saveImage(fb, IMAGE_FOLDER);
+                String filename = cameraHandler.saveImage(fb, IMAGE_FOLDER);
                 DEBUG_PRINTF("Image saved: %s\n", filename.c_str());
                 
                 // Transmit via LoRa if enabled
@@ -303,87 +311,218 @@ void handleMotionDetection() {
 /**
  * Enter deep sleep mode to conserve power
  */
-void enterDeepSleep() {
-    DEBUG_PRINTLN("Entering deep sleep...");
+void SystemManager::enterDeepSleep() {
+    DEBUG_PRINTLN("Entering deep sleep mode...");
     
-    // Configure wake-up source (PIR motion sensor)
-    esp_sleep_enable_ext0_wakeup(GPIO_NUM_13, 1);  // PIR_PIN
+    // Cleanup all subsystems
+    cleanup();
     
-    // Also wake up after a timeout
-    esp_sleep_enable_timer_wakeup(DEEP_SLEEP_DURATION * 1000000ULL);
+    // Configure wake-up sources
+    esp_sleep_enable_timer_wakeup(DEEP_SLEEP_DURATION * 1000000); // Convert to microseconds
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_13, 1); // PIR sensor wake-up
     
-    // Turn off unnecessary peripherals
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
+    DEBUG_PRINTF("Sleeping for %d seconds\n", DEEP_SLEEP_DURATION);
+    delay(100); // Allow debug message to be sent
     
-    delay(100);
+    esp_deep_sleep_start();
+}
+
+/**
+ * Handle critical low power situation
+ */
+void SystemManager::handleLowPower() {
+    DEBUG_PRINTLN("Critical low power - entering emergency mode");
+    
+    // Enter power saving mode
+    powerManager.enterPowerSaving();
+    
+    // Disable non-essential systems
+    if (wifiManager.isConnected()) {
+        wifiManager.disconnect();
+    }
+    
+    // Reduce camera quality if possible
+    // This would require additional camera configuration methods
+    
+    // Enter deep sleep for longer period
+    DEBUG_PRINTLN("Entering extended deep sleep...");
+    esp_sleep_enable_timer_wakeup(DEEP_SLEEP_DURATION * 2 * 1000000); // Double sleep time
     esp_deep_sleep_start();
 }
 
 /**
  * Log current system status
  */
-void logSystemStatus() {
-    float batteryVoltage = SolarManager::getBatteryVoltage();
-    float solarVoltage = SolarManager::getSolarVoltage();
-    bool isCharging = SolarManager::isCharging();
+void SystemManager::logSystemStatus() {
+    PowerStats powerStats = powerManager.getPowerStats();
+    MotionFilterStatus motionStatus = motionFilter.getStatus();
+    CameraStatus cameraStatus = cameraHandler.getStatus();
+    WiFiStatusInfo wifiStatus = wifiManager.getStatus();
     
     DEBUG_PRINTLN("=== System Status ===");
     DEBUG_PRINTF("Uptime: %lu seconds\n", (millis() - bootTime) / 1000);
-    DEBUG_PRINTF("Battery: %.2fV %s\n", batteryVoltage, 
-                 isCharging ? "(Charging)" : "(Discharging)");
-    DEBUG_PRINTF("Solar: %.2fV\n", solarVoltage);
+    DEBUG_PRINTF("Battery: %.2fV (%d%%) %s\n", 
+                 powerStats.batteryVoltage, powerStats.batteryPercentage,
+                 powerStats.isCharging ? "(Charging)" : "(Discharging)");
+    DEBUG_PRINTF("Solar: %.2fV\n", powerStats.solarVoltage);
     DEBUG_PRINTF("Daily triggers: %d/%d\n", dailyTriggerCount, MAX_DAILY_TRIGGERS);
-    DEBUG_PRINTF("Camera: %s\n", cameraInitialized ? "OK" : "Error");
+    DEBUG_PRINTF("Camera: %s (%s)\n", 
+                 cameraStatus.initialized ? "OK" : "Error",
+                 cameraStatus.boardName);
     DEBUG_PRINTF("SD Card: %s\n", sdCardInitialized ? "OK" : "Error");
     DEBUG_PRINTF("LoRa: %s\n", loraInitialized ? "OK" : "Disabled");
+    DEBUG_PRINTF("WiFi: %s", wifiStatus.initialized ? "Enabled" : "Disabled");
+    if (wifiStatus.status == WIFI_STATUS_CONNECTED) {
+        DEBUG_PRINTF(" (Connected to %s, IP: %s, RSSI: %d dBm)\n", 
+                     wifiStatus.ssid.c_str(), wifiStatus.ipAddress.c_str(), wifiStatus.rssi);
+    } else {
+        DEBUG_PRINTLN(" (Disconnected)");
+    }
+    DEBUG_PRINTF("Motion Filter: %s\n", motionStatus.initialized ? "Active" : "Inactive");
     DEBUG_PRINTF("Free heap: %d bytes\n", ESP.getFreeHeap());
     DEBUG_PRINTLN("====================\n");
 }
 
 /**
- * Handle critical low power situation
+ * Cleanup all system resources
  */
-void handleLowPower() {
-    DEBUG_PRINTLN("CRITICAL: Low battery detected!");
-    DEBUG_PRINTLN("Entering emergency deep sleep...");
+void SystemManager::cleanup() {
+    DEBUG_PRINTLN("Cleaning up system resources...");
     
-    // Disable all non-essential systems
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
+    cameraHandler.cleanup();
+    motionFilter.cleanup();
+    powerManager.cleanup();
+    wifiManager.cleanup();
     
-    // Extended sleep time in low power mode
-    esp_sleep_enable_timer_wakeup(DEEP_SLEEP_DURATION * 2 * 1000000ULL);
-    esp_deep_sleep_start();
+    if (loraInitialized) {
+        LoraMesh::cleanup();
+        loraInitialized = false;
+    }
+}
+
+/**
+ * Initialize LittleFS file system
+ */
+bool SystemManager::initializeFileSystem() {
+    DEBUG_PRINTLN("Initializing file system...");
+    
+    if (!LittleFS.begin()) {
+        DEBUG_PRINTLN("LittleFS mount failed, formatting...");
+        if (LittleFS.format()) {
+            DEBUG_PRINTLN("LittleFS formatted successfully");
+            if (!LittleFS.begin()) {
+                DEBUG_PRINTLN("Error: LittleFS mount failed after format");
+                return false;
+            }
+        } else {
+            DEBUG_PRINTLN("Error: LittleFS format failed");
+            return false;
+        }
+    }
+    
+    DEBUG_PRINTLN("File system initialized");
+    return true;
+}
+
+/**
+ * Initialize SD card storage
+ */
+bool SystemManager::initializeSDCard() {
+    DEBUG_PRINTLN("Initializing SD card...");
+    
+    if (!SD_MMC.begin()) {
+        DEBUG_PRINTLN("SD Card initialization failed");
+        return false;
+    }
+    
+    uint8_t cardType = SD_MMC.cardType();
+    if (cardType == CARD_NONE) {
+        DEBUG_PRINTLN("No SD card attached");
+        return false;
+    }
+    
+    DEBUG_PRINTF("SD Card Type: ");
+    if (cardType == CARD_MMC) {
+        DEBUG_PRINTLN("MMC");
+    } else if (cardType == CARD_SD) {
+        DEBUG_PRINTLN("SDSC");
+    } else if (cardType == CARD_SDHC) {
+        DEBUG_PRINTLN("SDHC");
+    } else {
+        DEBUG_PRINTLN("UNKNOWN");
+    }
+    
+    uint64_t cardSize = SD_MMC.cardSize() / (1024 * 1024);
+    DEBUG_PRINTF("SD Card Size: %lluMB\n", cardSize);
+    
+    // Create required directories
+    if (!SD_MMC.exists(IMAGE_FOLDER)) {
+        SD_MMC.mkdir(IMAGE_FOLDER);
+        DEBUG_PRINTF("Created directory: %s\n", IMAGE_FOLDER);
+    }
+    
+    if (!SD_MMC.exists(LOG_FOLDER)) {
+        SD_MMC.mkdir(LOG_FOLDER);
+        DEBUG_PRINTF("Created directory: %s\n", LOG_FOLDER);
+    }
+    
+    sdCardInitialized = true;
+    DEBUG_PRINTLN("SD card initialized successfully");
+    return true;
+}
+
+/**
+ * Initialize LoRa mesh networking
+ */
+bool SystemManager::initializeLoRa() {
+    DEBUG_PRINTLN("Initializing LoRa mesh networking...");
+    return LoraMesh::init();
 }
 
 /**
  * Check if current time is within active hours
  */
-bool isWithinActiveHours() {
+bool SystemManager::isWithinActiveHours() {
+    if (!NTP_ENABLED) {
+        return true; // Always active if no time reference
+    }
+    
     struct tm timeinfo;
     if (!getLocalTime(&timeinfo)) {
-        // If time is not available, assume it's within active hours
-        return true;
+        return true; // Default to active if time not available
     }
     
     int currentHour = timeinfo.tm_hour;
-    return (currentHour >= TRIGGER_ACTIVE_HOURS_START && 
-            currentHour < TRIGGER_ACTIVE_HOURS_END);
+    
+    if (TRIGGER_ACTIVE_HOURS_START <= TRIGGER_ACTIVE_HOURS_END) {
+        // Normal case: start < end (e.g., 6 AM to 8 PM)
+        return (currentHour >= TRIGGER_ACTIVE_HOURS_START && 
+                currentHour < TRIGGER_ACTIVE_HOURS_END);
+    } else {
+        // Overnight case: start > end (e.g., 8 PM to 6 AM)
+        return (currentHour >= TRIGGER_ACTIVE_HOURS_START || 
+                currentHour < TRIGGER_ACTIVE_HOURS_END);
+    }
 }
 
 /**
  * Reset daily counters at midnight
  */
-void resetDailyCounts() {
-    static int lastDay = -1;
+void SystemManager::resetDailyCounts() {
+    if (!NTP_ENABLED) return;
     
     struct tm timeinfo;
-    if (getLocalTime(&timeinfo)) {
-        if (lastDay != -1 && timeinfo.tm_mday != lastDay) {
-            DEBUG_PRINTLN("New day detected - resetting daily counters");
+    if (!getLocalTime(&timeinfo)) return;
+    
+    static int lastDay = -1;
+    if (lastDay != timeinfo.tm_mday) {
+        if (lastDay != -1) { // Not the first check
+            DEBUG_PRINTLN("Resetting daily counters");
             dailyTriggerCount = 0;
+            powerManager.resetStats();
+            motionFilter.resetStats();
         }
         lastDay = timeinfo.tm_mday;
     }
 }
+
