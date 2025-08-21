@@ -97,9 +97,9 @@ bool init() {
 void processMessages() {
     if (!initialized) return;
     
-    // Send heartbeat every 30 seconds
+    // Send heartbeat at configured interval
     unsigned long now = millis();
-    if (now - lastHeartbeat > 30000) {
+    if (now - lastHeartbeat > HEARTBEAT_INTERVAL) {
         sendHeartbeat();
         lastHeartbeat = now;
     }
@@ -142,7 +142,7 @@ bool transmitImage(camera_fb_t* fb, const String& filename) {
     DEBUG_PRINTF("Transmitting image: %s (%d bytes)\n", filename.c_str(), fb->len);
     
     // Create image metadata message
-    DynamicJsonDocument doc(512);
+    DynamicJsonDocument doc(JSON_BUFFER_MEDIUM);
     doc["type"] = "image_meta";
     doc["node_id"] = nodeId;
     doc["filename"] = filename;
@@ -261,7 +261,7 @@ static bool sendPacket(const String& message, int targetNode) {
  * Process received message
  */
 static void processReceivedMessage(const String& message) {
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(JSON_BUFFER_LARGE);
     DeserializationError error = deserializeJson(doc, message);
     
     if (error) {
@@ -348,7 +348,7 @@ static int findRouteToNode(int targetNode) {
  * Send heartbeat message
  */
 static void sendHeartbeat() {
-    DynamicJsonDocument doc(256);
+    DynamicJsonDocument doc(JSON_BUFFER_SMALL);
     doc["type"] = "heartbeat";
     doc["source_node"] = nodeId;
     doc["timestamp"] = millis();
@@ -364,7 +364,7 @@ static void sendHeartbeat() {
  * Create formatted message
  */
 static String createMessage(const String& type, const JsonObject& data) {
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(JSON_BUFFER_LARGE);
     doc["type"] = type;
     doc["source_node"] = nodeId;
     doc["timestamp"] = millis();

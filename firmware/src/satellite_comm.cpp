@@ -347,7 +347,7 @@ void SatelliteComm::exitSleepMode() {
     wakeUpModule();
     
     // Re-establish communication
-    delay(5000);
+    delay(COMMUNICATION_SETUP_DELAY);
     
     switch (moduleType) {
         case MODULE_IRIDIUM:

@@ -130,6 +130,7 @@ All configuration parameters are centralized in `firmware/src/config.h` for easy
 | `HEARTBEAT_INTERVAL` | `30000` | ms | Interval for sending network heartbeats |
 | `SERIAL_INIT_DELAY` | `1000` | ms | Delay for serial port initialization |
 | `NETWORK_RETRY_DELAY` | `2000` | ms | Delay between network transmission attempts |
+| `COMMUNICATION_SETUP_DELAY` | `5000` | ms | Delay for communication module setup |
 
 ### LoRa Mesh Network
 | Parameter | Default | Range | Description |
@@ -200,6 +201,16 @@ All configuration parameters are centralized in `firmware/src/config.h` for easy
 | `TRIGGER_ACTIVE_HOURS_END` | `20` | hour | End of active period (24h format) |
 | `NIGHT_MODE_ENABLED` | `false` | bool | Enable night photography |
 | `MAX_DAILY_TRIGGERS` | `50` | count | Maximum triggers per day |
+
+### Memory and Buffer Configuration
+| Parameter | Default | Range | Description |
+|-----------|---------|-------|-------------|
+| `BUFFER_SIZE_SMALL` | `256` | bytes | Small buffer size for general use |
+| `BUFFER_SIZE_MEDIUM` | `1024` | bytes | Medium buffer size for general use |
+| `BUFFER_SIZE_LARGE` | `4096` | bytes | Large buffer size for general use |
+| `JSON_BUFFER_SMALL` | `256` | bytes | Small JSON document buffer |
+| `JSON_BUFFER_MEDIUM` | `512` | bytes | Medium JSON document buffer |
+| `JSON_BUFFER_LARGE` | `1024` | bytes | Large JSON document buffer |
 
 ### Debug and Logging
 | Parameter | Default | Range | Description |

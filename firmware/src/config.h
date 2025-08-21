@@ -156,6 +156,7 @@
 #define SATELLITE_RESPONSE_DELAY 2000    // ms - delay waiting for satellite module response
 #define SATELLITE_WAKEUP_DELAY 100       // ms - delay for satellite module wake up
 #define LORA_TRANSMISSION_DELAY 1000     // ms - simulated delay for LoRa transmission
+#define COMMUNICATION_SETUP_DELAY 5000   // ms - delay for communication module setup
 
 // ===========================
 // HARDWARE CONFIGURATION
@@ -215,6 +216,9 @@
 #define BUFFER_SIZE_SMALL 256            // bytes - small buffer size
 #define BUFFER_SIZE_MEDIUM 1024          // bytes - medium buffer size  
 #define BUFFER_SIZE_LARGE 4096           // bytes - large buffer size
+#define JSON_BUFFER_SMALL 256            // bytes - small JSON document buffer
+#define JSON_BUFFER_MEDIUM 512           // bytes - medium JSON document buffer
+#define JSON_BUFFER_LARGE 1024           // bytes - large JSON document buffer
 
 // Function-like macros for common operations
 #define VOLTAGE_TO_ADC(voltage) ((voltage) * 4095 / ADC_REFERENCE_VOLTAGE)
