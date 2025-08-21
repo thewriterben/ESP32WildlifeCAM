@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 #include <esp_camera.h>
+#include "hal/camera_board.h"
+#include <memory>
 
 // Lighting condition enumeration
 enum LightingCondition {
@@ -18,14 +20,32 @@ struct CameraStatus {
     bool sensorDetected;
     int imageCount;
     esp_err_t lastError;
+    BoardType boardType;
+    SensorType sensorType;
+    const char* boardName;
+    const char* sensorName;
 };
 
 namespace CameraHandler {
     /**
      * Initialize camera with optimal settings for wildlife photography
+     * Uses HAL for automatic board detection and configuration
      * @return true if initialization successful, false otherwise
      */
     bool init();
+    
+    /**
+     * Initialize camera with specific board type
+     * @param boardType Specific board type to use
+     * @return true if initialization successful, false otherwise
+     */
+    bool init(BoardType boardType);
+    
+    /**
+     * Get the current camera board instance
+     * @return Pointer to camera board, or nullptr if not initialized
+     */
+    CameraBoard* getBoard();
     
     /**
      * Configure camera sensor settings optimized for wildlife detection
@@ -60,6 +80,13 @@ namespace CameraHandler {
      * @param fb Camera frame buffer
      */
     void saveImageMetadata(const String& imageFilename, camera_fb_t* fb);
+    
+    /**
+     * Configure camera sensor settings optimized for wildlife detection
+     * (Legacy function for backward compatibility)
+     * @param sensor Pointer to camera sensor
+     */
+    void configureSensorSettings(sensor_t* sensor);
     
     /**
      * Get camera status information
