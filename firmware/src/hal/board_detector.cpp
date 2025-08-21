@@ -5,6 +5,7 @@
 
 #include "board_detector.h"
 #include "esp32_cam.h"
+#include "esp32_s3_cam.h"
 #include "../config.h"
 #include <esp_system.h>
 #include <esp_chip_info.h>
@@ -61,9 +62,7 @@ std::unique_ptr<CameraBoard> BoardDetector::createBoard(BoardType type) {
             return std::make_unique<ESP32CAM>();
             
         case BOARD_ESP32_S3_CAM:
-            // TODO: Implement ESP32S3CAM class
-            DEBUG_PRINTLN("ESP32-S3-CAM not yet implemented, falling back to ESP32-CAM");
-            return std::make_unique<ESP32CAM>();
+            return std::make_unique<ESP32S3CAM>();
             
         case BOARD_ESP_EYE:
             // TODO: Implement ESPEye class
@@ -109,8 +108,8 @@ const char* BoardDetector::getBoardName(BoardType type) {
 bool BoardDetector::isBoardSupported(BoardType type) {
     switch (type) {
         case BOARD_AI_THINKER_ESP32_CAM:
-            return true;
         case BOARD_ESP32_S3_CAM:
+            return true;
         case BOARD_ESP_EYE:
         case BOARD_M5STACK_TIMER_CAM:
         case BOARD_TTGO_T_CAMERA:
@@ -147,19 +146,34 @@ uint32_t BoardDetector::getChipId() {
 }
 
 BoardType BoardDetector::detectByPinConfiguration() {
-    // Test for AI-Thinker ESP32-CAM pin configuration
-    // This is a simplified test - in practice, you'd test multiple pins
+    // Get chip model to help with detection
+    const char* chip_model = getChipModel();
     
-    // Check if GPIO 0 (XCLK) is available - common for ESP32-CAM
-    if (testGPIOPin(0, false)) { // GPIO 0 should be available for XCLK
-        // Check if GPIO 32 (PWDN) is available
-        if (testGPIOPin(32, false)) {
-            // This looks like AI-Thinker ESP32-CAM configuration
-            return BOARD_AI_THINKER_ESP32_CAM;
+    if (strstr(chip_model, "ESP32-S3")) {
+        DEBUG_PRINTLN("ESP32-S3 chip detected, checking for S3-CAM configuration");
+        
+        // Test for ESP32-S3-CAM specific pins
+        // GPIO 40 is commonly used for XCLK on ESP32-S3-CAM
+        if (testGPIOPin(40, false)) {
+            // GPIO 48 is commonly used for LED on ESP32-S3-CAM
+            if (testGPIOPin(48, false)) {
+                DEBUG_PRINTLN("ESP32-S3-CAM pin configuration detected");
+                return BOARD_ESP32_S3_CAM;
+            }
+        }
+    } else if (strstr(chip_model, "ESP32")) {
+        DEBUG_PRINTLN("ESP32 chip detected, checking for ESP32-CAM configuration");
+        
+        // Test for AI-Thinker ESP32-CAM pin configuration
+        // Check if GPIO 0 (XCLK) is available - common for ESP32-CAM
+        if (testGPIOPin(0, false)) { // GPIO 0 should be available for XCLK
+            // Check if GPIO 32 (PWDN) is available
+            if (testGPIOPin(32, false)) {
+                DEBUG_PRINTLN("AI-Thinker ESP32-CAM pin configuration detected");
+                return BOARD_AI_THINKER_ESP32_CAM;
+            }
         }
     }
-    
-    // Add more board-specific pin tests here
     
     return BOARD_UNKNOWN;
 }
