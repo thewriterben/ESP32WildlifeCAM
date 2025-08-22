@@ -66,22 +66,22 @@ std::unique_ptr<CameraBoard> BoardDetector::createBoard(BoardType type) {
             return std::make_unique<ESP32S3CAM>();
             
         case BOARD_ESP_EYE:
-            // TODO: Implement ESPEye class
+            // ESP-EYE implementation not yet completed, falling back to ESP32-CAM
             DEBUG_PRINTLN("ESP-EYE not yet implemented, falling back to ESP32-CAM");
             return std::make_unique<ESP32CAM>();
             
         case BOARD_M5STACK_TIMER_CAM:
-            // TODO: Implement M5StackTimerCam class
+            // M5Stack Timer Camera implementation not yet completed, falling back to ESP32-CAM
             DEBUG_PRINTLN("M5Stack Timer Camera not yet implemented, falling back to ESP32-CAM");
             return std::make_unique<ESP32CAM>();
             
         case BOARD_TTGO_T_CAMERA:
-            // TODO: Implement TTGOTCamera class
+            // TTGO T-Camera implementation not yet completed, falling back to ESP32-CAM
             DEBUG_PRINTLN("TTGO T-Camera not yet implemented, falling back to ESP32-CAM");
             return std::make_unique<ESP32CAM>();
             
         case BOARD_XIAO_ESP32S3_SENSE:
-            // TODO: Implement XiaoESP32S3Sense class
+            // XIAO ESP32S3 Sense implementation not yet completed, falling back to ESP32-CAM
             DEBUG_PRINTLN("XIAO ESP32S3 Sense not yet implemented, falling back to ESP32-CAM");
             return std::make_unique<ESP32CAM>();
             

@@ -67,11 +67,8 @@
 // 
 // SOLUTION: Use input-only pins for ADC, make some features optional/shared
 
-// Motion Detection - PRIORITY 1 (gets the last available pin)
-#define PIR_PIN 13                        // PIR sensor pin - only remaining available pin
-#define PIR_DEBOUNCE_TIME 2000           // ms - prevent multiple triggers
-#define MOTION_DETECTION_ENABLED true    
-#define MOTION_SENSITIVITY 50            // 0-100, higher = more sensitive
+// Motion Detection - PRIORITY 1 
+// NOTE: PIR_PIN is defined above as GPIO 1
 
 // Weather Filtering
 #define WEATHER_FILTERING_ENABLED true
@@ -91,12 +88,13 @@
 // ===========================
 // FINAL PIN ALLOCATION SUMMARY
 // ===========================
-// Available pins on AI-Thinker ESP32-CAM: 2, 12, 13, 14, 15, 16, 17, 33 (8 pins)
+// Available pins on AI-Thinker ESP32-CAM: 1, 2, 12, 13, 14, 15, 16, 17, 33 (9 pins)
 // 
 // ASSIGNED PINS (no conflicts):
+// GPIO 1:  PIR_PIN
 // GPIO 2:  CHARGING_LED_PIN
 // GPIO 12: LORA_MISO  
-// GPIO 13: PIR_PIN
+// GPIO 13: Available (could be used for additional features)
 // GPIO 14: LORA_SCK
 // GPIO 15: LORA_MOSI
 // GPIO 16: LORA_CS

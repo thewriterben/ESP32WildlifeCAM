@@ -8,6 +8,7 @@
 #include "../configs/sensor_configs.h"
 #include <esp_camera.h>
 #include <esp_system.h>
+#include <Wire.h>
 
 ESP32CAM::ESP32CAM() {
     board_type = BOARD_AI_THINKER_ESP32_CAM;
