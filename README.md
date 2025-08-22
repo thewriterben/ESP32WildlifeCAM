@@ -48,6 +48,8 @@ The ESP32WildlifeCAM project supports **15 different ESP32 camera boards**, maki
 | **ESP32-S3-EYE** | ESP32-S3 | Yes | Advanced AI vision board | 100mA active, 5mA sleep |
 | **Freenove ESP32-WROVER-CAM** | ESP32 | Yes | Educational favorite, well documented | 110mA active, 8mA sleep |
 | **M5Stack ESP32CAM** | ESP32 | Optional | Stackable modular design | 95mA active, 6mA sleep |
+
+**📖 For detailed hardware specifications and deployment guides, see [docs/deployment/](docs/deployment/README.md)**
 | **TTGO T-Journal** | ESP32 | Yes | E-paper display integration | 120mA active, 8mA sleep |
 | **LilyGO T-Camera Plus** | ESP32 | Yes | Enhanced features | 90mA active, 5mA sleep |
 | **Espressif ESP32-CAM-MB** | ESP32 | Optional | Official development board | 115mA active, 9mA sleep |
@@ -99,6 +101,52 @@ The system automatically detects the connected board type using:
 - **Chip Model Identification**: ESP32 vs ESP32-S3 detection
 - **I2C Device Scanning**: Identifies board-specific sensors/displays
 - **Fallback Logic**: Graceful degradation to compatible board types
+
+## 🎯 Deployment Scenarios
+
+The ESP32WildlifeCAM supports five major deployment scenarios, each optimized for different use cases:
+
+### 🔬 Research Deployment
+**Large-scale scientific monitoring (50+ nodes)**
+- High-resolution image capture for detailed analysis
+- AI-powered species classification and behavior analysis
+- Multi-hop mesh networking with data aggregation
+- Integration with research databases and publications
+- **Cost**: $150-200 per node | **Battery Life**: 60+ days
+
+### 💰 Budget Conservation
+**Cost-effective community monitoring**
+- Simplified hardware using AI-Thinker ESP32-CAM
+- Basic motion detection with local storage
+- 3D printable enclosures and DIY solar systems
+- Community-friendly setup and maintenance
+- **Cost**: $60-80 per node | **Battery Life**: 30-45 days
+
+### 🏙️ Urban Monitoring
+**Stealth urban wildlife tracking**
+- Advanced filtering for urban false positives
+- Anti-vandalism features and concealed installation
+- WiFi/cellular connectivity for real-time data
+- Encrypted storage and secure transmission
+- **Cost**: $120-180 per node | **Battery Life**: 25-35 days
+
+### 🌨️ Extreme Environment
+**Arctic/desert monitoring with satellite backup**
+- Enhanced weatherproofing for harsh conditions
+- Extended battery systems and thermal management
+- Satellite communication for remote locations
+- Survival mode operation for extended autonomy
+- **Cost**: $200-300 per node | **Battery Life**: 45+ days
+
+### 🤖 AI-Enhanced Research
+**Cutting-edge AI processing and analysis**
+- Real-time species classification and behavior analysis
+- Edge computing with cloud-assisted processing
+- Continuous learning and model improvement
+- Advanced conservation alerts and insights
+- **Cost**: $250-400 per node | **Processing**: Real-time AI
+
+**📋 Detailed deployment guides: [docs/deployment/scenarios/](docs/deployment/scenarios/)**
 
 ## 🚀 Quick Start
 
