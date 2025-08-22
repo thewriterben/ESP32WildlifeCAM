@@ -30,6 +30,76 @@ A comprehensive solar-powered wildlife trail camera system built with ESP32-S3, 
 - Charging: TP4056 with protection
 - Power consumption: <100µA in sleep mode
 
+## 📷 Supported Camera Boards
+
+The ESP32WildlifeCAM project supports **15 different ESP32 camera boards**, making it compatible with the majority of popular ESP32 camera modules available in the market.
+
+### Fully Supported Boards ✅
+
+| Board | Chip | PSRAM | Features | Power Profile |
+|-------|------|-------|----------|---------------|
+| **AI-Thinker ESP32-CAM** | ESP32 | Optional | Most popular, good all-around | 120mA active, 10mA sleep |
+| **ESP32-S3-CAM** | ESP32-S3 | Yes | High performance, AI ready | 100mA active, 7mA sleep |
+| **ESP-EYE** | ESP32 | Yes | Espressif official, OLED display | 110mA active, 8mA sleep |
+| **M5Stack Timer CAM** | ESP32 | Optional | Battery optimized, external power | 90mA active, 5mA sleep |
+| **TTGO T-Camera** | ESP32 | Yes | Built-in display, compact | 95mA active, 6mA sleep |
+| **XIAO ESP32S3 Sense** | ESP32-S3 | Yes | Ultra-compact, microphone | 80mA active, 4mA sleep |
+| **FireBeetle ESP32-CAM** | ESP32 | Optional | **Extreme low power design** | 70mA active, 3mA sleep |
+| **ESP32-S3-EYE** | ESP32-S3 | Yes | Advanced AI vision board | 100mA active, 5mA sleep |
+| **Freenove ESP32-WROVER-CAM** | ESP32 | Yes | Educational favorite, well documented | 110mA active, 8mA sleep |
+| **M5Stack ESP32CAM** | ESP32 | Optional | Stackable modular design | 95mA active, 6mA sleep |
+| **TTGO T-Journal** | ESP32 | Yes | E-paper display integration | 120mA active, 8mA sleep |
+| **LilyGO T-Camera Plus** | ESP32 | Yes | Enhanced features | 90mA active, 5mA sleep |
+| **Espressif ESP32-CAM-MB** | ESP32 | Optional | Official development board | 115mA active, 9mA sleep |
+| **M5Stack UnitCAM** | ESP32 | Optional | **Tiny form factor** for stealth | 70mA active, 3mA sleep |
+| **TTGO T-Camera V1.7** | ESP32 | Yes | Latest version with improvements | 85mA active, 4mA sleep |
+
+### Wildlife-Specific Optimizations
+
+Each board implementation includes optimizations specifically for wildlife monitoring:
+
+#### 🔋 **Power Management**
+- **Extended Sleep Modes**: 3µA to 10mA sleep current depending on board
+- **Solar Integration**: Automatic charging management and voltage monitoring
+- **Wake Sources**: PIR motion sensors, timer-based, or manual triggers
+- **CPU Scaling**: Dynamic frequency adjustment (40MHz to 240MHz)
+
+#### 📸 **Camera Settings**
+- **Outdoor Optimized**: Auto-exposure and white balance for varying light
+- **Motion Blur Reduction**: Fast shutter speeds for moving wildlife
+- **Night Photography**: High gain settings and flash/LED control
+- **Storage Efficient**: JPEG quality balanced for file size vs detail
+
+#### 🌐 **Network & Communication**
+- **LoRa Mesh**: Long-range communication for remote deployment areas
+- **Satellite Ready**: Integration points for satellite communication
+- **Local Storage**: SD card and flash memory management
+- **Data Compression**: Image and telemetry compression algorithms
+
+#### 🏞️ **Environmental Features**
+- **Weather Filtering**: Motion detection ignoring wind/rain false positives
+- **Temperature Monitoring**: Sensor health and environmental logging
+- **Weatherproof Design**: IP65+ rated enclosure support
+- **Solar Tracking**: Optimal panel positioning feedback
+
+### Board Selection Guide
+
+**For Maximum Battery Life**: FireBeetle ESP32-CAM, M5Stack UnitCAM
+**For AI/ML Features**: ESP32-S3-EYE, ESP32-S3-CAM, XIAO ESP32S3 Sense  
+**For Stealth Monitoring**: XIAO ESP32S3 Sense, M5Stack UnitCAM
+**For Development/Testing**: AI-Thinker ESP32-CAM, ESP-EYE
+**For Remote Deployment**: M5Stack Timer CAM, LilyGO T-Camera Plus
+**For Educational Use**: Freenove ESP32-WROVER-CAM, ESP-EYE
+
+### Automatic Board Detection
+
+The system automatically detects the connected board type using:
+- **GPIO Fingerprinting**: Tests board-specific pin configurations
+- **PSRAM Detection**: Checks for external PSRAM availability  
+- **Chip Model Identification**: ESP32 vs ESP32-S3 detection
+- **I2C Device Scanning**: Identifies board-specific sensors/displays
+- **Fallback Logic**: Graceful degradation to compatible board types
+
 ## 🚀 Quick Start
 
 ### 1. Hardware Setup
