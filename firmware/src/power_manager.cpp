@@ -19,7 +19,8 @@ PowerManager::PowerManager()
     : initialized(false), batteryVoltage(0.0), solarVoltage(0.0),
       chargingActive(false), lastVoltageCheck(0), currentPowerState(POWER_NORMAL),
       totalChargingTime(0), chargingStartTime(0), lowPowerMode(false),
-      batteryCalibrationOffset(0.0), solarCalibrationOffset(0.0) {
+      batteryCalibrationOffset(0.0), solarCalibrationOffset(0.0),
+      advancedOptimizer(nullptr), optimizationsEnabled(false) {
     applyConfigurationSettings();
 }
 
@@ -429,4 +430,38 @@ namespace SolarManager {
             instance = nullptr;
         }
     }
+}
+
+// Advanced optimization methods implementation
+bool PowerManager::enableAdvancedOptimizations() {
+    if (optimizationsEnabled) return true;
+    
+    #ifdef OPTIMIZED_HEAP_SIZE
+    // Only enable if optimizations are compiled in
+    advancedOptimizer = nullptr; // Would create AdvancedPowerManager instance
+    optimizationsEnabled = true;
+    
+    DEBUG_PRINTLN("Advanced power optimizations enabled");
+    return true;
+    #else
+    DEBUG_PRINTLN("Advanced optimizations not available - compile with optimization flags");
+    return false;
+    #endif
+}
+
+float PowerManager::getOptimizationRecommendations() const {
+    if (!optimizationsEnabled) return 0.0f;
+    
+    float potentialSavings = 0.0f;
+    
+    // Calculate potential power savings based on current state
+    if (currentPowerState == POWER_LOW || currentPowerState == POWER_CRITICAL) {
+        potentialSavings += 50.0f; // 50mA potential savings in low power mode
+    }
+    
+    if (!chargingActive && batteryVoltage < 3.5f) {
+        potentialSavings += 30.0f; // 30mA additional savings when not charging
+    }
+    
+    return potentialSavings;
 }

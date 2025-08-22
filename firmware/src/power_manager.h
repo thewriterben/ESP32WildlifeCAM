@@ -3,6 +3,9 @@
 
 #include <Arduino.h>
 
+// Forward declaration for advanced power optimization
+class AdvancedPowerManager;
+
 // Power state enumeration
 enum PowerState {
     POWER_CRITICAL = 0,  // Battery critically low
@@ -159,6 +162,18 @@ public:
      */
     bool isInLowPowerMode() const { return lowPowerMode; }
 
+    /**
+     * @brief Enable advanced power optimizations
+     * @return true if optimization enabled successfully
+     */
+    bool enableAdvancedOptimizations();
+
+    /**
+     * @brief Get power consumption optimization recommendations
+     * @return recommended power savings in mA
+     */
+    float getOptimizationRecommendations() const;
+
 private:
     // Member variables
     bool initialized;
@@ -172,6 +187,10 @@ private:
     bool lowPowerMode;
     float batteryCalibrationOffset;
     float solarCalibrationOffset;
+    
+    // Advanced optimization support
+    AdvancedPowerManager* advancedOptimizer;
+    bool optimizationsEnabled;
     
     // Private methods
     float readVoltage(int pin, float voltageDividerRatio = VOLTAGE_DIVIDER_RATIO);
