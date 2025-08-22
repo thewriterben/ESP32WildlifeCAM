@@ -85,6 +85,15 @@
 #define BME280_SDA 21              // I2C data pin
 #define BME280_SCL 22              // I2C clock pin
 
+// ADXL345 Accelerometer
+#define ADXL345_ENABLED false       // Enable accelerometer
+#define ADXL345_ADDRESS 0x53        // I2C address (same bus as BME280)
+
+// Additional Sensors
+#define VIBRATION_PIN 16            // SW-420 vibration sensor pin
+#define IR_LED_PIN 33               // 12V IR LED ring control (MOSFET gate)
+#define NIGHT_VISION_ENABLED true   // Enable IR LEDs for night mode
+
 // Trigger Settings
 #define TRIGGER_ACTIVE_HOURS_START 6   // Hour (24h format) - start active period
 #define TRIGGER_ACTIVE_HOURS_END 20    // Hour (24h format) - end active period
