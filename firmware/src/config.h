@@ -272,6 +272,33 @@
 #define LOG_ROTATION_ENABLED false       // Enable log file rotation
 
 // ===========================
+// HMI (HUMAN MACHINE INTERFACE) CONFIGURATION
+// ===========================
+
+// HMI System Configuration
+#define HMI_ENABLED true                 // Enable HMI system (display and user interface)
+#define HMI_AUTO_BRIGHTNESS true         // Enable automatic brightness adjustment
+#define HMI_DEFAULT_BRIGHTNESS 200       // Default display brightness (0-255)
+#define HMI_AUTO_OFF_TIMEOUT 30000       // Auto-off timeout in milliseconds (30 seconds)
+#define HMI_UPDATE_INTERVAL 1000         // Display update interval in milliseconds
+#define HMI_LOW_POWER_MODE true          // Enable low power mode for display
+
+// Display Configuration
+#define DISPLAY_AUTO_DETECT true         // Auto-detect display type based on board
+#define DISPLAY_FORCE_TYPE 0             // Force specific display type (0=auto, 1=SSD1306, 2=ST7789)
+#define DISPLAY_I2C_SPEED 400000         // I2C speed for OLED displays
+#define DISPLAY_SPI_SPEED 27000000       // SPI speed for TFT displays
+
+// Menu System Configuration
+#define HMI_MENU_TIMEOUT 30000           // Menu timeout in milliseconds
+#define HMI_STATUS_DISPLAY_TIME 5000     // Status display time in milliseconds
+#define HMI_ERROR_DISPLAY_TIME 10000     // Error display time in milliseconds
+
+// Button Input Configuration (if hardware buttons are available)
+#define HMI_BUTTON_DEBOUNCE_MS 50        // Button debounce time
+#define HMI_BUTTON_LONG_PRESS_MS 1000    // Long press detection time
+
+// ===========================
 // MULTI-BOARD COMMUNICATION CONFIGURATION
 // ===========================
 

@@ -100,6 +100,10 @@ PowerProfile ESP32CAM::getPowerProfile() const {
     return profile;
 }
 
+DisplayProfile ESP32CAM::getDisplayProfile() const {
+    return NO_DISPLAY_PROFILE;  // ESP32-CAM has no built-in display
+}
+
 bool ESP32CAM::configureSensor(sensor_t* sensor) {
     if (!sensor) return false;
     

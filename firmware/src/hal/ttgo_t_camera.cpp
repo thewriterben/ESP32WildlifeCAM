@@ -60,6 +60,10 @@ PowerProfile TTGOTCAMERA::getPowerProfile() const {
     return TTGO_T_CAMERA_POWER_PROFILE;
 }
 
+DisplayProfile TTGOTCAMERA::getDisplayProfile() const {
+    return TTGO_T_CAMERA_DISPLAY_PROFILE;
+}
+
 bool TTGOTCAMERA::configureSensor(sensor_t* sensor) {
     if (!sensor) return false;
     

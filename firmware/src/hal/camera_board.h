@@ -84,6 +84,23 @@ struct CameraConfig {
     bool has_flash;                 // Flash capability
 };
 
+// Display configuration for board
+struct DisplayProfile {
+    bool has_display;              // Board has built-in display
+    uint8_t display_type;          // Display type (SSD1306, ST7789, etc.)
+    int display_sda_pin;           // I2C SDA pin for OLED
+    int display_scl_pin;           // I2C SCL pin for OLED
+    int display_cs_pin;            // SPI CS pin for TFT
+    int display_dc_pin;            // SPI DC pin for TFT
+    int display_rst_pin;           // Reset pin
+    int display_bl_pin;            // Backlight pin
+    uint8_t display_i2c_addr;      // I2C address for OLED
+    uint32_t display_i2c_freq;     // I2C frequency
+    uint32_t display_spi_freq;     // SPI frequency
+    uint16_t display_width;        // Display width in pixels
+    uint16_t display_height;       // Display height in pixels
+};
+
 /**
  * Abstract base class for camera board implementations
  */
@@ -105,6 +122,7 @@ public:
     virtual GPIOMap getGPIOMap() const = 0;
     virtual CameraConfig getCameraConfig() const = 0;
     virtual PowerProfile getPowerProfile() const = 0;
+    virtual DisplayProfile getDisplayProfile() const = 0;
     
     // Camera operations
     virtual bool configureSensor(sensor_t* sensor) = 0;

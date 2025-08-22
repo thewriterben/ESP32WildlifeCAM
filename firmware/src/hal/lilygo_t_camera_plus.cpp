@@ -43,6 +43,10 @@ PowerProfile LILYGOTCAMERAPLUS::getPowerProfile() const {
     return LILYGO_T_CAMERA_PLUS_POWER_PROFILE;
 }
 
+DisplayProfile LILYGOTCAMERAPLUS::getDisplayProfile() const {
+    return LILYGO_T_CAMERA_PLUS_DISPLAY_PROFILE;
+}
+
 bool LILYGOTCAMERAPLUS::configureSensor(sensor_t* sensor) {
     if (!sensor) return false;
     configureWildlifeSettings(sensor);
