@@ -1,6 +1,6 @@
 # ESP32 Wildlife Camera Project
 
-A comprehensive solar-powered wildlife trail camera system built with ESP32-S3, featuring intelligent motion detection, LoRa mesh networking, and weatherproof design.
+A solar-powered wildlife trail camera system built with ESP32-S3, featuring intelligent motion detection, LoRa mesh networking, and weatherproof design.
 
 ## 🌟 Features
 
