@@ -147,127 +147,93 @@ All configuration parameters are centralized in `firmware/src/config.h`. The fol
 | `WIFI_TIMEOUT` | Connection timeout | `10000` | milliseconds |
 | `WIFI_RETRY_COUNT` | Connection retry attempts | `3` | 1-10 |
 
-### Trigger and Timing Configuration
-| Parameter | Description | Default Value | Range/Options |
-|-----------|-------------|---------------|---------------|
-| `TRIGGER_ACTIVE_HOURS_START` | Active period start hour | `6` | 0-23 |
-| `TRIGGER_ACTIVE_HOURS_END` | Active period end hour | `20` | 0-23 |
-| `MAX_DAILY_TRIGGERS` | Maximum daily image captures | `50` | 1-1000 |
-| `TRIGGER_COOLDOWN_PERIOD` | Minimum time between triggers | `5000` | milliseconds |
-| `STATUS_REPORT_INTERVAL` | System status reporting interval | `300000` | milliseconds (5 min) |
-
 ### Environmental Sensors Configuration
 | Parameter | Description | Default Value | Range/Options |
 |-----------|-------------|---------------|---------------|
-| `BME280_ENABLED` | Enable BME280 weather sensor | `false` | true/false |
-| `BME280_ADDRESS` | I2C address | `0x76` | 0x76 or 0x77 |
-| `BME280_SDA` | I2C data pin | `21` | Valid GPIO pin |
-| `BME280_SCL` | I2C clock pin | `22` | Valid GPIO pin |
+| `WEATHER_SENSOR_ENABLED` | Enable weather sensor | `false` | true/false |
+| `BME280_I2C_ADDRESS` | BME280 sensor I2C address | `0x76` | 0x76, 0x77 |
+| `TEMPERATURE_OFFSET` | Temperature calibration offset | `0.0` | °C |
+| `HUMIDITY_OFFSET` | Humidity calibration offset | `0.0` | % |
+
+### Timing and Trigger Configuration
+| Parameter | Description | Default Value | Range/Options |
+|-----------|-------------|---------------|---------------|
+| `STARTUP_DELAY` | Initial startup delay | `5000` | milliseconds |
+| `CAMERA_WARMUP_TIME` | Camera initialization time | `2000` | milliseconds |
+| `CAPTURE_INTERVAL_MIN` | Minimum time between captures | `30` | seconds |
+| `MAX_DAILY_CAPTURES` | Maximum captures per day | `100` | 1-1000 |
+| `NIGHT_MODE_ENABLED` | Enable night mode operation | `true` | true/false |
+| `QUIET_HOURS_START` | Start of quiet hours | `22` | 0-23 (hour) |
+| `QUIET_HOURS_END` | End of quiet hours | `6` | 0-23 (hour) |
 
 ## 🏗️ Architecture Overview
 
-The ESP32WildlifeCAM firmware follows a modular, object-oriented architecture with clear separation of concerns:
+This firmware implements a modern object-oriented architecture with clear separation of concerns and centralized configuration management.
 
-### System Architecture Diagram
+### System Components
+
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    SystemManager                        │
-│  (Central Coordinator & Main Loop Management)          │
-└─────────────────┬───────────────────────────────────────┘
-                  │
-     ┌────────────┼────────────┐
-     │            │            │
-┌────▼────┐  ┌───▼────┐  ┌────▼─────┐  ┌──────────┐
-│Camera   │  │Motion  │  │Power     │  │WiFi      │
-│Handler  │  │Filter  │  │Manager   │  │Manager   │
-└─────────┘  └────────┘  └──────────┘  └──────────┘
-     │            │            │            │
-┌────▼────┐  ┌───▼────┐  ┌────▼─────┐  ┌──▼─────────┐
-│HAL      │  │Weather │  │Solar     │  │Network     │
-│Boards   │  │Sensors │  │Charging  │  │Discovery   │
-└─────────┘  └────────┘  └──────────┘  └────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     SystemManager                          │
+├─────────────────────────────────────────────────────────────┤
+│  • Central coordinator and state management                │
+│  • Handles subsystem initialization and coordination       │
+│  • Manages main update loop and error handling            │
+└─┬───────────────────────────────────────────────────────┬───┘
+  │                                                       │
+┌─▼─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────▼─────┐
+│ CameraHandler │ │MotionFilter │ │PowerManager │ │WiFiManager│
+├───────────────┤ ├─────────────┤ ├─────────────┤ ├───────────┤
+│• Image capture│ │• PIR sensor │ │• Battery    │ │• Network  │
+│• HAL abstraction│ │• Weather   │ │  monitoring │ │  connectivity│
+│• Format handling│ │  filtering  │ │• Solar      │ │• AP mode  │
+│• Quality control│ │• Debouncing │ │  charging   │ │• Power    │
+└───────────────┘ └─────────────┘ └─────────────┘ └───────────┘
 ```
 
-### Core Subsystems
+### Key Architecture Features
 
-#### 1. SystemManager
-- **Purpose**: Central coordinator for all wildlife camera subsystems
-- **Key Features**:
-  - Unified initialization sequence with proper error handling
-  - Coordinated update cycle for all subsystems
-  - Resource management and cleanup
-  - Deep sleep and power state management
-- **Configuration Dependencies**: All subsystem configurations
+- **Centralized Configuration**: All parameters consolidated in `config.h` with comprehensive documentation
+- **Class-Based Design**: Each major subsystem implemented as a C++ class with proper encapsulation
+- **RAII Pattern**: Automatic resource management with constructors, destructors, and proper cleanup
+- **Error Handling**: Graceful degradation and comprehensive error reporting
+- **Legacy Compatibility**: Namespace wrappers maintain backward compatibility
+- **Extensible Design**: Well-defined interfaces for adding new functionality
 
-#### 2. CameraHandler
-- **Purpose**: Manages ESP32 camera initialization, configuration, and image capture
-- **Key Features**:
-  - Hardware Abstraction Layer (HAL) for different board types
-  - Automatic board detection and optimization
-  - Wildlife-optimized sensor settings
-  - Image capture with metadata generation
-  - SD card storage with timestamp filenames
-- **Configuration Dependencies**: Camera, image processing, and storage settings
+### Benefits of the New Architecture
 
-#### 3. MotionFilter  
-- **Purpose**: Intelligent motion detection with environmental filtering
-- **Key Features**:
-  - PIR sensor interrupt handling
-  - Weather-based motion filtering (wind, rain, temperature)
-  - Consecutive motion validation
-  - Configurable sensitivity and thresholds
-  - Statistics tracking and reporting
-- **Configuration Dependencies**: Motion detection, weather filtering, and environmental sensor settings
-
-#### 4. PowerManager (formerly SolarManager)
-- **Purpose**: Solar power management, battery monitoring, and power optimization
-- **Key Features**:
-  - Real-time battery and solar voltage monitoring
-  - Charging control and optimization
-  - Power state management (Normal, Good, Low, Critical)
-  - CPU frequency scaling for power saving
-  - Battery life estimation and statistics
-- **Configuration Dependencies**: Power management, ADC, and battery threshold settings
-
-#### 5. WiFiManager
-- **Purpose**: WiFi connectivity and network operations management
-- **Key Features**:
-  - Automatic connection and reconnection handling
-  - Network scanning and discovery
-  - Access Point mode for configuration
-  - Power save mode support
-  - Connection status monitoring and reporting
-- **Configuration Dependencies**: WiFi and network settings
-
-### Subsystem Interactions
-
-1. **SystemManager** orchestrates all subsystems and handles the main application logic
-2. **MotionFilter** triggers **CameraHandler** when valid motion is detected
-3. **PowerManager** influences system behavior based on power state:
-   - Low power: Reduces camera quality, extends sleep duration
-   - Critical power: Enters emergency deep sleep mode
-4. **WiFiManager** provides network connectivity for:
-   - Time synchronization (NTP)
-   - Remote configuration
-   - Status reporting
-5. **CameraHandler** works with **PowerManager** to optimize image capture based on available power
-
-### Configuration System
-
-All subsystems use centralized configuration from `config.h`:
-- **Compile-time configuration**: All parameters defined as preprocessor macros
-- **Categorized organization**: Settings grouped by functionality
-- **Comprehensive documentation**: Each parameter includes description and valid ranges
-- **Validation macros**: Built-in range checking and value clamping
-- **Future-ready**: Foundation for runtime configuration capability
-
-### Error Handling and Resource Management
-
-- **RAII Pattern**: All subsystem classes follow Resource Acquisition Is Initialization
-- **Graceful Degradation**: System continues operation even if non-critical subsystems fail
-- **Resource Cleanup**: Proper cleanup on system shutdown or deep sleep
+- **Maintainability**: Clear separation of concerns and encapsulation
+- **Extensibility**: Well-defined interfaces for adding new functionality
+- **Configuration Management**: Single source of truth for all system parameters
+- **Code Quality**: Modern C++ patterns with proper resource management
 - **Error Propagation**: Initialization failures are properly reported and handled
 - **Backward Compatibility**: Legacy namespace wrappers maintain compatibility with existing code
+
+## 🔍 Advanced Features
+
+### Weather-Based Motion Filtering
+The system includes intelligent weather-based motion filtering to reduce false positives:
+
+- **Wind Detection**: Filters out motion during high wind conditions
+- **Rain Filtering**: Reduces sensitivity during precipitation
+- **Temperature Stability**: Accounts for thermal fluctuations
+- **Adaptive Thresholds**: Adjusts sensitivity based on environmental conditions
+
+### Mesh Networking Architecture
+The LoRa mesh network enables distributed camera deployments:
+
+- **Multi-hop Routing**: Messages can traverse multiple nodes
+- **Automatic Discovery**: Nodes automatically discover neighbors
+- **Load Balancing**: Traffic distributed across available paths
+- **Fault Tolerance**: Network self-heals when nodes fail
+
+### Power Optimization Strategies
+Advanced power management for extended deployment:
+
+- **Dynamic CPU Scaling**: Reduces processor speed during idle periods
+- **Selective Component Power**: Powers down unused peripherals
+- **Solar Tracking**: Optimizes charging based on available solar energy
+- **Predictive Sleep**: Adjusts sleep duration based on activity patterns
 
 ## 🌦️ Weather Resistance
 

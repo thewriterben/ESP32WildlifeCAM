@@ -39,7 +39,7 @@ bool init() {
     pinMode(CHARGING_LED_PIN, OUTPUT);
     
     // Set ADC resolution for better accuracy
-    analogReadResolution(12);  // 12-bit resolution (0-4095)
+    analogReadResolution(ADC_RESOLUTION);  // Configurable ADC resolution
     
     // Initial voltage readings
     update();
@@ -58,13 +58,13 @@ void update() {
     
     unsigned long now = millis();
     
-    // Update voltages every 5 seconds
-    if (now - lastVoltageCheck > 5000) {
-        // Read battery voltage (assuming voltage divider)
-        batteryVoltage = readVoltage(BATTERY_VOLTAGE_PIN, 2.0);
+    // Update voltages at configured interval
+    if (now - lastVoltageCheck > VOLTAGE_CHECK_INTERVAL) {
+        // Read battery voltage (using configured voltage divider ratio)
+        batteryVoltage = readVoltage(BATTERY_VOLTAGE_PIN, VOLTAGE_DIVIDER_RATIO);
         
-        // Read solar panel voltage (assuming voltage divider)
-        solarVoltage = readVoltage(SOLAR_VOLTAGE_PIN, 2.0);
+        // Read solar panel voltage (using configured voltage divider ratio)
+        solarVoltage = readVoltage(SOLAR_VOLTAGE_PIN, VOLTAGE_DIVIDER_RATIO);
         
         // Update power state
         updatePowerState();
@@ -74,9 +74,9 @@ void update() {
         
         lastVoltageCheck = now;
         
-        // Log status every minute
+        // Log status at configured interval
         static unsigned long lastLog = 0;
-        if (now - lastLog > 60000) {
+        if (now - lastLog > POWER_LOG_INTERVAL) {
             logPowerStatus();
             lastLog = now;
         }
@@ -178,20 +178,36 @@ bool shouldEnterLowPower() {
  * Read voltage from ADC pin with calibration
  */
 static float readVoltage(int pin, float voltageDividerRatio) {
+    // Validate inputs
+    if (pin < 0 || voltageDividerRatio <= 0) {
+        DEBUG_PRINTF("Invalid voltage reading parameters: pin=%d, ratio=%.2f\n", 
+                    pin, voltageDividerRatio);
+        return 0.0;
+    }
+    
     // Take multiple readings for better accuracy
-    const int numReadings = 10;
+    const int numReadings = VOLTAGE_CALIBRATION_SAMPLES;
     long sum = 0;
     
     for (int i = 0; i < numReadings; i++) {
-        sum += analogRead(pin);
+        int reading = analogRead(pin);
+        // Validate ADC reading is within expected range
+        if (reading < 0 || reading > 4095) {
+            DEBUG_PRINTF("Warning: ADC reading out of range: %d\n", reading);
+            reading = constrain(reading, 0, 4095);
+        }
+        sum += reading;
         delay(10);
     }
     
     float avgReading = sum / (float)numReadings;
     
     // Convert ADC reading to voltage
-    // ESP32 ADC: 12-bit (0-4095), reference voltage ~3.3V
-    float voltage = (avgReading * 3.3 / 4095.0) * voltageDividerRatio;
+    // ESP32 ADC: 12-bit (0-4095), reference voltage configured
+    float voltage = (avgReading * ADC_REFERENCE_VOLTAGE / 4095.0) * voltageDividerRatio;
+    
+    // Apply reasonable bounds for battery/solar voltages (0-20V max)
+    voltage = constrain(voltage, 0.0, 20.0);
     
     return voltage;
 }
@@ -265,7 +281,7 @@ void enterPowerSaving() {
     DEBUG_PRINTLN("Entering power saving mode...");
     
     // Reduce system clock frequency
-    setCpuFrequencyMhz(80);  // Reduce from 240MHz to 80MHz
+    setCpuFrequencyMhz(POWER_SAVE_CPU_FREQUENCY);  // Configurable power saving frequency
     
     // Turn off non-essential peripherals
     // This would typically include disabling WiFi, reducing camera quality, etc.
@@ -280,7 +296,7 @@ void exitPowerSaving() {
     DEBUG_PRINTLN("Exiting power saving mode...");
     
     // Restore normal system clock
-    setCpuFrequencyMhz(240);
+    setCpuFrequencyMhz(NORMAL_CPU_FREQUENCY);
     
     // Re-enable peripherals as needed
     
