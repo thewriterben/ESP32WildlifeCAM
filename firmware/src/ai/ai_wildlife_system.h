@@ -1,9 +1,10 @@
 /**
  * @file ai_wildlife_system.h
- * @brief Main AI Wildlife Monitoring System Integration
+ * @brief Enhanced AI Wildlife Monitoring System Integration
  * 
  * Integrates all AI/ML components for comprehensive wildlife monitoring
- * with the existing ESP32 Wildlife Camera system.
+ * with the existing ESP32 Wildlife Camera system, including advanced
+ * optimizations, multi-modal processing, and intelligent power management.
  */
 
 #ifndef AI_WILDLIFE_SYSTEM_H
@@ -13,10 +14,17 @@
 #include "tinyml/inference_engine.h"
 #include "vision/species_classifier.h"
 #include "vision/behavior_analyzer.h"
+#include "power_ai_optimizer.h"
+#include "ai_benchmark_optimizer.h"
+#include "multimodal_ai_system.h"
 #include <memory>
 
+// Forward declarations
+class ModelCache;
+class ModelPredictor;
+
 /**
- * Complete AI Analysis Result
+ * Enhanced Wildlife Analysis Result
  */
 struct WildlifeAnalysisResult {
     SpeciesResult species;
@@ -28,14 +36,35 @@ struct WildlifeAnalysisResult {
     unsigned long processingTime;
     unsigned long timestamp;
     
+    // Enhanced multi-modal results
+    MultiModalResult multiModalResult;
+    AudioFeatures audioAnalysis;
+    EnvironmentalContext environmentalContext;
+    
+    // Power and performance metrics
+    float powerConsumption_mW;
+    ModelType usedModel;
+    bool wasFromCache;
+    float cacheHitRate;
+    
+    // Advanced analysis
+    float stressLevel;
+    float biodiversityIndex;
+    std::vector<String> behaviorIndicators;
+    String analysisNotes;
+    
     WildlifeAnalysisResult() : 
         motionDetected(false), overallConfidence(0.0f),
         threatDetected(false), humanPresenceDetected(false),
-        processingTime(0), timestamp(0) {}
+        processingTime(0), timestamp(0),
+        powerConsumption_mW(0.0f),
+        usedModel(ModelType::SPECIES_CLASSIFIER),
+        wasFromCache(false), cacheHitRate(0.0f),
+        stressLevel(0.0f), biodiversityIndex(0.0f) {}
 };
 
 /**
- * AI Processing Configuration
+ * Enhanced AI Processing Configuration
  */
 struct AIProcessingConfig {
     bool enableSpeciesClassification;
@@ -45,9 +74,15 @@ struct AIProcessingConfig {
     bool enableHumanDetection;
     bool enableRealTimeProcessing;
     bool enableBatchProcessing;
+    bool enableMultiModalProcessing;
+    bool enablePowerOptimization;
+    bool enableIntelligentCaching;
+    bool enablePredictiveProcessing;
+    bool enableEnvironmentalAdaptation;
     float confidenceThreshold;
     uint32_t processingInterval;     // ms between AI analyses
-    bool powerOptimized;
+    PowerAIMode powerMode;
+    OptimizationTarget optimizationTarget;
     
     AIProcessingConfig() : 
         enableSpeciesClassification(true),
@@ -57,9 +92,15 @@ struct AIProcessingConfig {
         enableHumanDetection(true),
         enableRealTimeProcessing(true),
         enableBatchProcessing(false),
+        enableMultiModalProcessing(true),
+        enablePowerOptimization(true),
+        enableIntelligentCaching(true),
+        enablePredictiveProcessing(true),
+        enableEnvironmentalAdaptation(true),
         confidenceThreshold(0.6f),
         processingInterval(2000),
-        powerOptimized(true) {}
+        powerMode(PowerAIMode::ADAPTIVE),
+        optimizationTarget(OptimizationTarget::BALANCED_PERFORMANCE) {}
 };
 
 /**
@@ -102,10 +143,11 @@ private:
 };
 
 /**
- * Main AI Wildlife Monitoring System
+ * Enhanced AI Wildlife Monitoring System
  * 
  * Coordinates all AI components and integrates with the existing
- * camera system for intelligent wildlife monitoring.
+ * camera system for intelligent wildlife monitoring with advanced
+ * optimizations, multi-modal processing, and power management.
  */
 class AIWildlifeSystem {
 public:
@@ -117,10 +159,18 @@ public:
     bool loadModels(const char* modelsDirectory);
     void configure(const AIProcessingConfig& config);
     void cleanup();
+    bool isSystemReady() const;
     
-    // Main processing functions
+    // Enhanced processing functions
     WildlifeAnalysisResult analyzeFrame(const CameraFrame& frame);
+    WildlifeAnalysisResult analyzeFrameWithAudio(const CameraFrame& frame, 
+                                                const float* audioData, 
+                                                size_t audioLength);
     WildlifeAnalysisResult analyzeFrameSequence(const std::vector<CameraFrame>& frames);
+    WildlifeAnalysisResult analyzeMultiModal(const CameraFrame& frame,
+                                           const float* audioData,
+                                           size_t audioLength,
+                                           const EnvironmentalContext& environment);
     bool processMotionEvent(const CameraFrame& frame);
     
     // Integration with existing system
@@ -128,37 +178,63 @@ public:
     void onImageCaptured(const CameraFrame& frame, const String& filename);
     void onMotionDetected();
     void updatePowerState(float batteryVoltage, bool isCharging);
+    void updateEnvironmentalConditions(const EnvironmentalContext& environment);
     
-    // Intelligent scheduling
+    // Intelligent scheduling and power management
     void enableIntelligentScheduling(bool enable = true);
+    void enablePowerOptimization(bool enable = true);
     unsigned long getNextWakeTime();
     bool shouldEnterDeepSleep();
     void optimizeForBatteryLife();
+    PowerAIMode getCurrentPowerMode() const;
     
     // Learning and adaptation
     void enableContinuousLearning(bool enable = true);
     void updateFromUserFeedback(const String& imageFilename, SpeciesType correctSpecies);
     void shareDataForFederatedLearning();
+    void enableEnvironmentalAdaptation(bool enable = true);
     
-    // Performance monitoring
+    // Performance monitoring and optimization
     AIMetrics getSystemMetrics() const;
+    PowerAIMetrics getPowerMetrics() const;
     String getSystemStatus() const;
     void printSystemStatistics();
+    void runPerformanceBenchmark();
+    void optimizeSystemPerformance();
     
     // Configuration and settings
     void setConfidenceThreshold(float threshold);
     void enablePowerOptimization(bool enable = true);
     void setProcessingPriority(ModelType priority);
+    void setOptimizationTarget(OptimizationTarget target);
+    void setPowerMode(PowerAIMode mode);
     
     // Model management
     bool updateModel(ModelType type, const char* newModelPath);
     std::vector<ModelType> getLoadedModels() const;
     bool validateAllModels();
+    void enableModelCaching(bool enable = true);
+    float getCacheHitRate() const;
+    
+    // Multi-modal processing
+    void enableMultiModalProcessing(bool enable = true);
+    void enableAudioProcessing(bool enable = true);
+    void configureSensorFusion(const SensorFusionConfig& config);
+    MultiModalResult getLastMultiModalResult() const;
+    
+    // Advanced features
+    void enableEcosystemMonitoring(bool enable = true);
+    void enableThreatDetection(bool enable = true);
+    void setConservationTargets(const std::vector<SpeciesType>& targets);
+    std::vector<SpeciesType> getPredictedActiveSpecies() const;
+    float calculateBiodiversityIndex() const;
     
     // Research and data export
     void enableResearchMode(bool enable = true);
     void exportAnalysisData(const char* filename);
     void exportLearningData(const char* filename);
+    void exportPerformanceReport(const char* filename);
+    void generateEcosystemReport(const char* filename);
 
 private:
     // Core AI components
@@ -167,12 +243,19 @@ private:
     std::unique_ptr<BehaviorAnalyzer> behaviorAnalyzer_;
     std::unique_ptr<IntelligentTrigger> intelligentTrigger_;
     
+    // Enhanced optimization components
+    std::unique_ptr<PowerAIOptimizer> powerOptimizer_;
+    std::unique_ptr<AIBenchmarkOptimizer> benchmarkOptimizer_;
+    std::unique_ptr<MultiModalAISystem> multiModalSystem_;
+    
     // Configuration
     AIProcessingConfig config_;
     bool systemInitialized_;
     bool intelligentSchedulingEnabled_;
     bool continuousLearningEnabled_;
     bool researchModeEnabled_;
+    bool multiModalProcessingEnabled_;
+    bool powerOptimizationEnabled_;
     
     // Performance tracking
     mutable AIMetrics systemMetrics_;
@@ -182,10 +265,13 @@ private:
     float batteryVoltage_;
     bool isCharging_;
     unsigned long lastProcessingTime_;
+    EnvironmentalContext currentEnvironment_;
     
     // Processing optimization
     unsigned long lastAnalysisTime_;
     ModelType processingPriority_;
+    OptimizationTarget optimizationTarget_;
+    PowerAIMode currentPowerMode_;
     
     // Learning data
     struct LearningRecord {
@@ -202,6 +288,10 @@ private:
     bool initializeAIComponents();
     WildlifeAnalysisResult runFullAnalysis(const CameraFrame& frame);
     WildlifeAnalysisResult runOptimizedAnalysis(const CameraFrame& frame);
+    WildlifeAnalysisResult runMultiModalAnalysis(const CameraFrame& frame,
+                                                const float* audioData,
+                                                size_t audioLength,
+                                                const EnvironmentalContext& environment);
     
     // Power-optimized processing
     WildlifeAnalysisResult runLowPowerAnalysis(const CameraFrame& frame);
@@ -214,16 +304,23 @@ private:
     void saveLearningData();
     void loadLearningData();
     
+    // Environmental adaptation
+    void adaptToEnvironmentalConditions();
+    void updateSpeciesPredictions();
+    void adjustConfidenceThresholds();
+    
     // Utility functions
     void updateSystemMetrics(const WildlifeAnalysisResult& result);
     void logAnalysisResult(const WildlifeAnalysisResult& result);
     bool isHighPriorityDetection(const WildlifeAnalysisResult& result);
+    void triggerConservationAlert(const WildlifeAnalysisResult& result);
     
     // Constants
     static const size_t MAX_RECENT_ANALYSES = 100;
     static const size_t MAX_LEARNING_RECORDS = 1000;
     static const unsigned long MIN_PROCESSING_INTERVAL = 1000; // 1 second
     static const float LOW_BATTERY_THRESHOLD = 3.4f; // Volts
+    static const float EMERGENCY_BATTERY_THRESHOLD = 3.2f; // Volts
 };
 
 // Global AI system instance (singleton pattern)
