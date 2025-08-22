@@ -70,9 +70,13 @@
 // POWER MANAGEMENT CONFIGURATION
 // ===========================
 
-// ADC and Voltage Monitoring
-#define SOLAR_VOLTAGE_PIN 34             // ADC pin for solar voltage monitoring
-#define BATTERY_VOLTAGE_PIN 35           // ADC pin for battery voltage monitoring
+// ADC and Voltage Monitoring - DISABLED due to camera pin conflicts
+// Note: ESP32-CAM camera uses GPIO 34, 35, 36, 39 for camera data lines
+// These pins cannot be used for ADC voltage monitoring simultaneously
+#define SOLAR_VOLTAGE_MONITORING_ENABLED false  // Disabled due to GPIO 34 conflict with Y8_GPIO_NUM
+#define BATTERY_VOLTAGE_MONITORING_ENABLED false // Disabled due to GPIO 35 conflict with Y9_GPIO_NUM
+// #define SOLAR_VOLTAGE_PIN 34          // CONFLICTS with Y8_GPIO_NUM
+// #define BATTERY_VOLTAGE_PIN 35        // CONFLICTS with Y9_GPIO_NUM
 #define ADC_RESOLUTION 12                // ADC resolution in bits (12-bit = 0-4095)
 #define ADC_REFERENCE_VOLTAGE 3.3        // ADC reference voltage
 #define VOLTAGE_DIVIDER_RATIO 2.0        // Voltage divider ratio for scaling
@@ -98,15 +102,26 @@
 #define DEEP_SLEEP_DURATION 300          // seconds - sleep between checks
 #define LOW_POWER_CPU_FREQ 80            // MHz - reduced CPU frequency for power saving
 
-// Power Indicator LED
-#define CHARGING_LED_PIN 2               // Charging indicator LED pin
+// Power Indicator LED - Alternative pin to avoid SD card conflict
+#define CHARGING_LED_PIN 16              // Charging indicator LED pin (GPIO 16 available on ESP32-CAM)
+#define CHARGING_LED_ENABLED true        // Enabled when LoRa disabled
 
 // ===========================
 // LORA MESH NETWORK CONFIGURATION
 // ===========================
 
 // LoRa Module Enable/Disable
-#define LORA_ENABLED true                // Enable/disable LoRa functionality
+// CRITICAL: AI-Thinker ESP32-CAM has insufficient GPIO pins for camera + LoRa simultaneously
+// Camera pins are hardwired and cannot be changed. LoRa conflicts with camera pins:
+// - GPIO 5: LORA_CS conflicts with Y2_GPIO_NUM (camera data bit 2)
+// - GPIO 18: LORA_SCK conflicts with Y3_GPIO_NUM (camera data bit 3)
+// - GPIO 19: LORA_MISO conflicts with Y4_GPIO_NUM (camera data bit 4)
+// - GPIO 23: LORA_MOSI conflicts with HREF_GPIO_NUM (camera horizontal reference)
+// - GPIO 26: LORA_DIO0 conflicts with SIOD_GPIO_NUM (camera I2C data)
+// 
+// RESOLUTION: This configuration prioritizes camera functionality.
+// For LoRa networking, use a different ESP32 board with more available GPIO pins.
+#define LORA_ENABLED false               // Disabled due to fundamental GPIO conflicts with camera
 
 // LoRa Radio Configuration
 #define LORA_FREQUENCY 915E6             // Frequency: 433E6, 868E6, 915E6 Hz
@@ -118,13 +133,13 @@
 #define LORA_SYNC_WORD 0x12              // Network sync word (network ID)
 #define LORA_CRC_ENABLED true            // Enable CRC checking
 
-// LoRa GPIO Pin Configuration
-#define LORA_SCK 18                      // SPI clock pin
-#define LORA_MISO 19                     // SPI MISO pin
-#define LORA_MOSI 23                     // SPI MOSI pin
-#define LORA_CS 5                        // Chip select pin
-#define LORA_RST 14                      // Reset pin
-#define LORA_DIO0 26                     // DIO0 interrupt pin
+// LoRa GPIO Pin Configuration (DISABLED - pins available for other uses)
+// #define LORA_SCK 18                   // SPI clock pin - CONFLICTS with Y3_GPIO_NUM
+// #define LORA_MISO 19                  // SPI MISO pin - CONFLICTS with Y4_GPIO_NUM
+// #define LORA_MOSI 23                  // SPI MOSI pin - CONFLICTS with HREF_GPIO_NUM
+// #define LORA_CS 5                     // Chip select pin - CONFLICTS with Y2_GPIO_NUM
+// #define LORA_RST 14                   // Reset pin - now available for SD_CLK_PIN
+// #define LORA_DIO0 26                  // DIO0 interrupt pin - CONFLICTS with SIOD_GPIO_NUM
 
 // Mesh Network Configuration
 #define NODE_ID 1                        // Unique node identifier (1-255)
@@ -155,11 +170,12 @@
 // FILE SYSTEM CONFIGURATION
 // ===========================
 
-// SD Card Configuration
+// SD Card Configuration - ENABLED when LoRa is disabled
+#define SD_CARD_ENABLED true             // SD card enabled when LoRa disabled 
 #define SD_CS_PIN 12                     // SD card chip select pin
 #define SD_MOSI_PIN 15                   // SD card MOSI pin
-#define SD_CLK_PIN 14                    // SD card clock pin
-#define SD_MISO_PIN 2                    // SD card MISO pin
+#define SD_CLK_PIN 14                    // SD card clock pin (available when LORA_RST disabled)
+#define SD_MISO_PIN 2                    // SD card MISO pin (available when charging LED disabled)
 #define SD_SPI_FREQ 40000000            // SD card SPI frequency (40MHz)
 
 // Storage Paths and Limits
@@ -181,27 +197,39 @@
 #define DAYLIGHT_OFFSET_SEC 3600         // Daylight saving offset in seconds
 #define NTP_UPDATE_INTERVAL 86400000     // ms - NTP update interval (24 hours)
 
-// RTC Configuration
-#define RTC_ENABLED false                // Enable external RTC module
-#define RTC_SDA_PIN 21                   // RTC I2C data pin
-#define RTC_SCL_PIN 22                   // RTC I2C clock pin
+// RTC Configuration - DISABLED due to BME280 I2C pin conflicts  
+#define RTC_ENABLED false                // External RTC disabled due to I2C conflicts
+// #define RTC_SDA_PIN 21                // CONFLICTS with BME280_SDA
+// #define RTC_SCL_PIN 22                // CONFLICTS with BME280_SCL and PCLK_GPIO_NUM
 
 // ===========================
 // ENVIRONMENTAL SENSORS CONFIGURATION
 // ===========================
 
-// BME280 Weather Sensor
-#define BME280_ENABLED false             // Enable BME280 weather sensor
-#define BME280_ADDRESS 0x76              // I2C address (0x76 or 0x77)
-#define BME280_SDA 21                    // I2C data pin
-#define BME280_SCL 22                    // I2C clock pin
-#define BME280_READING_INTERVAL 30000    // ms - sensor reading interval
+// BME280 Weather Sensor - DISABLED due to I2C pin conflicts with camera
+#define BME280_ENABLED false             // Disabled due to I2C pin conflicts with camera and RTC
+// #define BME280_ADDRESS 0x76           // I2C address (0x76 or 0x77)
+// #define BME280_SDA 21                 // CONFLICTS with RTC_SDA_PIN and camera Y5 pin
+// #define BME280_SCL 22                 // CONFLICTS with RTC_SCL_PIN and PCLK_GPIO_NUM
+#define BME280_READING_INTERVAL 30000    // ms - sensor reading interval (unused when disabled)
 
-// Additional Environmental Sensors
-#define LIGHT_SENSOR_ENABLED false       // Enable light level sensor
-#define LIGHT_SENSOR_PIN 36              // ADC pin for light sensor
-#define WIND_SENSOR_ENABLED false        // Enable wind speed sensor
-#define WIND_SENSOR_PIN 39               // GPIO pin for wind sensor
+// Additional Environmental Sensors - DISABLED due to camera pin conflicts
+#define LIGHT_SENSOR_ENABLED false       // Disabled due to GPIO 36 conflict with Y6_GPIO_NUM
+#define WIND_SENSOR_ENABLED false        // Disabled due to GPIO 39 conflict with Y7_GPIO_NUM
+// #define LIGHT_SENSOR_PIN 36           // CONFLICTS with Y6_GPIO_NUM
+// #define WIND_SENSOR_PIN 39            // CONFLICTS with Y7_GPIO_NUM
+
+// Vibration Sensor - DISABLED due to LoRa CS pin conflict
+#define VIBRATION_ENABLED false          // Disabled due to pin conflicts with LoRa
+// #define VIBRATION_SENSOR_PIN 5        // Would conflict with LORA_CS pin
+
+// IR LED Night Vision - DISABLED due to LoRa DIO0 pin conflict  
+#define IR_LED_ENABLED false             // Disabled due to pin conflicts with LoRa
+// #define IR_LED_PIN 26                 // Would conflict with LORA_DIO0 pin
+
+// Satellite Communication - DISABLED due to multiple pin conflicts
+#define SATELLITE_ENABLED false          // Disabled due to extensive pin conflicts
+// Satellite communication would require multiple pins that conflict with camera and LoRa
 
 // ===========================
 // TRIGGER AND TIMING CONFIGURATION
@@ -342,7 +370,7 @@
 #define PWDN_GPIO_NUM     32             // Power down pin
 #define RESET_GPIO_NUM    -1             // Reset pin (not connected)
 #define XCLK_GPIO_NUM      0             // External clock pin
-#define SIOD_GPIO_NUM     26             // I2C data pin for camera
+#define SIOD_GPIO_NUM     26             // I2C data pin for camera - CONFLICTS with LORA_DIO0
 #define SIOC_GPIO_NUM     27             // I2C clock pin for camera
 
 // Camera Data Pins
@@ -350,13 +378,13 @@
 #define Y8_GPIO_NUM       34             // Camera data bit 8
 #define Y7_GPIO_NUM       39             // Camera data bit 7
 #define Y6_GPIO_NUM       36             // Camera data bit 6
-#define Y5_GPIO_NUM       21             // Camera data bit 5
-#define Y4_GPIO_NUM       19             // Camera data bit 4
-#define Y3_GPIO_NUM       18             // Camera data bit 3
-#define Y2_GPIO_NUM        5             // Camera data bit 2
+#define Y5_GPIO_NUM       21             // Camera data bit 5 - CONFLICTS with RTC_SDA/BME280_SDA
+#define Y4_GPIO_NUM       19             // Camera data bit 4 - CONFLICTS with LORA_MISO
+#define Y3_GPIO_NUM       18             // Camera data bit 3 - CONFLICTS with LORA_SCK
+#define Y2_GPIO_NUM        5             // Camera data bit 2 - CONFLICTS with LORA_CS
 #define VSYNC_GPIO_NUM    25             // Vertical sync pin
-#define HREF_GPIO_NUM     23             // Horizontal reference pin
-#define PCLK_GPIO_NUM     22             // Pixel clock pin
+#define HREF_GPIO_NUM     23             // Horizontal reference pin - CONFLICTS with LORA_MOSI
+#define PCLK_GPIO_NUM     22             // Pixel clock pin - CONFLICTS with RTC_SCL/BME280_SCL
 
 #define CAMERA_LED_PIN     4             // Built-in camera LED pin
 #endif
