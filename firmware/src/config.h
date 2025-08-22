@@ -245,6 +245,19 @@
 #define SERIAL_BAUD_RATE 115200          // Serial communication baud rate
 #define DEBUG_BUFFER_SIZE 256            // Debug message buffer size
 
+// Enhanced Debug System Configuration
+#define DEBUG_ENHANCED_ENABLED true      // Enable enhanced debug features
+#define DEBUG_TIMESTAMP_ENABLED true     // Enable timestamps in debug output
+#define DEBUG_CATEGORY_ENABLED true      // Enable category tags in debug output
+#define DEBUG_MEMORY_TRACKING true       // Enable memory usage tracking
+#define DEBUG_PERFORMANCE_TIMING true    // Enable performance timing features
+
+// Debug Mode Presets (uncomment one)
+// #define DEBUG_DEVELOPMENT_MODE        // Verbose debugging for development
+// #define DEBUG_PRODUCTION_MODE         // Minimal debugging for production
+// #define DEBUG_PERFORMANCE_MODE        // Focus on performance metrics
+// Default: Field deployment mode (balanced)
+
 // Logging Levels
 #define LOG_LEVEL_ERROR 0                // Error messages only
 #define LOG_LEVEL_WARN 1                 // Warning and error messages
