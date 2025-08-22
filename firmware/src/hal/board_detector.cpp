@@ -194,13 +194,23 @@ BoardType BoardDetector::detectByPinConfiguration() {
     const char* chip_model = getChipModel();
     
     if (strstr(chip_model, "ESP32-S3")) {
-        DEBUG_PRINTLN("ESP32-S3 chip detected, checking for S3-CAM configuration");
+        DEBUG_PRINTLN("ESP32-S3 chip detected, checking for S3-based boards");
         
-        // Test for ESP32-S3-CAM specific pins
-        // GPIO 40 is commonly used for XCLK on ESP32-S3-CAM
-        if (testGPIOPin(40, false)) {
-            // GPIO 48 is commonly used for LED on ESP32-S3-CAM
-            if (testGPIOPin(48, false)) {
+        // Test for XIAO ESP32S3 Sense (compact board with unique pin layout)
+        if (testGPIOPin(10, false) && testGPIOPin(40, false)) { // XCLK on 10, SIOD on 40
+            DEBUG_PRINTLN("XIAO ESP32S3 Sense pin configuration detected");
+            return BOARD_XIAO_ESP32S3_SENSE;
+        }
+        
+        // Test for ESP32-S3-EYE (advanced AI board)
+        if (testGPIOPin(15, false) && testGPIOPin(48, false)) { // XCLK on 15, LED on 48
+            DEBUG_PRINTLN("ESP32-S3-EYE pin configuration detected");
+            return BOARD_ESP32_S3_EYE;
+        }
+        
+        // Test for ESP32-S3-CAM standard configuration
+        if (testGPIOPin(40, false)) { // GPIO 40 is commonly used for XCLK on ESP32-S3-CAM
+            if (testGPIOPin(48, false)) { // GPIO 48 is commonly used for LED
                 DEBUG_PRINTLN("ESP32-S3-CAM pin configuration detected");
                 return BOARD_ESP32_S3_CAM;
             }
@@ -220,7 +230,19 @@ BoardType BoardDetector::detectByPinConfiguration() {
             }
         }
         
-        // Test for AI-Thinker ESP32-CAM pin configuration
+        // Test for M5Stack Timer Camera (XCLK on GPIO 27, Reset on GPIO 15)
+        if (testGPIOPin(27, false) && testGPIOPin(15, false)) {
+            DEBUG_PRINTLN("M5Stack Timer Camera pin configuration detected");
+            return BOARD_M5STACK_TIMER_CAM;
+        }
+        
+        // Test for TTGO T-Camera (XCLK on GPIO 32, PWDN on GPIO 26)
+        if (testGPIOPin(32, false) && testGPIOPin(26, false)) {
+            DEBUG_PRINTLN("TTGO T-Camera pin configuration detected");
+            return BOARD_TTGO_T_CAMERA;
+        }
+        
+        // Test for AI-Thinker ESP32-CAM pin configuration (default fallback)
         // Check if GPIO 0 (XCLK) is available - common for ESP32-CAM
         if (testGPIOPin(0, false)) { // GPIO 0 should be available for XCLK
             // Check if GPIO 32 (PWDN) is available
