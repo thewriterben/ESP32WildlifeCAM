@@ -14,6 +14,8 @@ void setup() {
     
     Serial.println("ESP32 Wildlife Camera - Board Detection Example");
     Serial.println("================================================");
+    Serial.println("Supports: AI-Thinker ESP32-CAM, ESP32-S3-CAM, ESP-EYE");
+    Serial.println();
     
     // Get chip information
     Serial.printf("Chip Model: %s\n", BoardDetector::getChipModel());

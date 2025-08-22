@@ -9,13 +9,13 @@ This document provides comprehensive information about ESP32 camera board compat
 | Board | Status | Chip | Camera | PSRAM | Flash | Power Mgmt |
 |-------|--------|------|--------|-------|-------|------------|
 | AI-Thinker ESP32-CAM | ✅ Full | ESP32 | OV2640 | Optional | 4MB | External |
+| ESP-EYE | ✅ Full | ESP32 | OV2640 | 8MB | 16MB | Advanced |
 
 ### Planned Support
 
 | Board | Status | Chip | Camera | PSRAM | Flash | Power Mgmt |
 |-------|--------|------|--------|-------|-------|------------|
 | ESP32-S3-CAM | 🔄 In Progress | ESP32-S3 | OV2640/OV5640 | 8MB | 16MB | Integrated |
-| ESP-EYE | 🔄 Planned | ESP32 | OV2640 | 8MB | 16MB | Advanced |
 | M5Stack Timer Camera | 🔄 Planned | ESP32 | OV3660 | 4MB | 16MB | Battery |
 | TTGO T-Camera | 🔄 Planned | ESP32 | OV2640 | 4MB | 16MB | Display |
 | XIAO ESP32S3 Sense | 🔄 Planned | ESP32-S3 | OV2640 | 8MB | 8MB | Ultra-compact |
@@ -115,13 +115,13 @@ void setup() {
 - **PSRAM**: 8MB standard
 - **Use Cases**: High-resolution monitoring, AI processing
 
-### ESP-EYE (Planned)
+### ESP-EYE
 - **GPIO Layout**: Optimized for vision applications
 - **Power**: Advanced power management
 - **Camera**: OV2640 with enhanced optics
-- **Flash**: Professional flash system
-- **PSRAM**: 8MB for vision processing
-- **Use Cases**: AI-enhanced wildlife recognition
+- **Flash**: Professional flash system on GPIO 21
+- **PSRAM**: 8MB for vision processing  
+- **Use Cases**: AI-enhanced wildlife recognition, scientific monitoring
 
 ## Migration Guide
 
