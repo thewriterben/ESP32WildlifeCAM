@@ -20,8 +20,32 @@
 #define CAMERA_JPEG_QUALITY 12            // 10-63 lower means higher quality
 #define CAMERA_FB_COUNT 2                 // Frame buffer count
 
+// ===========================
+// GPIO PIN ALLOCATION TABLE 
+// ===========================
+// AI-Thinker ESP32-CAM hardware-fixed pins (CANNOT CHANGE):
+// GPIO 0:  Camera XCLK
+// GPIO 4:  Camera LED/Flash  
+// GPIO 5:  Camera Y2
+// GPIO 18: Camera Y3
+// GPIO 19: Camera Y4
+// GPIO 21: Camera Y5  
+// GPIO 22: Camera PCLK
+// GPIO 23: Camera HREF
+// GPIO 25: Camera VSYNC
+// GPIO 26: Camera SIOD (I2C SDA)
+// GPIO 27: Camera SIOC (I2C SCL)
+// GPIO 32: Camera PWDN
+// GPIO 34: Camera Y8 (input only)
+// GPIO 35: Camera Y9 (input only)
+// GPIO 36: Camera Y6 (input only)
+// GPIO 39: Camera Y7 (input only)
+//
+// Available pins for other functions: 1, 2, 3, 12, 13, 14, 15, 16, 17, 33
+// (Note: GPIO 6-11 are flash pins and should be avoided)
+
 // Motion Detection
-#define PIR_PIN 13                        // PIR sensor pin
+#define PIR_PIN 1                         // PIR sensor pin - Using available GPIO 1
 #define PIR_DEBOUNCE_TIME 2000           // ms - prevent multiple triggers
 #define MOTION_DETECTION_ENABLED true    
 #define MOTION_SENSITIVITY 50            // 0-100, higher = more sensitive
@@ -32,14 +56,64 @@
 #define RAIN_THRESHOLD 0.5             // mm/h - ignore motion during rain
 #define TEMP_COMP_ENABLED true         // Temperature compensation for PIR
 
-// Power Management
-#define SOLAR_VOLTAGE_PIN 34           // ADC pin for solar voltage monitoring
-#define BATTERY_VOLTAGE_PIN 35         // ADC pin for battery voltage monitoring
+// ===========================
+// REALISTIC GPIO PIN ALLOCATION
+// ===========================
+// AI-Thinker ESP32-CAM has LIMITED available pins due to camera usage.
+// This configuration prioritizes core functionality and makes some features optional.
+//
+// AVAILABLE PINS: 2, 12, 13, 14, 15, 16, 17, 33 (only 8 pins!)
+// NEEDED FUNCTIONS: PIR(1) + LoRa(6) + SD(4) + LED(1) + Power(2) + Other(3) = 17 pins
+// 
+// SOLUTION: Use input-only pins for ADC, make some features optional/shared
+
+// Motion Detection - PRIORITY 1 (gets the last available pin)
+#define PIR_PIN 13                        // PIR sensor pin - only remaining available pin
+#define PIR_DEBOUNCE_TIME 2000           // ms - prevent multiple triggers
+#define MOTION_DETECTION_ENABLED true    
+#define MOTION_SENSITIVITY 50            // 0-100, higher = more sensitive
+
+// Weather Filtering
+#define WEATHER_FILTERING_ENABLED true
+#define WIND_THRESHOLD 15               // km/h - ignore motion above this wind speed
+#define RAIN_THRESHOLD 0.5             // mm/h - ignore motion during rain
+#define TEMP_COMP_ENABLED true         // Temperature compensation for PIR
+
+// Power Management - Use input-only pins for ADC readings
+#define SOLAR_VOLTAGE_PIN 34           // ADC pin - camera Y8 (shared, input-only)
+#define BATTERY_VOLTAGE_PIN 35         // ADC pin - camera Y9 (shared, input-only)
 #define SOLAR_VOLTAGE_THRESHOLD 3.2    // V - minimum solar voltage for charging
 #define BATTERY_LOW_THRESHOLD 3.0      // V - low battery warning
 #define BATTERY_CRITICAL_THRESHOLD 2.8 // V - critical battery level
 #define DEEP_SLEEP_DURATION 300        // seconds - sleep between checks
-#define CHARGING_LED_PIN 2             // Charging indicator LED
+#define CHARGING_LED_PIN 2             // Charging indicator LED - only remaining pin
+
+// ===========================
+// FINAL PIN ALLOCATION SUMMARY
+// ===========================
+// Available pins on AI-Thinker ESP32-CAM: 2, 12, 13, 14, 15, 16, 17, 33 (8 pins)
+// 
+// ASSIGNED PINS (no conflicts):
+// GPIO 2:  CHARGING_LED_PIN
+// GPIO 12: LORA_MISO  
+// GPIO 13: PIR_PIN
+// GPIO 14: LORA_SCK
+// GPIO 15: LORA_MOSI
+// GPIO 16: LORA_CS
+// GPIO 17: LORA_RST
+// GPIO 33: LORA_DIO0
+//
+// SHARED PINS (camera + other functions):
+// GPIO 34: Camera Y8 + SOLAR_VOLTAGE_PIN (input-only, safe to share)
+// GPIO 35: Camera Y9 + BATTERY_VOLTAGE_PIN (input-only, safe to share)
+//
+// DISABLED FEATURES (due to pin conflicts):
+// - SD Card storage (conflicts with LoRa)
+// - Vibration sensor (conflicts with LoRa CS)
+// - IR LED night vision (conflicts with LoRa DIO0)
+// - Satellite communication (conflicts with LoRa and PIR)
+//
+// ALTERNATIVE: To enable SD card, set LORA_ENABLED to false
 
 // LoRa Mesh Network
 #define LORA_ENABLED true
@@ -51,13 +125,19 @@
 #define LORA_PREAMBLE_LENGTH 8        // 6-65535
 #define LORA_SYNC_WORD 0x12           // Network ID
 
-// LoRa Pins (SX1276/SX1262)
-#define LORA_SCK 18
-#define LORA_MISO 19
-#define LORA_MOSI 23
-#define LORA_CS 5
-#define LORA_RST 14
-#define LORA_DIO0 26
+// ===========================
+// FINAL GPIO PIN ALLOCATION - CONFLICT FREE
+// ===========================
+// Available pins: 2, 12, 13, 14, 15, 16, 17, 33 (8 pins total)
+// Assignments (no conflicts):
+
+// LoRa Pins (6 pins needed) - CORRECTED TO AVOID ALL CONFLICTS  
+#define LORA_SCK 14     // Available (was conflicting with SD CLK)
+#define LORA_MISO 12    // Available (was conflicting with SD CS)
+#define LORA_MOSI 15    // Available (was conflicting with SD MOSI)
+#define LORA_CS 16      // Available 
+#define LORA_RST 17     // Available
+#define LORA_DIO0 33    // Available
 
 // Network Configuration
 #define NODE_ID 1                     // Unique node identifier
@@ -65,13 +145,16 @@
 #define MESH_RETRY_COUNT 3           // Transmission retry attempts
 #define MESH_ACK_TIMEOUT 5000        // ms - acknowledgment timeout
 
-// File System
-#define SD_CS_PIN 12                 // SD card chip select
-#define SD_MOSI_PIN 15
-#define SD_CLK_PIN 14
-#define SD_MISO_PIN 2
-#define IMAGE_FOLDER "/images"       // Folder for captured images
-#define LOG_FOLDER "/logs"          // Folder for system logs
+// File System - DISABLED DUE TO PIN CONFLICTS
+// NOTE: SD card functionality conflicts with LoRa pins on AI-Thinker ESP32-CAM
+// Either disable LoRa OR disable SD card, cannot have both with current pin layout
+#define SD_CARD_ENABLED false        // Disabled due to insufficient pins
+// #define SD_CS_PIN 12                 // CONFLICTS with LORA_MISO
+// #define SD_MOSI_PIN 15               // CONFLICTS with LORA_MOSI  
+// #define SD_CLK_PIN 14                // CONFLICTS with LORA_SCK
+// #define SD_MISO_PIN 2                // Available but only 1 pin not enough
+#define IMAGE_FOLDER "/images"       // Folder for captured images (LittleFS)
+#define LOG_FOLDER "/logs"          // Folder for system logs (LittleFS)
 #define MAX_FILES_PER_DAY 100       // Maximum images per day
 
 // Time Management
@@ -89,10 +172,13 @@
 #define ADXL345_ENABLED false       // Enable accelerometer
 #define ADXL345_ADDRESS 0x53        // I2C address (same bus as BME280)
 
-// Additional Sensors
-#define VIBRATION_PIN 16            // SW-420 vibration sensor pin
-#define IR_LED_PIN 33               // 12V IR LED ring control (MOSFET gate)
-#define NIGHT_VISION_ENABLED true   // Enable IR LEDs for night mode
+// Additional Sensors - DISABLED DUE TO PIN CONFLICTS
+// NOTE: These sensors conflict with LoRa pins on AI-Thinker ESP32-CAM
+#define VIBRATION_ENABLED false       // Disabled - would conflict with LORA_CS pin 16
+// #define VIBRATION_PIN 16            // CONFLICTS with LORA_CS
+#define IR_LED_ENABLED false          // Disabled - would conflict with LORA_DIO0 pin 33
+// #define IR_LED_PIN 33               // CONFLICTS with LORA_DIO0  
+#define NIGHT_VISION_ENABLED false    // Disabled due to IR LED conflict
 
 // Trigger Settings
 #define TRIGGER_ACTIVE_HOURS_START 6   // Hour (24h format) - start active period
@@ -181,12 +267,14 @@
 // COMMUNICATION CONFIGURATION
 // ===========================
 
-// Satellite Communication
+// Satellite Communication - DISABLED DUE TO PIN CONFLICTS
+// NOTE: Satellite module pins conflict with LoRa on AI-Thinker ESP32-CAM
+#define SATELLITE_ENABLED false             // Disabled due to pin conflicts
 #define SATELLITE_BAUD_RATE 19200        // baud rate for satellite module communication
 #define SATELLITE_RETRY_COUNT 5          // number of retry attempts for satellite commands
 #define SATELLITE_MESSAGE_MAX_LENGTH 100 // max bytes per satellite message
-#define SAT_SLEEP_PIN 12                 // pin for satellite module sleep control
-#define SAT_RING_PIN 13                  // pin for satellite module ring indicator
+// #define SAT_SLEEP_PIN 12                 // CONFLICTS with LORA_MISO
+// #define SAT_RING_PIN 13                  // CONFLICTS with PIR_PIN
 
 // LoRa Mesh Network
 #define LORA_MESSAGE_QUEUE_SIZE 10       // maximum queued messages

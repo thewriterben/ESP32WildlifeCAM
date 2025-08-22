@@ -8,6 +8,7 @@
 #include "motion_filter.h"
 #include "config.h"
 #include <Arduino.h>
+#include <math.h>
 
 #ifdef BME280_ENABLED
 #include <Adafruit_BME280.h>
@@ -243,7 +244,7 @@ static bool isTemperatureStable() {
     
     // Check temperature change rate
     if (now - lastTempCheck > 30000) {  // Every 30 seconds
-        float tempDelta = abs(currentTemperature - lastTemperature);
+        float tempDelta = fabs(currentTemperature - lastTemperature);
         lastTemperature = currentTemperature;
         lastTempCheck = now;
         

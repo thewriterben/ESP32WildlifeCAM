@@ -10,6 +10,7 @@
 #include <esp_system.h>
 #include <esp_chip_info.h>
 #include <Wire.h>
+#include <vector>
 
 BoardType BoardDetector::detectBoardType() {
     DEBUG_PRINTLN("Detecting board type...");
@@ -179,24 +180,54 @@ BoardType BoardDetector::detectByPinConfiguration() {
 }
 
 bool BoardDetector::testGPIOPin(int pin, bool expected_state) {
-    // Simple GPIO test - check if pin can be configured
-    // This is a basic implementation
-    if (pin < 0 || pin > 39) return false;
+    // Comprehensive GPIO pin testing
+    if (pin < 0 || pin > 39) {
+        DEBUG_PRINTF("GPIO pin %d out of range (0-39)\n", pin);
+        return false;
+    }
     
-    // Try to configure pin as input
-    pinMode(pin, INPUT);
+    // Skip testing input-only pins that cannot be configured as outputs
+    if (pin >= 34 && pin <= 39) {
+        // These are input-only pins, just check if they can be read
+        pinMode(pin, INPUT);
+        delay(1);
+        digitalRead(pin); // Test read capability
+        return true;
+    }
+    
+    // Test if pin can be configured and responds correctly
+    uint8_t original_mode = digitalRead(pin);
+    
+    // Try to configure pin as output and test
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, HIGH);
     delay(1);
+    bool high_state = digitalRead(pin);
     
-    // Read pin state
-    bool state = digitalRead(pin);
+    digitalWrite(pin, LOW);
+    delay(1);
+    bool low_state = digitalRead(pin);
     
-    // This is a simplified test - real implementation would be more sophisticated
-    return true; // For now, assume all pins are valid
+    // Restore original configuration
+    pinMode(pin, INPUT);
+    
+    // Pin is working if we can set high/low states
+    bool pin_functional = (high_state == HIGH && low_state == LOW);
+    
+    if (!pin_functional) {
+        DEBUG_PRINTF("GPIO pin %d failed functionality test\n", pin);
+    }
+    
+    return pin_functional;
 }
 
 BoardType BoardDetector::detectByI2CDevices() {
-    // Initialize I2C with default pins
+    // Initialize I2C with default pins first
     Wire.begin();
+    delay(100); // Allow I2C to stabilize
+    
+    DEBUG_PRINTLN("Scanning for I2C devices...");
+    bool deviceFound = false;
     
     // Scan for I2C devices that might indicate specific boards
     for (uint8_t address = 1; address < 127; address++) {
@@ -204,37 +235,113 @@ BoardType BoardDetector::detectByI2CDevices() {
         uint8_t error = Wire.endTransmission();
         
         if (error == 0) {
+            deviceFound = true;
             DEBUG_PRINTF("I2C device found at address 0x%02X\n", address);
             
             // Check for specific devices that indicate board types
             switch (address) {
                 case 0x76:
                 case 0x77:
-                    // BME280 or similar sensor - might indicate specific boards
+                    // BME280 or BMP280 sensor - common on ESP32-S3-CAM boards
+                    DEBUG_PRINTLN("BME280/BMP280 sensor detected");
                     break;
                 case 0x3C:
-                    // OLED display - might indicate ESP-EYE or similar
+                case 0x3D:
+                    // OLED display - common on ESP-EYE boards
+                    DEBUG_PRINTLN("OLED display detected - possible ESP-EYE board");
+                    return BOARD_ESP_EYE;
+                case 0x68:
+                    // MPU6050 accelerometer - might indicate M5Stack boards
+                    DEBUG_PRINTLN("MPU6050 accelerometer detected");
+                    break;
+                case 0x21:
+                    // Camera sensor OV2640 address
+                    DEBUG_PRINTLN("Camera sensor I2C detected");
                     break;
                 default:
+                    DEBUG_PRINTF("Unknown I2C device at 0x%02X\n", address);
                     break;
             }
         }
     }
     
-    // For now, return unknown - specific board detection by I2C would be implemented here
+    if (!deviceFound) {
+        DEBUG_PRINTLN("No I2C devices found");
+    }
+    
+    // For now, return unknown - more sophisticated board detection by I2C device combinations would be implemented here
     return BOARD_UNKNOWN;
 }
 
 bool BoardDetector::validateGPIOConfiguration(const GPIOMap& gpio_map) {
     // Check if GPIO configuration is valid for the current chip
-    // This would validate pin numbers against chip capabilities
+    // Comprehensive validation of pin numbers against ESP32 capabilities
     
-    // Basic validation - check if pins are in valid range
-    if (gpio_map.pwdn_pin >= 0 && gpio_map.pwdn_pin > 39) return false;
-    if (gpio_map.reset_pin >= 0 && gpio_map.reset_pin > 39) return false;
-    if (gpio_map.xclk_pin >= 0 && gpio_map.xclk_pin > 39) return false;
+    // Helper function to validate a single pin
+    auto validatePin = [](int pin, const char* pin_name) -> bool {
+        if (pin < 0) return true; // Negative pins are "not used" indicators
+        if (pin > 39) {
+            DEBUG_PRINTF("ERROR: %s pin %d exceeds maximum GPIO (39)\n", pin_name, pin);
+            return false;
+        }
+        // Additional ESP32-specific validations
+        if (pin == 6 || pin == 7 || pin == 8 || pin == 9 || pin == 10 || pin == 11) {
+            DEBUG_PRINTF("WARNING: %s pin %d is connected to flash and may cause issues\n", pin_name, pin);
+            return false; // These pins are typically used for flash memory
+        }
+        return true;
+    };
     
-    // Add more sophisticated validation here
+    // Validate all pins in the GPIO map
+    bool valid = true;
+    valid &= validatePin(gpio_map.pwdn_pin, "PWDN");
+    valid &= validatePin(gpio_map.reset_pin, "RESET");
+    valid &= validatePin(gpio_map.xclk_pin, "XCLK");
+    valid &= validatePin(gpio_map.siod_pin, "SIOD");
+    valid &= validatePin(gpio_map.sioc_pin, "SIOC");
+    valid &= validatePin(gpio_map.led_pin, "LED");
+    valid &= validatePin(gpio_map.flash_pin, "FLASH");
     
-    return true;
+    // Validate camera data pins
+    valid &= validatePin(gpio_map.y9_pin, "Y9");
+    valid &= validatePin(gpio_map.y8_pin, "Y8");
+    valid &= validatePin(gpio_map.y7_pin, "Y7");
+    valid &= validatePin(gpio_map.y6_pin, "Y6");
+    valid &= validatePin(gpio_map.y5_pin, "Y5");
+    valid &= validatePin(gpio_map.y4_pin, "Y4");
+    valid &= validatePin(gpio_map.y3_pin, "Y3");
+    valid &= validatePin(gpio_map.y2_pin, "Y2");
+    valid &= validatePin(gpio_map.vsync_pin, "VSYNC");
+    valid &= validatePin(gpio_map.href_pin, "HREF");
+    valid &= validatePin(gpio_map.pclk_pin, "PCLK");
+    
+    // Check for pin conflicts (same pin used for multiple functions)
+    std::vector<int> used_pins;
+    auto addPin = [&used_pins](int pin, const char* name) -> bool {
+        if (pin < 0) return true; // Skip unused pins
+        for (int used_pin : used_pins) {
+            if (used_pin == pin) {
+                DEBUG_PRINTF("ERROR: Pin conflict - GPIO %d used for multiple functions including %s\n", pin, name);
+                return false;
+            }
+        }
+        used_pins.push_back(pin);
+        return true;
+    };
+    
+    valid &= addPin(gpio_map.pwdn_pin, "PWDN");
+    valid &= addPin(gpio_map.reset_pin, "RESET");
+    valid &= addPin(gpio_map.xclk_pin, "XCLK");
+    valid &= addPin(gpio_map.siod_pin, "SIOD");
+    valid &= addPin(gpio_map.sioc_pin, "SIOC");
+    valid &= addPin(gpio_map.led_pin, "LED");
+    // Note: flash_pin might be same as led_pin on some boards, so don't check conflicts for it
+    
+    if (valid) {
+        DEBUG_PRINTLN("GPIO configuration validation passed");
+    } else {
+        DEBUG_PRINTLN("GPIO configuration validation failed");
+    }
+    
+    return valid;
 }

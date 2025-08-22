@@ -195,20 +195,22 @@ void initializeCamera() {
 }
 
 /**
- * Initialize SD card storage
+ * Initialize SD card storage (if enabled)
  */
 void initializeSDCard() {
+    #ifdef SD_CARD_ENABLED
+    #if SD_CARD_ENABLED
     DEBUG_PRINTLN("Initializing SD card...");
     
     if (!SD_MMC.begin()) {
-        DEBUG_PRINTLN("Warning: SD card initialization failed");
+        DEBUG_PRINTLN("Warning: SD card initialization failed, using LittleFS only");
         sdCardInitialized = false;
         return;
     }
     
     uint8_t cardType = SD_MMC.cardType();
     if (cardType == CARD_NONE) {
-        DEBUG_PRINTLN("Warning: No SD card attached");
+        DEBUG_PRINTLN("Warning: No SD card attached, using LittleFS only");
         sdCardInitialized = false;
         return;
     }
@@ -216,18 +218,26 @@ void initializeSDCard() {
     // Create necessary directories
     if (!SD_MMC.exists(IMAGE_FOLDER)) {
         SD_MMC.mkdir(IMAGE_FOLDER);
-        DEBUG_PRINTF("Created directory: %s\n", IMAGE_FOLDER);
+        DEBUG_PRINTF("Created SD directory: %s\n", IMAGE_FOLDER);
     }
     
     if (!SD_MMC.exists(LOG_FOLDER)) {
         SD_MMC.mkdir(LOG_FOLDER);
-        DEBUG_PRINTF("Created directory: %s\n", LOG_FOLDER);
+        DEBUG_PRINTF("Created SD directory: %s\n", LOG_FOLDER);
     }
     
     uint64_t cardSize = SD_MMC.cardSize() / (1024 * 1024);
     DEBUG_PRINTF("SD card initialized: %lluMB\n", cardSize);
     
     sdCardInitialized = true;
+    #else
+    DEBUG_PRINTLN("SD card disabled in configuration, using LittleFS only");
+    sdCardInitialized = false;
+    #endif
+    #else
+    DEBUG_PRINTLN("SD card support not configured, using LittleFS only");
+    sdCardInitialized = false;
+    #endif
 }
 
 /**
@@ -249,6 +259,21 @@ void initializeFileSystem() {
             return;
         }
     }
+    
+    // Create necessary directories in LittleFS
+    if (!LittleFS.exists(IMAGE_FOLDER)) {
+        LittleFS.mkdir(IMAGE_FOLDER);
+        DEBUG_PRINTF("Created LittleFS directory: %s\n", IMAGE_FOLDER);
+    }
+    
+    if (!LittleFS.exists(LOG_FOLDER)) {
+        LittleFS.mkdir(LOG_FOLDER);
+        DEBUG_PRINTF("Created LittleFS directory: %s\n", LOG_FOLDER);
+    }
+    
+    size_t totalBytes = LittleFS.totalBytes();
+    size_t usedBytes = LittleFS.usedBytes();
+    DEBUG_PRINTF("LittleFS initialized: %u/%u bytes used\n", usedBytes, totalBytes);
     
     DEBUG_PRINTLN("File system initialized");
 }
@@ -307,7 +332,7 @@ void enterDeepSleep() {
     DEBUG_PRINTLN("Entering deep sleep...");
     
     // Configure wake-up source (PIR motion sensor)
-    esp_sleep_enable_ext0_wakeup(GPIO_NUM_13, 1);  // PIR_PIN
+    esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(PIR_PIN), 1);
     
     // Also wake up after a timeout
     esp_sleep_enable_timer_wakeup(DEEP_SLEEP_DURATION * 1000000ULL);
