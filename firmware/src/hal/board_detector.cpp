@@ -7,6 +7,18 @@
 #include "esp32_cam.h"
 #include "esp32_s3_cam.h"
 #include "esp_eye.h"
+#include "m5stack_timer_cam.h"
+#include "ttgo_t_camera.h"
+#include "xiao_esp32s3_sense.h"
+#include "firebeetle_esp32_cam.h"
+#include "esp32_s3_eye.h"
+#include "freenove_esp32_wrover_cam.h"
+#include "m5stack_esp32cam.h"
+#include "ttgo_t_journal.h"
+#include "lilygo_t_camera_plus.h"
+#include "espressif_esp32_cam_mb.h"
+#include "m5stack_unitcam.h"
+#include "ttgo_t_camera_v17.h"
 #include "../config.h"
 #include <esp_system.h>
 #include <esp_chip_info.h>
@@ -70,19 +82,40 @@ std::unique_ptr<CameraBoard> BoardDetector::createBoard(BoardType type) {
             return std::make_unique<ESPEYE>();
             
         case BOARD_M5STACK_TIMER_CAM:
-            // M5Stack Timer Camera implementation not yet completed, falling back to ESP32-CAM
-            DEBUG_PRINTLN("M5Stack Timer Camera not yet implemented, falling back to ESP32-CAM");
-            return std::make_unique<ESP32CAM>();
+            return std::make_unique<M5StackTimerCAM>();
             
         case BOARD_TTGO_T_CAMERA:
-            // TTGO T-Camera implementation not yet completed, falling back to ESP32-CAM
-            DEBUG_PRINTLN("TTGO T-Camera not yet implemented, falling back to ESP32-CAM");
-            return std::make_unique<ESP32CAM>();
+            return std::make_unique<TTGOTCAMERA>();
             
         case BOARD_XIAO_ESP32S3_SENSE:
-            // XIAO ESP32S3 Sense implementation not yet completed, falling back to ESP32-CAM
-            DEBUG_PRINTLN("XIAO ESP32S3 Sense not yet implemented, falling back to ESP32-CAM");
-            return std::make_unique<ESP32CAM>();
+            return std::make_unique<XIAOESP32S3SENSE>();
+            
+        case BOARD_FIREBEETLE_ESP32_CAM:
+            return std::make_unique<FIREBEETLEESP32CAM>();
+            
+        case BOARD_ESP32_S3_EYE:
+            return std::make_unique<ESP32S3EYE>();
+            
+        case BOARD_FREENOVE_ESP32_WROVER_CAM:
+            return std::make_unique<FREENOVESP32WROVERCAM>();
+            
+        case BOARD_M5STACK_ESP32CAM:
+            return std::make_unique<M5STACKESP32CAM>();
+            
+        case BOARD_TTGO_T_JOURNAL:
+            return std::make_unique<TTGOTJOURNAL>();
+            
+        case BOARD_LILYGO_T_CAMERA_PLUS:
+            return std::make_unique<LILYGOTCAMERAPLUS>();
+            
+        case BOARD_ESPRESSIF_ESP32_CAM_MB:
+            return std::make_unique<ESPRESSIF_ESP32CAMMB>();
+            
+        case BOARD_M5STACK_UNITCAM:
+            return std::make_unique<M5STACKUNITCAM>();
+            
+        case BOARD_TTGO_T_CAMERA_V17:
+            return std::make_unique<TTGOTCAMERAV17>();
             
         default:
             DEBUG_PRINTLN("Unknown board type, falling back to ESP32-CAM");
@@ -101,6 +134,12 @@ const char* BoardDetector::getBoardName(BoardType type) {
         case BOARD_FIREBEETLE_ESP32_CAM: return "FireBeetle ESP32-E IoT Camera";
         case BOARD_ESP32_S3_EYE: return "ESP32-S3-EYE";
         case BOARD_FREENOVE_ESP32_WROVER_CAM: return "Freenove ESP32-WROVER CAM";
+        case BOARD_M5STACK_ESP32CAM: return "M5Stack ESP32CAM";
+        case BOARD_TTGO_T_JOURNAL: return "TTGO T-Journal";
+        case BOARD_LILYGO_T_CAMERA_PLUS: return "LilyGO T-Camera Plus";
+        case BOARD_ESPRESSIF_ESP32_CAM_MB: return "Espressif ESP32-CAM-MB";
+        case BOARD_M5STACK_UNITCAM: return "M5Stack UnitCAM";
+        case BOARD_TTGO_T_CAMERA_V17: return "TTGO T-Camera V1.7";
         default: return "Unknown Board";
     }
 }
@@ -110,14 +149,19 @@ bool BoardDetector::isBoardSupported(BoardType type) {
         case BOARD_AI_THINKER_ESP32_CAM:
         case BOARD_ESP32_S3_CAM:
         case BOARD_ESP_EYE:
-            return true;
         case BOARD_M5STACK_TIMER_CAM:
         case BOARD_TTGO_T_CAMERA:
         case BOARD_XIAO_ESP32S3_SENSE:
         case BOARD_FIREBEETLE_ESP32_CAM:
         case BOARD_ESP32_S3_EYE:
         case BOARD_FREENOVE_ESP32_WROVER_CAM:
-            return false; // Not yet implemented
+        case BOARD_M5STACK_ESP32CAM:
+        case BOARD_TTGO_T_JOURNAL:
+        case BOARD_LILYGO_T_CAMERA_PLUS:
+        case BOARD_ESPRESSIF_ESP32_CAM_MB:
+        case BOARD_M5STACK_UNITCAM:
+        case BOARD_TTGO_T_CAMERA_V17:
+            return true;
         default:
             return false;
     }

@@ -176,4 +176,466 @@ const CameraConfig M5STACK_TIMER_CAM_CAMERA_CONFIG = {
     .has_flash = true
 };
 
+// TTGO T-Camera Profile
+const GPIOMap TTGO_T_CAMERA_GPIO_MAP = {
+    .pwdn_pin = 26,
+    .reset_pin = -1,
+    .xclk_pin = 32,
+    .siod_pin = 13,
+    .sioc_pin = 12,
+    .y9_pin = 39,
+    .y8_pin = 36,
+    .y7_pin = 23,
+    .y6_pin = 18,
+    .y5_pin = 15,
+    .y4_pin = 4,
+    .y3_pin = 14,
+    .y2_pin = 5,
+    .vsync_pin = 27,
+    .href_pin = 25,
+    .pclk_pin = 19,
+    .led_pin = 2,
+    .flash_pin = 4
+};
+
+const PowerProfile TTGO_T_CAMERA_POWER_PROFILE = {
+    .sleep_current_ua = 6000,
+    .active_current_ma = 95,
+    .camera_current_ma = 160,
+    .has_external_power = false,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.0,
+    .max_voltage = 4.2
+};
+
+const CameraConfig TTGO_T_CAMERA_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_UXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 12,
+    .fb_count = 2,
+    .xclk_freq_hz = 20000000,
+    .psram_required = true,
+    .has_flash = true
+};
+
+// XIAO ESP32S3 Sense Profile  
+const GPIOMap XIAO_ESP32S3_SENSE_GPIO_MAP = {
+    .pwdn_pin = -1,
+    .reset_pin = -1,
+    .xclk_pin = 10,
+    .siod_pin = 40,
+    .sioc_pin = 39,
+    .y9_pin = 48,
+    .y8_pin = 11,
+    .y7_pin = 12,
+    .y6_pin = 14,
+    .y5_pin = 16,
+    .y4_pin = 18,
+    .y3_pin = 17,
+    .y2_pin = 15,
+    .vsync_pin = 38,
+    .href_pin = 47,
+    .pclk_pin = 13,
+    .led_pin = -1,
+    .flash_pin = -1
+};
+
+const PowerProfile XIAO_ESP32S3_SENSE_POWER_PROFILE = {
+    .sleep_current_ua = 4000,
+    .active_current_ma = 80,
+    .camera_current_ma = 140,
+    .has_external_power = false,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.0,
+    .max_voltage = 3.6
+};
+
+const CameraConfig XIAO_ESP32S3_SENSE_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_QXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 10,
+    .fb_count = 3,
+    .xclk_freq_hz = 20000000,
+    .psram_required = true,
+    .has_flash = false
+};
+
+// FireBeetle ESP32-CAM Profile
+const GPIOMap FIREBEETLE_ESP32_CAM_GPIO_MAP = {
+    .pwdn_pin = 32,
+    .reset_pin = -1,
+    .xclk_pin = 0,
+    .siod_pin = 26,
+    .sioc_pin = 27,
+    .y9_pin = 35,
+    .y8_pin = 34,
+    .y7_pin = 39,
+    .y6_pin = 36,
+    .y5_pin = 21,
+    .y4_pin = 19,
+    .y3_pin = 18,
+    .y2_pin = 5,
+    .vsync_pin = 25,
+    .href_pin = 23,
+    .pclk_pin = 22,
+    .led_pin = 4,
+    .flash_pin = 4
+};
+
+const PowerProfile FIREBEETLE_ESP32_CAM_POWER_PROFILE = {
+    .sleep_current_ua = 3000,
+    .active_current_ma = 70,
+    .camera_current_ma = 130,
+    .has_external_power = true,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.0,
+    .max_voltage = 4.2
+};
+
+const CameraConfig FIREBEETLE_ESP32_CAM_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_UXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 12,
+    .fb_count = 2,
+    .xclk_freq_hz = 20000000,
+    .psram_required = false,
+    .has_flash = true
+};
+
+// ESP32-S3-EYE Profile
+const GPIOMap ESP32_S3_EYE_GPIO_MAP = {
+    .pwdn_pin = -1,
+    .reset_pin = -1,
+    .xclk_pin = 15,
+    .siod_pin = 4,
+    .sioc_pin = 5,
+    .y9_pin = 16,
+    .y8_pin = 17,
+    .y7_pin = 18,
+    .y6_pin = 12,
+    .y5_pin = 10,
+    .y4_pin = 8,
+    .y3_pin = 9,
+    .y2_pin = 11,
+    .vsync_pin = 6,
+    .href_pin = 7,
+    .pclk_pin = 13,
+    .led_pin = 48,
+    .flash_pin = 48
+};
+
+const PowerProfile ESP32_S3_EYE_POWER_PROFILE = {
+    .sleep_current_ua = 5000,
+    .active_current_ma = 100,
+    .camera_current_ma = 170,
+    .has_external_power = true,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.0,
+    .max_voltage = 5.0
+};
+
+const CameraConfig ESP32_S3_EYE_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_QXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 10,
+    .fb_count = 3,
+    .xclk_freq_hz = 20000000,
+    .psram_required = true,
+    .has_flash = true
+};
+
+// Freenove ESP32-WROVER-CAM Profile
+const GPIOMap FREENOVE_ESP32_WROVER_CAM_GPIO_MAP = {
+    .pwdn_pin = 32,
+    .reset_pin = -1,
+    .xclk_pin = 0,
+    .siod_pin = 26,
+    .sioc_pin = 27,
+    .y9_pin = 35,
+    .y8_pin = 34,
+    .y7_pin = 39,
+    .y6_pin = 36,
+    .y5_pin = 21,
+    .y4_pin = 19,
+    .y3_pin = 18,
+    .y2_pin = 5,
+    .vsync_pin = 25,
+    .href_pin = 23,
+    .pclk_pin = 22,
+    .led_pin = 4,
+    .flash_pin = 4
+};
+
+const PowerProfile FREENOVE_ESP32_WROVER_CAM_POWER_PROFILE = {
+    .sleep_current_ua = 8000,
+    .active_current_ma = 110,
+    .camera_current_ma = 190,
+    .has_external_power = false,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.0,
+    .max_voltage = 3.6
+};
+
+const CameraConfig FREENOVE_ESP32_WROVER_CAM_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_UXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 12,
+    .fb_count = 2,
+    .xclk_freq_hz = 20000000,
+    .psram_required = true,
+    .has_flash = true
+};
+
+// M5Stack ESP32CAM Profile
+const GPIOMap M5STACK_ESP32CAM_GPIO_MAP = {
+    .pwdn_pin = -1,
+    .reset_pin = 15,
+    .xclk_pin = 27,
+    .siod_pin = 25,
+    .sioc_pin = 23,
+    .y9_pin = 19,
+    .y8_pin = 36,
+    .y7_pin = 18,
+    .y6_pin = 39,
+    .y5_pin = 5,
+    .y4_pin = 34,
+    .y3_pin = 35,
+    .y2_pin = 32,
+    .vsync_pin = 22,
+    .href_pin = 26,
+    .pclk_pin = 21,
+    .led_pin = 2,
+    .flash_pin = 14
+};
+
+const PowerProfile M5STACK_ESP32CAM_POWER_PROFILE = {
+    .sleep_current_ua = 6000,
+    .active_current_ma = 95,
+    .camera_current_ma = 160,
+    .has_external_power = true,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.7,
+    .max_voltage = 4.2
+};
+
+const CameraConfig M5STACK_ESP32CAM_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_UXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 12,
+    .fb_count = 2,
+    .xclk_freq_hz = 20000000,
+    .psram_required = false,
+    .has_flash = true
+};
+
+// TTGO T-Journal Profile
+const GPIOMap TTGO_T_JOURNAL_GPIO_MAP = {
+    .pwdn_pin = 26,
+    .reset_pin = -1,
+    .xclk_pin = 32,
+    .siod_pin = 13,
+    .sioc_pin = 12,
+    .y9_pin = 39,
+    .y8_pin = 36,
+    .y7_pin = 23,
+    .y6_pin = 18,
+    .y5_pin = 15,
+    .y4_pin = 4,
+    .y3_pin = 14,
+    .y2_pin = 5,
+    .vsync_pin = 27,
+    .href_pin = 25,
+    .pclk_pin = 19,
+    .led_pin = 2,
+    .flash_pin = 4
+};
+
+const PowerProfile TTGO_T_JOURNAL_POWER_PROFILE = {
+    .sleep_current_ua = 8000,
+    .active_current_ma = 120,
+    .camera_current_ma = 180,
+    .has_external_power = false,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.0,
+    .max_voltage = 4.2
+};
+
+const CameraConfig TTGO_T_JOURNAL_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_UXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 12,
+    .fb_count = 2,
+    .xclk_freq_hz = 20000000,
+    .psram_required = true,
+    .has_flash = true
+};
+
+// LilyGO T-Camera Plus Profile
+const GPIOMap LILYGO_T_CAMERA_PLUS_GPIO_MAP = {
+    .pwdn_pin = 26,
+    .reset_pin = -1,
+    .xclk_pin = 32,
+    .siod_pin = 13,
+    .sioc_pin = 12,
+    .y9_pin = 39,
+    .y8_pin = 36,
+    .y7_pin = 23,
+    .y6_pin = 18,
+    .y5_pin = 15,
+    .y4_pin = 4,
+    .y3_pin = 14,
+    .y2_pin = 5,
+    .vsync_pin = 27,
+    .href_pin = 25,
+    .pclk_pin = 19,
+    .led_pin = 2,
+    .flash_pin = 4
+};
+
+const PowerProfile LILYGO_T_CAMERA_PLUS_POWER_PROFILE = {
+    .sleep_current_ua = 5000,
+    .active_current_ma = 90,
+    .camera_current_ma = 150,
+    .has_external_power = false,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.0,
+    .max_voltage = 4.2
+};
+
+const CameraConfig LILYGO_T_CAMERA_PLUS_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_UXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 10,
+    .fb_count = 3,
+    .xclk_freq_hz = 20000000,
+    .psram_required = true,
+    .has_flash = true
+};
+
+// Espressif ESP32-CAM-MB Profile
+const GPIOMap ESPRESSIF_ESP32_CAM_MB_GPIO_MAP = {
+    .pwdn_pin = 32,
+    .reset_pin = -1,
+    .xclk_pin = 0,
+    .siod_pin = 26,
+    .sioc_pin = 27,
+    .y9_pin = 35,
+    .y8_pin = 34,
+    .y7_pin = 39,
+    .y6_pin = 36,
+    .y5_pin = 21,
+    .y4_pin = 19,
+    .y3_pin = 18,
+    .y2_pin = 5,
+    .vsync_pin = 25,
+    .href_pin = 23,
+    .pclk_pin = 22,
+    .led_pin = 4,
+    .flash_pin = 4
+};
+
+const PowerProfile ESPRESSIF_ESP32_CAM_MB_POWER_PROFILE = {
+    .sleep_current_ua = 9000,
+    .active_current_ma = 115,
+    .camera_current_ma = 185,
+    .has_external_power = true,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.0,
+    .max_voltage = 5.0
+};
+
+const CameraConfig ESPRESSIF_ESP32_CAM_MB_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_UXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 12,
+    .fb_count = 2,
+    .xclk_freq_hz = 20000000,
+    .psram_required = false,
+    .has_flash = true
+};
+
+// M5Stack UnitCAM Profile
+const GPIOMap M5STACK_UNITCAM_GPIO_MAP = {
+    .pwdn_pin = -1,
+    .reset_pin = 15,
+    .xclk_pin = 27,
+    .siod_pin = 25,
+    .sioc_pin = 23,
+    .y9_pin = 19,
+    .y8_pin = 36,
+    .y7_pin = 18,
+    .y6_pin = 39,
+    .y5_pin = 5,
+    .y4_pin = 34,
+    .y3_pin = 35,
+    .y2_pin = 32,
+    .vsync_pin = 22,
+    .href_pin = 26,
+    .pclk_pin = 21,
+    .led_pin = 2,
+    .flash_pin = 14
+};
+
+const PowerProfile M5STACK_UNITCAM_POWER_PROFILE = {
+    .sleep_current_ua = 3000,
+    .active_current_ma = 70,
+    .camera_current_ma = 120,
+    .has_external_power = false,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.7,
+    .max_voltage = 4.2
+};
+
+const CameraConfig M5STACK_UNITCAM_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_SVGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 12,
+    .fb_count = 1,
+    .xclk_freq_hz = 20000000,
+    .psram_required = false,
+    .has_flash = true
+};
+
+// TTGO T-Camera V1.7 Profile
+const GPIOMap TTGO_T_CAMERA_V17_GPIO_MAP = {
+    .pwdn_pin = 26,
+    .reset_pin = -1,
+    .xclk_pin = 32,
+    .siod_pin = 13,
+    .sioc_pin = 12,
+    .y9_pin = 39,
+    .y8_pin = 36,
+    .y7_pin = 23,
+    .y6_pin = 18,
+    .y5_pin = 15,
+    .y4_pin = 4,
+    .y3_pin = 14,
+    .y2_pin = 5,
+    .vsync_pin = 27,
+    .href_pin = 25,
+    .pclk_pin = 19,
+    .led_pin = 2,
+    .flash_pin = 4
+};
+
+const PowerProfile TTGO_T_CAMERA_V17_POWER_PROFILE = {
+    .sleep_current_ua = 4000,
+    .active_current_ma = 85,
+    .camera_current_ma = 145,
+    .has_external_power = false,
+    .supports_deep_sleep = true,
+    .min_voltage = 3.0,
+    .max_voltage = 4.2
+};
+
+const CameraConfig TTGO_T_CAMERA_V17_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_UXGA,
+    .pixel_format = PIXFORMAT_JPEG,
+    .jpeg_quality = 10,
+    .fb_count = 3,
+    .xclk_freq_hz = 20000000,
+    .psram_required = true,
+    .has_flash = true
+};
+
 #endif // BOARD_PROFILES_H
