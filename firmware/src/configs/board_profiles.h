@@ -8,6 +8,23 @@
 
 #include "../hal/camera_board.h"
 
+// Default display profile for boards without built-in display
+const DisplayProfile NO_DISPLAY_PROFILE = {
+    .has_display = false,
+    .display_type = 0,
+    .display_sda_pin = -1,
+    .display_scl_pin = -1,
+    .display_cs_pin = -1,
+    .display_dc_pin = -1,
+    .display_rst_pin = -1,
+    .display_bl_pin = -1,
+    .display_i2c_addr = 0,
+    .display_i2c_freq = 0,
+    .display_spi_freq = 0,
+    .display_width = 0,
+    .display_height = 0
+};
+
 // AI-Thinker ESP32-CAM Profile
 const GPIOMap AI_THINKER_GPIO_MAP = {
     .pwdn_pin = 32,
@@ -216,6 +233,22 @@ const CameraConfig TTGO_T_CAMERA_CAMERA_CONFIG = {
     .xclk_freq_hz = 20000000,
     .psram_required = true,
     .has_flash = true
+};
+
+const DisplayProfile TTGO_T_CAMERA_DISPLAY_PROFILE = {
+    .has_display = true,
+    .display_type = 1,              // SSD1306 OLED
+    .display_sda_pin = 21,
+    .display_scl_pin = 22,
+    .display_cs_pin = -1,
+    .display_dc_pin = -1,
+    .display_rst_pin = 16,
+    .display_bl_pin = -1,
+    .display_i2c_addr = 0x3C,
+    .display_i2c_freq = 400000,
+    .display_spi_freq = 0,
+    .display_width = 128,
+    .display_height = 64
 };
 
 // XIAO ESP32S3 Sense Profile  
@@ -510,6 +543,22 @@ const CameraConfig LILYGO_T_CAMERA_PLUS_CAMERA_CONFIG = {
     .xclk_freq_hz = 20000000,
     .psram_required = true,
     .has_flash = true
+};
+
+const DisplayProfile LILYGO_T_CAMERA_PLUS_DISPLAY_PROFILE = {
+    .has_display = true,
+    .display_type = 2,              // ST7789 TFT
+    .display_sda_pin = -1,
+    .display_scl_pin = -1,
+    .display_cs_pin = 12,
+    .display_dc_pin = 13,
+    .display_rst_pin = 14,
+    .display_bl_pin = 15,
+    .display_i2c_addr = 0,
+    .display_i2c_freq = 0,
+    .display_spi_freq = 27000000,
+    .display_width = 240,
+    .display_height = 240
 };
 
 // Espressif ESP32-CAM-MB Profile

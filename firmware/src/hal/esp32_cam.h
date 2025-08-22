@@ -27,6 +27,7 @@ public:
     GPIOMap getGPIOMap() const override;
     CameraConfig getCameraConfig() const override;
     PowerProfile getPowerProfile() const override;
+    DisplayProfile getDisplayProfile() const override;
     
     // Camera operations
     bool configureSensor(sensor_t* sensor) override;
