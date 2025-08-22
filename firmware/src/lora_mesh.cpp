@@ -183,7 +183,7 @@ bool sendStatus(const JsonObject& statusData) {
  * Queue message for transmission
  */
 bool queueMessage(const String& message) {
-    if (messageQueue.count >= 10) {
+    if (messageQueue.count >= LORA_MESSAGE_QUEUE_SIZE) {
         DEBUG_PRINTLN("Warning: Message queue full, dropping oldest message");
         // Remove oldest message
         for (int i = 1; i < messageQueue.count; i++) {
@@ -195,7 +195,7 @@ bool queueMessage(const String& message) {
     messageQueue.messages[messageQueue.count] = message;
     messageQueue.count++;
     
-    DEBUG_PRINTF("Message queued (%d in queue)\n", messageQueue.count);
+    DEBUG_PRINTF("Message queued (%d/%d in queue)\n", messageQueue.count, LORA_MESSAGE_QUEUE_SIZE);
     return true;
 }
 

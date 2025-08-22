@@ -178,20 +178,36 @@ bool shouldEnterLowPower() {
  * Read voltage from ADC pin with calibration
  */
 static float readVoltage(int pin, float voltageDividerRatio) {
+    // Validate inputs
+    if (pin < 0 || voltageDividerRatio <= 0) {
+        DEBUG_PRINTF("Invalid voltage reading parameters: pin=%d, ratio=%.2f\n", 
+                    pin, voltageDividerRatio);
+        return 0.0;
+    }
+    
     // Take multiple readings for better accuracy
-    const int numReadings = 10;
+    const int numReadings = VOLTAGE_CALIBRATION_SAMPLES;
     long sum = 0;
     
     for (int i = 0; i < numReadings; i++) {
-        sum += analogRead(pin);
+        int reading = analogRead(pin);
+        // Validate ADC reading is within expected range
+        if (reading < 0 || reading > 4095) {
+            DEBUG_PRINTF("Warning: ADC reading out of range: %d\n", reading);
+            reading = constrain(reading, 0, 4095);
+        }
+        sum += reading;
         delay(10);
     }
     
     float avgReading = sum / (float)numReadings;
     
     // Convert ADC reading to voltage
-    // ESP32 ADC: 12-bit (0-4095), reference voltage ~3.3V
-    float voltage = (avgReading * 3.3 / 4095.0) * voltageDividerRatio;
+    // ESP32 ADC: 12-bit (0-4095), reference voltage configured
+    float voltage = (avgReading * ADC_REFERENCE_VOLTAGE / 4095.0) * voltageDividerRatio;
+    
+    // Apply reasonable bounds for battery/solar voltages (0-20V max)
+    voltage = constrain(voltage, 0.0, 20.0);
     
     return voltage;
 }
