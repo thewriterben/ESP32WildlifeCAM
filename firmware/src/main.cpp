@@ -38,6 +38,8 @@
 #include "power_manager.h"
 #include "wifi_manager.h"
 #include "lora_mesh.h"
+#include "display/hmi_system.h"
+#include "hal/board_detector.h"
 
 // AI/ML Integration (conditionally compiled)
 #ifdef ESP32_AI_ENABLED
@@ -71,6 +73,7 @@ public:
     MotionFilter& getMotionFilter() { return motionFilter; }
     PowerManager& getPowerManager() { return powerManager; }
     WiFiManager& getWiFiManager() { return wifiManager; }
+    HMISystem& getHMISystem() { return hmiSystem; }
     
     // Status methods
     bool isCameraInitialized() const { return cameraHandler.isInitialized(); }
@@ -93,6 +96,8 @@ private:
     MotionFilter motionFilter;
     PowerManager powerManager;
     WiFiManager wifiManager;
+    HMISystem hmiSystem;
+    std::unique_ptr<CameraBoard> detectedBoard;
     
     // System state
     bool sdCardInitialized;
@@ -241,6 +246,30 @@ bool SystemManager::init() {
     }
     DEBUG_TIMER_END("camera_init");
     
+    // Detect and initialize board-specific features
+    DEBUG_TIMER_START("board_init");
+    BoardDetector detector;
+    BoardType boardType = detector.detectBoard();
+    detectedBoard = detector.createBoard(boardType);
+    if (detectedBoard) {
+        DEBUG_SYSTEM_INFO("Detected board: %s", detectedBoard->getBoardName());
+        if (!detectedBoard->init()) {
+            DEBUG_SYSTEM_WARN("Warning: Board initialization failed");
+        }
+    } else {
+        DEBUG_SYSTEM_WARN("Warning: Could not detect board type");
+    }
+    DEBUG_TIMER_END("board_init");
+    
+    // Initialize HMI system (display and user interface)
+    DEBUG_TIMER_START("hmi_init");
+    if (detectedBoard && hmiSystem.init(detectedBoard.get())) {
+        DEBUG_SYSTEM_INFO("HMI system initialized successfully");
+    } else {
+        DEBUG_SYSTEM_INFO("No display detected - running in headless mode");
+    }
+    DEBUG_TIMER_END("hmi_init");
+    
     // Initialize SD card storage
     if (!initializeSDCard()) {
         DEBUG_SYSTEM_WARN("Warning: SD card initialization failed");
@@ -294,6 +323,12 @@ void SystemManager::update() {
     
     // Update power management
     powerManager.update();
+    
+    // Update HMI system (display, menus, input)
+    if (hmiSystem.isInitialized()) {
+        hmiSystem.updateDisplay();
+        hmiSystem.processInput();
+    }
     
     // Update WiFi if enabled
     if (WIFI_ENABLED) {

@@ -64,6 +64,10 @@ PowerProfile ESPEYE::getPowerProfile() const {
     return ESP_EYE_POWER_PROFILE;
 }
 
+DisplayProfile ESPEYE::getDisplayProfile() const {
+    return NO_DISPLAY_PROFILE;  // ESP-EYE has no built-in display for now
+}
+
 bool ESPEYE::configureSensor(sensor_t* sensor) {
     if (!sensor) return false;
     
