@@ -212,6 +212,20 @@ void simulateNetworkCoordination() {
     Serial.println("  [Stealth Nodes] Minimal status update");
     Serial.println("  [Portable] Cellular data upload");
     Serial.println();
+    
+    Serial.println("📡 NEW MULTI-BOARD COORDINATION AVAILABLE:");
+    Serial.println("  ✅ Automatic board discovery and role assignment");
+    Serial.println("  ✅ Coordinator election based on capabilities");
+    Serial.println("  ✅ Task distribution and load balancing");
+    Serial.println("  ✅ Network topology mapping and monitoring");
+    Serial.println("  ✅ Failover and standalone mode support");
+    Serial.println("  ✅ Integration with existing LoRa mesh");
+    Serial.println();
+    Serial.println("  🚀 To use the new multi-board system:");
+    Serial.println("     #include \"../firmware/src/multi_board/multi_board_system.h\"");
+    Serial.println("     initializeMultiboardSystem(nodeId, preferredRole);");
+    Serial.println("     // See examples/multi_board_communication/ for full example");
+    Serial.println();
 }
 
 void setup() {

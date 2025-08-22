@@ -259,10 +259,35 @@
 #define LOG_ROTATION_ENABLED false       // Enable log file rotation
 
 // ===========================
+// MULTI-BOARD COMMUNICATION CONFIGURATION
+// ===========================
+
+// Multi-Board System Configuration
+#define MULTIBOARD_ENABLED true          // Enable multi-board coordination system
+#define MULTIBOARD_NODE_ID 1             // Default node ID (should be unique per device)
+#define MULTIBOARD_PREFERRED_ROLE ROLE_NODE // Default preferred role
+#define MULTIBOARD_DISCOVERY_TIMEOUT 120000 // ms - Discovery timeout (2 minutes)
+#define MULTIBOARD_ROLE_CHANGE_TIMEOUT 60000 // ms - Role change timeout (1 minute)
+#define MULTIBOARD_HEARTBEAT_INTERVAL 60000 // ms - Heartbeat interval (1 minute)
+#define MULTIBOARD_TASK_TIMEOUT 300000   // ms - Task execution timeout (5 minutes)
+#define MULTIBOARD_COORDINATOR_TIMEOUT 600000 // ms - Coordinator availability timeout (10 minutes)
+
+// Multi-Board Features
+#define MULTIBOARD_AUTO_ROLE_SELECTION true // Enable automatic role selection based on capabilities
+#define MULTIBOARD_STANDALONE_FALLBACK true // Enable standalone mode when coordinator unavailable
+#define MULTIBOARD_TASK_EXECUTION true   // Enable task execution on nodes
+#define MULTIBOARD_LOAD_BALANCING true   // Enable intelligent task distribution
+#define MULTIBOARD_TOPOLOGY_MAPPING true // Enable network topology mapping
+
+// Integration Settings
+#define MULTIBOARD_LORA_INTEGRATION true // Integrate with existing LoRa mesh system
+#define MULTIBOARD_NETWORK_SELECTOR_INTEGRATION true // Integrate with network selector
+
+// ===========================
 // FIRMWARE INFORMATION
 // ===========================
 
-#define FIRMWARE_VERSION "1.0.0"         // Firmware version string
+#define FIRMWARE_VERSION "1.1.0"         // Firmware version string (updated for multi-board support)
 #define HARDWARE_VERSION "1.0"           // Hardware version string
 #define BUILD_DATE __DATE__               // Build date (automatically set)
 #define BUILD_TIME __TIME__               // Build time (automatically set)
