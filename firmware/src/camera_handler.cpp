@@ -12,6 +12,7 @@
 #include "configs/sensor_configs.h"
 #include <esp_camera.h>
 #include <SD_MMC.h>
+#include <LittleFS.h>
 #include <ArduinoJson.h>
 
 namespace CameraHandler {
@@ -231,7 +232,7 @@ camera_fb_t* captureImage() {
 }
 
 /**
- * Save image to SD card with timestamp and metadata
+ * Save image to storage with timestamp and metadata
  */
 String saveImage(camera_fb_t* fb, const char* folder) {
     if (!fb) {
@@ -242,8 +243,25 @@ String saveImage(camera_fb_t* fb, const char* folder) {
     // Create filename with timestamp
     String filename = generateFilename(folder);
     
-    // Save image file
-    File file = SD_MMC.open(filename.c_str(), FILE_WRITE);
+    File file;
+    
+    #ifdef SD_CARD_ENABLED
+    #if SD_CARD_ENABLED
+    // Use SD card if enabled and available
+    file = SD_MMC.open(filename.c_str(), FILE_WRITE);
+    if (!file) {
+        DEBUG_PRINTF("Error: Failed to create SD file %s, trying LittleFS\n", filename.c_str());
+        file = LittleFS.open(filename.c_str(), FILE_WRITE);
+    }
+    #else
+    // Use LittleFS when SD card is disabled
+    file = LittleFS.open(filename.c_str(), FILE_WRITE);
+    #endif
+    #else
+    // Fallback to LittleFS if SD_CARD_ENABLED not defined
+    file = LittleFS.open(filename.c_str(), FILE_WRITE);
+    #endif
+    
     if (!file) {
         DEBUG_PRINTF("Error: Failed to create file %s\n", filename.c_str());
         return "";

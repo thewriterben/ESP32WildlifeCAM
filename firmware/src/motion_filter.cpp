@@ -8,6 +8,7 @@
 #include "motion_filter.h"
 #include "config.h"
 #include <Arduino.h>
+#include <math.h>
 
 #ifdef BME280_ENABLED
 #include <Adafruit_BME280.h>
@@ -23,7 +24,7 @@ static bool motionDetected = false;
 static int consecutiveMotions = 0;
 static float currentWindSpeed = 0.0;
 static float currentRainfall = 0.0;
-static float currentTemperature = 20.0;
+static float currentTemperature = DEFAULT_TEMPERATURE;
 
 #ifdef BME280_ENABLED
 static Adafruit_BME280 bme;
@@ -213,23 +214,39 @@ static bool isWeatherSuitable() {
 static float estimateWindSpeed() {
     static unsigned long lastWindCheck = 0;
     static int falseMotionCount = 0;
+    static float lastEstimatedWind = 0.0;
     
     unsigned long now = millis();
     
     // Count false motions over the last minute
     if (now - lastWindCheck > 60000) {  // Every minute
+        // Calculate wind speed based on false motion events
         float estimatedWind = falseMotionCount * 2.5;  // Rough correlation
+        
+        // Apply reasonable bounds (wind speed 0-50 km/h max for estimation)
+        estimatedWind = constrain(estimatedWind, 0.0, 50.0);
+        
+        DEBUG_PRINTF("Wind estimation: %d false motions -> %.1f km/h\n", 
+                    falseMotionCount, estimatedWind);
+        
         falseMotionCount = 0;
         lastWindCheck = now;
+        lastEstimatedWind = estimatedWind;
+        currentWindSpeed = estimatedWind;  // Update global wind speed
+        
         return estimatedWind;
     }
     
     // Increment false motion counter for consecutive quick triggers
     if (consecutiveMotions > 5) {
         falseMotionCount++;
+        // Prevent excessive accumulation
+        if (falseMotionCount > 20) {
+            falseMotionCount = 20;
+        }
     }
     
-    return currentWindSpeed;  // Return last calculated value
+    return lastEstimatedWind;  // Return last calculated value with proper tracking
 }
 
 /**
@@ -243,7 +260,7 @@ static bool isTemperatureStable() {
     
     // Check temperature change rate
     if (now - lastTempCheck > 30000) {  // Every 30 seconds
-        float tempDelta = abs(currentTemperature - lastTemperature);
+        float tempDelta = fabs(currentTemperature - lastTemperature);
         lastTemperature = currentTemperature;
         lastTempCheck = now;
         

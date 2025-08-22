@@ -8,6 +8,7 @@
 #include "../configs/sensor_configs.h"
 #include <esp_camera.h>
 #include <esp_system.h>
+#include <Wire.h>
 
 ESP32CAM::ESP32CAM() {
     board_type = BOARD_AI_THINKER_ESP32_CAM;
@@ -216,9 +217,55 @@ void ESP32CAM::configureWildlifeSettings(sensor_t* sensor) {
 }
 
 bool ESP32CAM::testSensorCommunication() {
-    // Simple test to check if sensor responds
-    // This is a placeholder - actual implementation would test I2C communication
-    return true;
+    // Test I2C communication with camera sensor
+    Wire.begin(SIOD_GPIO_NUM, SIOC_GPIO_NUM);
+    delay(100); // Allow I2C to stabilize
+    
+    // Try to communicate with OV2640 sensor (default for AI-Thinker ESP32-CAM)
+    const uint8_t OV2640_I2C_ADDR = 0x30;
+    const uint8_t OV2640_CHIP_ID_HIGH = 0x0A;
+    const uint8_t OV2640_CHIP_ID_LOW = 0x0B;
+    
+    // Read chip ID to verify sensor communication
+    Wire.beginTransmission(OV2640_I2C_ADDR);
+    Wire.write(OV2640_CHIP_ID_HIGH);
+    if (Wire.endTransmission() != 0) {
+        DEBUG_PRINTLN("Failed to write to sensor register");
+        return false;
+    }
+    
+    Wire.requestFrom(OV2640_I2C_ADDR, (uint8_t)1);
+    if (Wire.available() < 1) {
+        DEBUG_PRINTLN("No response from sensor");
+        return false;
+    }
+    
+    uint8_t chip_id_high = Wire.read();
+    
+    Wire.beginTransmission(OV2640_I2C_ADDR);
+    Wire.write(OV2640_CHIP_ID_LOW);
+    if (Wire.endTransmission() != 0) {
+        DEBUG_PRINTLN("Failed to read chip ID low");
+        return false;
+    }
+    
+    Wire.requestFrom(OV2640_I2C_ADDR, (uint8_t)1);
+    if (Wire.available() < 1) {
+        DEBUG_PRINTLN("No response for chip ID low");
+        return false;
+    }
+    
+    uint8_t chip_id_low = Wire.read();
+    
+    // OV2640 chip ID should be 0x26XX
+    if (chip_id_high == 0x26) {
+        DEBUG_PRINTF("OV2640 sensor detected (ID: 0x%02X%02X)\n", chip_id_high, chip_id_low);
+        return true;
+    } else {
+        DEBUG_PRINTF("Unexpected sensor chip ID: 0x%02X%02X\n", chip_id_high, chip_id_low);
+        // Still return true as other sensors might work
+        return true;
+    }
 }
 
 void ESP32CAM::setupCameraPins() {

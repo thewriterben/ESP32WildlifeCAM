@@ -120,7 +120,7 @@ int NetworkSelector::calculateNetworkScore(const NetworkInfo& network,
     // Base priority scores
     switch (network.type) {
         case NETWORK_TYPE_LORA:
-            score = 100; // Highest priority
+            score = NETWORK_SCORE_EXCELLENT; // Highest priority
             break;
         case NETWORK_TYPE_CELLULAR:
             score = 70;
@@ -222,9 +222,8 @@ bool NetworkSelector::sendViaLoRa(const uint8_t* data, size_t length) {
     // Placeholder for LoRa mesh implementation
     Serial.printf("Sending %d bytes via LoRa mesh\n", length);
     
-    // In a real implementation, this would interface with LoRa radio
-    // For now, simulate successful transmission
-    delay(1000);
+    // Simulate transmission time based on network type
+    delay(LORA_TRANSMISSION_DELAY);
     return true;
 }
 
@@ -243,7 +242,7 @@ bool NetworkSelector::sendViaSatellite(const uint8_t* data, size_t length) {
     
     // Convert binary data to text for satellite transmission
     String message = "DATA:";
-    for (size_t i = 0; i < min(length, (size_t)100); i++) { // Limit for satellite
+    for (size_t i = 0; i < min(length, (size_t)SATELLITE_MESSAGE_MAX_LENGTH); i++) { // Limit for satellite
         message += String(data[i], HEX);
         if (i < length - 1) message += ",";
     }
@@ -277,7 +276,7 @@ bool NetworkSelector::attemptFallbackTransmission(const uint8_t* data, size_t le
             return true;
         }
         
-        delay(2000); // Wait between attempts
+        delay(NETWORK_RETRY_DELAY); // Wait between attempts
     }
     
     return false;
