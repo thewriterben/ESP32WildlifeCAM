@@ -1,18 +1,24 @@
 /**
- * ESP32 Wildlife Camera - Main Application
+ * ESP32 Wildlife Camera - Main Application with AI/ML Integration
  * 
  * A solar-powered wildlife trail camera with LoRa mesh networking,
- * intelligent motion detection, and weather filtering.
+ * intelligent motion detection, weather filtering, and comprehensive
+ * AI-powered wildlife monitoring capabilities.
  * 
  * Features:
- * - ESP32-S3 with camera module
- * - Solar power management
+ * - ESP32-S3 with camera module and AI acceleration
+ * - Solar power management with AI optimization
  * - LoRa mesh networking
  * - Weather-aware motion filtering
  * - Deep sleep power optimization
+ * - AI-powered species classification and behavior analysis
+ * - TensorFlow Lite Micro integration
+ * - Edge Impulse platform support
+ * - MicroPython AI scripting
+ * - Intelligent triggering and power management
  * 
  * Author: ESP32WildlifeCAM Project
- * Version: 1.0.0
+ * Version: 2.0.0 (AI Enhanced)
  */
 
 #include <Arduino.h>
@@ -31,12 +37,19 @@
 #include "wifi_manager.h"
 #include "lora_mesh.h"
 
+// AI/ML Integration (conditionally compiled)
+#ifdef ESP32_AI_ENABLED
+#include "ai/ai_wildlife_system.h"
+#include "ai/ai_common.h"
+#endif
+
 /**
  * @class SystemManager
- * @brief Central coordinator for all wildlife camera subsystems
+ * @brief Central coordinator for all wildlife camera subsystems with AI/ML integration
  * 
  * This class manages the initialization, coordination, and lifecycle
  * of all camera subsystems, providing a clean interface for the main loop.
+ * Includes comprehensive AI/ML capabilities when enabled.
  */
 class SystemManager {
 public:
@@ -63,6 +76,14 @@ public:
     bool isLoRaInitialized() const { return loraInitialized; }
     int getDailyTriggerCount() const { return dailyTriggerCount; }
     unsigned long getBootTime() const { return bootTime; }
+    
+#ifdef ESP32_AI_ENABLED
+    // AI-specific methods
+    bool isAISystemInitialized() const { return aiSystemInitialized; }
+    void handleAIAnalysis();
+    void handleIntelligentCapture();
+    void saveAIAnalysisMetadata(const String& filename, const WildlifeAnalysisResult& analysis);
+#endif
 
 private:
     // Subsystem instances
@@ -79,6 +100,13 @@ private:
     int dailyTriggerCount;
     unsigned long lastStatusCheck;
     
+#ifdef ESP32_AI_ENABLED
+    // AI-related state
+    bool aiSystemInitialized;
+    unsigned long lastAIAnalysis;
+    WildlifeAnalysisResult lastAnalysisResult;
+#endif
+    
     // Private methods
     bool initializeFileSystem();
     bool initializeSDCard();
@@ -86,6 +114,10 @@ private:
     bool isWithinActiveHours();
     void resetDailyCounts();
     String createImageFilename();
+    
+#ifdef ESP32_AI_ENABLED
+    bool initializeAISystem();
+#endif
 };
 
 // Global system manager instance
@@ -138,7 +170,11 @@ void loop() {
  */
 SystemManager::SystemManager() 
     : sdCardInitialized(false), loraInitialized(false), lastMotionTime(0),
-      bootTime(0), dailyTriggerCount(0), lastStatusCheck(0) {
+      bootTime(0), dailyTriggerCount(0), lastStatusCheck(0)
+#ifdef ESP32_AI_ENABLED
+    , aiSystemInitialized(false), lastAIAnalysis(0)
+#endif
+{
 }
 
 /**
@@ -204,6 +240,17 @@ bool SystemManager::init() {
         }
     }
     
+#ifdef ESP32_AI_ENABLED
+    // Initialize AI system if enabled
+    if (initializeAISystem()) {
+        aiSystemInitialized = true;
+        DEBUG_PRINTLN("AI Wildlife System initialized successfully");
+    } else {
+        aiSystemInitialized = false;
+        DEBUG_PRINTLN("Warning: AI system initialization failed - running without AI");
+    }
+#endif
+    
     return true;
 }
 
@@ -243,16 +290,43 @@ void SystemManager::update() {
         // Apply weather filtering
         if (motionFilter.isValidMotion()) {
             DEBUG_PRINTLN("Valid motion after filtering");
+            
+#ifdef ESP32_AI_ENABLED
+            // Use AI-enhanced motion analysis if available
+            if (aiSystemInitialized) {
+                handleAIAnalysis();
+            } else {
+                handleMotionDetection();
+            }
+#else
             handleMotionDetection();
+#endif
         } else {
             DEBUG_PRINTLN("Motion filtered out (weather conditions)");
         }
     }
     
+#ifdef ESP32_AI_ENABLED
+    // Perform intelligent capture check (AI-driven)
+    if (aiSystemInitialized && g_aiSystem && g_aiSystem->shouldTriggerCapture()) {
+        DEBUG_PRINTLN("AI triggered intelligent capture");
+        handleIntelligentCapture();
+    }
+#endif
+    
     // Handle LoRa mesh communication
     if (loraInitialized) {
         LoraMesh::processMessages();
     }
+    
+#ifdef ESP32_AI_ENABLED
+    // AI-optimized deep sleep decision
+    if (aiSystemInitialized && g_aiSystem && g_aiSystem->shouldEnterDeepSleep()) {
+        DEBUG_PRINTLN("AI recommends deep sleep");
+        enterDeepSleep();
+        return;
+    }
+#endif
     
     // Enter deep sleep if no activity and low power
     if (currentTime - lastMotionTime > DEEP_SLEEP_DURATION * 1000 && 
@@ -519,6 +593,14 @@ void SystemManager::resetDailyCounts() {
         if (lastDay != -1) { // Not the first check
             DEBUG_PRINTLN("Resetting daily counters");
             dailyTriggerCount = 0;
+            
+#ifdef ESP32_AI_ENABLED
+            // Reset AI system daily metrics if available
+            if (aiSystemInitialized && g_aiSystem) {
+                DEBUG_PRINTLN("Resetting AI daily metrics");
+                // This would reset daily AI metrics if implemented
+            }
+#endif
             powerManager.resetStats();
             motionFilter.resetStats();
         }
@@ -526,3 +608,226 @@ void SystemManager::resetDailyCounts() {
     }
 }
 
+#ifdef ESP32_AI_ENABLED
+/**
+ * Initialize AI Wildlife System
+ */
+bool SystemManager::initializeAISystem() {
+    DEBUG_PRINTLN("Initializing AI Wildlife System...");
+    
+    // Initialize the global AI system
+    if (::initializeAISystem()) {
+        DEBUG_PRINTLN("AI Wildlife System initialized successfully");
+        
+        // Load AI models if available
+        if (g_aiSystem) {
+            // Try to load models from SD card or flash
+            bool modelsLoaded = g_aiSystem->loadModels("/models");
+            if (modelsLoaded) {
+                DEBUG_PRINTLN("AI models loaded successfully");
+            } else {
+                DEBUG_PRINTLN("Warning: Some AI models failed to load");
+            }
+            
+            // Configure AI system for wildlife monitoring
+            AIProcessingConfig aiConfig;
+            aiConfig.enableSpeciesClassification = true;
+            aiConfig.enableBehaviorAnalysis = true;
+            aiConfig.enableMotionDetection = true;
+            aiConfig.enableHumanDetection = true;
+            aiConfig.powerOptimized = true;
+            aiConfig.confidenceThreshold = 0.7f;
+            aiConfig.processingInterval = 3000; // 3 seconds between AI analyses
+            
+            g_aiSystem->configure(aiConfig);
+            
+            // Enable intelligent scheduling for power optimization
+            g_aiSystem->enableIntelligentScheduling(true);
+            g_aiSystem->enableContinuousLearning(true);
+        }
+        return true;
+    } else {
+        DEBUG_PRINTLN("Warning: AI system initialization failed - running without AI");
+        return false;
+    }
+}
+
+/**
+ * Handle AI-enhanced motion analysis
+ */
+void SystemManager::handleAIAnalysis() {
+    if (!aiSystemInitialized || !g_aiSystem) {
+        // Fallback to traditional motion handling
+        handleMotionDetection();
+        return;
+    }
+    
+    unsigned long currentTime = millis();
+    
+    // Check if enough time has passed since last AI analysis
+    if (currentTime - lastAIAnalysis < 2000) { // Minimum 2 seconds between analyses
+        return;
+    }
+    
+    lastAIAnalysis = currentTime;
+    lastMotionTime = currentTime;
+    
+    DEBUG_PRINTLN("Starting AI-enhanced motion analysis...");
+    
+    // Check if within active hours
+    if (!isWithinActiveHours()) {
+        DEBUG_PRINTLN("Motion detected outside active hours");
+        return;
+    }
+    
+    // Check daily trigger limit
+    if (dailyTriggerCount >= MAX_DAILY_TRIGGERS) {
+        DEBUG_PRINTLN("Daily trigger limit reached");
+        return;
+    }
+    
+    // Capture image for AI analysis
+    if (cameraHandler.isInitialized()) {
+        camera_fb_t* fb = cameraHandler.captureImage();
+        if (fb) {
+            // Convert to CameraFrame for AI processing
+            CameraFrame frame(fb);
+            
+            // Perform AI analysis
+            WildlifeAnalysisResult analysis = g_aiSystem->analyzeFrame(frame);
+            lastAnalysisResult = analysis;
+            
+            // Log analysis results
+            if (analysis.species.species != SpeciesType::UNKNOWN) {
+                DEBUG_PRINTF("AI Analysis - Species: %s, Confidence: %.2f%%\n",
+                           speciesTypeToString(analysis.species.species),
+                           analysis.species.confidence * 100);
+                
+                if (analysis.behavior.primaryBehavior != BehaviorType::UNKNOWN) {
+                    DEBUG_PRINTF("AI Analysis - Behavior: %s, Confidence: %.2f%%\n",
+                               behaviorTypeToString(analysis.behavior.primaryBehavior),
+                               analysis.behavior.confidence * 100);
+                }
+            }
+            
+            // Decide whether to save the image based on AI analysis
+            bool shouldSave = false;
+            
+            if (analysis.overallConfidence >= 0.6f) {
+                shouldSave = true;
+                DEBUG_PRINTLN("High confidence detection - saving image");
+            } else if (analysis.species.species != SpeciesType::UNKNOWN && 
+                      analysis.species.confidence >= 0.4f) {
+                shouldSave = true;
+                DEBUG_PRINTLN("Potential wildlife detected - saving image");
+            } else if (analysis.humanPresenceDetected) {
+                shouldSave = true;
+                DEBUG_PRINTLN("Human presence detected - saving image");
+            } else if (analysis.threatDetected) {
+                shouldSave = true;
+                DEBUG_PRINTLN("Threat detected - saving image");
+            }
+            
+            if (shouldSave && sdCardInitialized) {
+                dailyTriggerCount++;
+                
+                String filename = cameraHandler.saveImage(fb, IMAGE_FOLDER);
+                DEBUG_PRINTF("AI-triggered image saved: %s\n", filename.c_str());
+                
+                // Save AI analysis metadata
+                String metadataFilename = filename;
+                metadataFilename.replace(".jpg", "_ai.json");
+                saveAIAnalysisMetadata(metadataFilename, analysis);
+                
+                // Notify AI system of image capture
+                g_aiSystem->onImageCaptured(frame, filename);
+                
+                // Transmit via LoRa if enabled and high priority
+                if (loraInitialized && IMAGE_COMPRESSION_ENABLED && 
+                    analysis.overallConfidence >= 0.8f) {
+                    LoraMesh::transmitImage(fb, filename);
+                }
+            } else {
+                DEBUG_PRINTLN("AI analysis below threshold - not saving image");
+            }
+            
+            esp_camera_fb_return(fb);
+        } else {
+            DEBUG_PRINTLN("Error: Failed to capture image for AI analysis");
+        }
+    }
+}
+
+/**
+ * Handle intelligent capture (AI-triggered without motion)
+ */
+void SystemManager::handleIntelligentCapture() {
+    DEBUG_PRINTLN("Processing intelligent capture trigger...");
+    
+    // Check basic conditions
+    if (!isWithinActiveHours()) {
+        DEBUG_PRINTLN("Intelligent capture outside active hours");
+        return;
+    }
+    
+    if (dailyTriggerCount >= MAX_DAILY_TRIGGERS) {
+        DEBUG_PRINTLN("Daily trigger limit reached for intelligent capture");
+        return;
+    }
+    
+    // Perform the AI analysis and capture
+    handleAIAnalysis();
+}
+
+/**
+ * Save AI analysis metadata to JSON file
+ */
+void SystemManager::saveAIAnalysisMetadata(const String& filename, const WildlifeAnalysisResult& analysis) {
+    if (!sdCardInitialized) return;
+    
+    DynamicJsonDocument doc(1024);
+    
+    // Species information
+    if (analysis.species.species != SpeciesType::UNKNOWN) {
+        JsonObject species = doc.createNestedObject("species");
+        species["type"] = speciesTypeToString(analysis.species.species);
+        species["confidence"] = analysis.species.confidence;
+        species["confidence_level"] = confidenceLevelToString(analysis.species.confidenceLevel);
+        species["count"] = analysis.species.animalCount;
+    }
+    
+    // Behavior information
+    if (analysis.behavior.primaryBehavior != BehaviorType::UNKNOWN) {
+        JsonObject behavior = doc.createNestedObject("behavior");
+        behavior["primary"] = behaviorTypeToString(analysis.behavior.primaryBehavior);
+        behavior["confidence"] = analysis.behavior.confidence;
+        behavior["activity_level"] = analysis.behavior.activity_level;
+        behavior["stress_level"] = analysis.behavior.stress_level;
+    }
+    
+    // Analysis metadata
+    doc["overall_confidence"] = analysis.overallConfidence;
+    doc["motion_detected"] = analysis.motionDetected;
+    doc["threat_detected"] = analysis.threatDetected;
+    doc["human_detected"] = analysis.humanPresenceDetected;
+    doc["processing_time"] = analysis.processingTime;
+    doc["timestamp"] = analysis.timestamp;
+    
+    // Environmental data
+    JsonObject environment = doc.createNestedObject("environment");
+    PowerStats powerStats = powerManager.getPowerStats();
+    environment["battery_voltage"] = powerStats.batteryVoltage;
+    environment["solar_voltage"] = powerStats.solarVoltage;
+    environment["is_charging"] = powerStats.isCharging;
+    
+    // Save to file
+    File file = SD_MMC.open(filename.c_str(), FILE_WRITE);
+    if (file) {
+        serializeJson(doc, file);
+        file.close();
+        DEBUG_PRINTF("AI metadata saved: %s\n", filename.c_str());
+    } else {
+        DEBUG_PRINTF("Error: Failed to save AI metadata: %s\n", filename.c_str());
+    }
+}
+#endif
