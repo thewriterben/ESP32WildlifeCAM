@@ -120,7 +120,8 @@
 // - GPIO 26: LORA_DIO0 conflicts with SIOD_GPIO_NUM (camera I2C data)
 // 
 // RESOLUTION: This configuration prioritizes camera functionality.
-// For LoRa networking, use a different ESP32 board with more available GPIO pins.
+// For LoRa networking, use ESP32-S3-CAM or ESP-EYE with more available GPIO pins.
+// With LoRa disabled, SD card storage and charging LED are enabled as alternatives.
 #define LORA_ENABLED false               // Disabled due to fundamental GPIO conflicts with camera
 
 // LoRa Radio Configuration
