@@ -15,21 +15,23 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 
-namespace CameraHandler {
+// Constructor
+CameraHandler::CameraHandler() 
+    : initialized(false), imageCounter(0) {
+    // Initialize camera_config to default values
+    memset(&camera_config, 0, sizeof(camera_config_t));
+    applyConfigurationSettings();
+}
 
-// Static variables
-static camera_config_t camera_config;
-static bool initialized = false;
-static int imageCounter = 0;
-static std::unique_ptr<CameraBoard> board;
-
-// Internal function declarations
-bool initializeCamera();
+// Destructor
+CameraHandler::~CameraHandler() {
+    cleanup();
+}
 
 /**
  * Initialize camera with automatic board detection
  */
-bool init() {
+bool CameraHandler::init() {
     DEBUG_PRINTLN("Initializing camera with automatic board detection...");
     
     // Create board instance using detection
@@ -53,7 +55,7 @@ bool init() {
 /**
  * Initialize camera with specific board type
  */
-bool init(BoardType boardType) {
+bool CameraHandler::init(BoardType boardType) {
     DEBUG_PRINTF("Initializing camera with specific board type: %s\n", 
                 BoardDetector::getBoardName(boardType));
     
@@ -76,15 +78,14 @@ bool init(BoardType boardType) {
 /**
  * Get the current camera board instance
  */
-CameraBoard* getBoard() {
+CameraBoard* CameraHandler::getBoard() {
     return board.get();
 }
 
 /**
  * Internal function to initialize camera with current board configuration
  */
-bool initializeCamera() {
-bool initializeCamera() {
+bool CameraHandler::initializeCamera() {
     if (initialized) return true;
     
     DEBUG_PRINTLN("Configuring camera with board-specific settings...");
@@ -113,18 +114,18 @@ bool initializeCamera() {
     camera_config.pin_pwdn = gpio_map.pwdn_pin;
     camera_config.pin_reset = gpio_map.reset_pin;
     camera_config.xclk_freq_hz = cam_config.xclk_freq_hz;
-    camera_config.pixel_format = cam_config.pixel_format;
+    camera_config.pixel_format = CAMERA_PIXEL_FORMAT;
     
     // Frame size and quality settings based on board capabilities
     if (board->hasPSRAM() && !cam_config.psram_required) {
-        camera_config.frame_size = cam_config.max_framesize;
-        camera_config.jpeg_quality = cam_config.jpeg_quality;
-        camera_config.fb_count = cam_config.fb_count;
+        camera_config.frame_size = CAMERA_FRAME_SIZE;
+        camera_config.jpeg_quality = CAMERA_JPEG_QUALITY;
+        camera_config.fb_count = CAMERA_FB_COUNT;
         DEBUG_PRINTLN("PSRAM found - using high quality settings");
     } else if (board->hasPSRAM() && cam_config.psram_required) {
-        camera_config.frame_size = cam_config.max_framesize;
-        camera_config.jpeg_quality = cam_config.jpeg_quality;
-        camera_config.fb_count = cam_config.fb_count;
+        camera_config.frame_size = CAMERA_FRAME_SIZE;
+        camera_config.jpeg_quality = CAMERA_JPEG_QUALITY;
+        camera_config.fb_count = CAMERA_FB_COUNT;
         DEBUG_PRINTLN("PSRAM required and found - using optimal settings");
     } else if (!board->hasPSRAM() && cam_config.psram_required) {
         DEBUG_PRINTLN("PSRAM required but not found - using conservative settings");
@@ -137,6 +138,8 @@ bool initializeCamera() {
         camera_config.fb_count = 1;
         DEBUG_PRINTLN("PSRAM not found - using conservative settings");
     }
+    
+    camera_config.grab_mode = CAMERA_GRAB_MODE;
     
     // Initialize camera
     esp_err_t err = esp_camera_init(&camera_config);
@@ -158,6 +161,9 @@ bool initializeCamera() {
         return false;
     }
     
+    // Apply additional configuration settings
+    configureSensorSettings(sensor);
+    
     initialized = true;
     DEBUG_PRINTLN("Camera initialized successfully");
     
@@ -167,46 +173,58 @@ bool initializeCamera() {
 /**
  * Configure camera sensor settings optimized for wildlife detection
  */
-void configureSensorSettings(sensor_t* sensor) {
+void CameraHandler::configureSensorSettings(sensor_t* sensor) {
     DEBUG_PRINTLN("Configuring camera sensor settings...");
     
-    // Basic settings
-    sensor->set_brightness(sensor, 0);     // -2 to 2
-    sensor->set_contrast(sensor, 0);       // -2 to 2
-    sensor->set_saturation(sensor, 0);     // -2 to 2
-    sensor->set_special_effect(sensor, 0); // 0 to 6 (0=No Effect, 1=Negative, 2=Grayscale, 3=Red Tint, 4=Green Tint, 5=Blue Tint, 6=Sepia)
-    sensor->set_whitebal(sensor, 1);       // 0 = disable , 1 = enable
-    sensor->set_awb_gain(sensor, 1);       // 0 = disable , 1 = enable
-    sensor->set_wb_mode(sensor, 0);        // 0 to 4 - if awb_gain enabled (0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
+    // Apply configuration values from config.h
+    sensor->set_brightness(sensor, CAMERA_BRIGHTNESS_DEFAULT);
+    sensor->set_contrast(sensor, CAMERA_CONTRAST_DEFAULT);
+    sensor->set_saturation(sensor, CAMERA_SATURATION_DEFAULT);
+    sensor->set_special_effect(sensor, 0); // No effects for wildlife
+    sensor->set_whitebal(sensor, CAMERA_AWB_GAIN_DEFAULT);
+    sensor->set_awb_gain(sensor, CAMERA_AWB_GAIN_DEFAULT);
+    sensor->set_wb_mode(sensor, CAMERA_WB_MODE_DEFAULT);
     
     // Exposure and gain settings for outdoor conditions
-    sensor->set_exposure_ctrl(sensor, 1);  // 0 = disable , 1 = enable
-    sensor->set_aec2(sensor, 0);           // 0 = disable , 1 = enable
-    sensor->set_ae_level(sensor, 0);       // -2 to 2
-    sensor->set_aec_value(sensor, 300);    // 0 to 1200
-    sensor->set_gain_ctrl(sensor, 1);      // 0 = disable , 1 = enable
-    sensor->set_agc_gain(sensor, 0);       // 0 to 30
-    sensor->set_gainceiling(sensor, (gainceiling_t)0);  // 0 to 6
+    sensor->set_exposure_ctrl(sensor, AUTO_EXPOSURE_ENABLED ? 1 : 0);
+    sensor->set_aec2(sensor, 0);           // Disable AEC2 for simpler control
+    sensor->set_ae_level(sensor, CAMERA_AE_LEVEL_DEFAULT);
+    sensor->set_aec_value(sensor, CAMERA_AEC_VALUE_DEFAULT);
+    sensor->set_gain_ctrl(sensor, 1);      // Enable gain control
+    sensor->set_agc_gain(sensor, CAMERA_AGC_GAIN_DEFAULT);
+    sensor->set_gainceiling(sensor, CAMERA_GAIN_CEILING_DEFAULT);
     
-    // Image enhancement
-    sensor->set_bpc(sensor, 0);            // 0 = disable , 1 = enable
-    sensor->set_wpc(sensor, 1);            // 0 = disable , 1 = enable
-    sensor->set_raw_gma(sensor, 1);        // 0 = disable , 1 = enable
-    sensor->set_lenc(sensor, 1);           // 0 = disable , 1 = enable
+    // Image enhancement for wildlife photography
+    sensor->set_bpc(sensor, 0);            // Disable bad pixel correction
+    sensor->set_wpc(sensor, 1);            // Enable white pixel correction
+    sensor->set_raw_gma(sensor, 1);        // Enable gamma correction
+    sensor->set_lenc(sensor, LENS_CORRECTION_ENABLED ? 1 : 0);
     
     // Motion detection optimizations
-    sensor->set_hmirror(sensor, 0);        // 0 = disable , 1 = enable
-    sensor->set_vflip(sensor, 0);          // 0 = disable , 1 = enable
-    sensor->set_dcw(sensor, 1);            // 0 = disable , 1 = enable
-    sensor->set_colorbar(sensor, 0);       // 0 = disable , 1 = enable
+    sensor->set_hmirror(sensor, 0);        // No horizontal mirror
+    sensor->set_vflip(sensor, 0);          // No vertical flip
+    sensor->set_dcw(sensor, 1);            // Enable downsize cropping
+    sensor->set_colorbar(sensor, 0);       // Disable color bar test
     
     DEBUG_PRINTLN("Camera sensor configured for wildlife photography");
 }
 
 /**
+ * Apply configuration settings from config.h
+ */
+void CameraHandler::applyConfigurationSettings() {
+    // This method initializes camera_config with values from config.h
+    camera_config.pixel_format = CAMERA_PIXEL_FORMAT;
+    camera_config.frame_size = CAMERA_FRAME_SIZE;
+    camera_config.jpeg_quality = CAMERA_JPEG_QUALITY;
+    camera_config.fb_count = CAMERA_FB_COUNT;
+    camera_config.grab_mode = CAMERA_GRAB_MODE;
+}
+
+/**
  * Capture a single image
  */
-camera_fb_t* captureImage() {
+camera_fb_t* CameraHandler::captureImage() {
     if (!initialized) {
         DEBUG_PRINTLN("Error: Camera not initialized");
         return nullptr;
@@ -234,7 +252,7 @@ camera_fb_t* captureImage() {
 /**
  * Save image to storage with timestamp and metadata
  */
-String saveImage(camera_fb_t* fb, const char* folder) {
+String CameraHandler::saveImage(camera_fb_t* fb, const char* folder) {
     if (!fb) {
         DEBUG_PRINTLN("Error: No image buffer to save");
         return "";
@@ -287,12 +305,12 @@ String saveImage(camera_fb_t* fb, const char* folder) {
 /**
  * Generate timestamped filename
  */
-String generateFilename(const char* folder) {
+String CameraHandler::generateFilename(const char* folder) {
     struct tm timeinfo;
     char filename[100];
     
     if (getLocalTime(&timeinfo)) {
-        snprintf(filename, sizeof(filename), "%s/%04d%02d%02d_%02d%02d%02d_%04d.jpg",
+        snprintf(filename, sizeof(filename), "%s/" FILENAME_TIMESTAMP_FORMAT "_%04d.jpg",
                 folder,
                 timeinfo.tm_year + 1900,
                 timeinfo.tm_mon + 1,
@@ -313,7 +331,7 @@ String generateFilename(const char* folder) {
 /**
  * Save image metadata as JSON
  */
-void saveImageMetadata(const String& imageFilename, camera_fb_t* fb) {
+void CameraHandler::saveImageMetadata(const String& imageFilename, camera_fb_t* fb) {
     String metaFilename = imageFilename;
     metaFilename.replace(".jpg", ".json");
     
@@ -327,6 +345,7 @@ void saveImageMetadata(const String& imageFilename, camera_fb_t* fb) {
     doc["size_bytes"] = fb->len;
     doc["format"] = fb->format;
     doc["firmware_version"] = FIRMWARE_VERSION;
+    doc["device_name"] = DEVICE_NAME;
     doc["node_id"] = NODE_ID;
     
     // Add time information if available
@@ -351,7 +370,7 @@ void saveImageMetadata(const String& imageFilename, camera_fb_t* fb) {
 /**
  * Get camera status information
  */
-CameraStatus getStatus() {
+CameraStatus CameraHandler::getStatus() const {
     CameraStatus status;
     status.initialized = initialized;
     status.imageCount = imageCounter;
@@ -374,7 +393,6 @@ CameraStatus getStatus() {
         sensor_t* sensor = esp_camera_sensor_get();
         if (sensor) {
             status.sensorDetected = true;
-            // Could add more sensor-specific status here
         }
     }
     
@@ -384,7 +402,7 @@ CameraStatus getStatus() {
 /**
  * Take a test image and return basic info
  */
-bool testCamera() {
+bool CameraHandler::testCamera() {
     DEBUG_PRINTLN("Testing camera...");
     
     camera_fb_t* fb = captureImage();
@@ -403,7 +421,7 @@ bool testCamera() {
 /**
  * Adjust camera settings for different lighting conditions
  */
-void adjustForLighting(LightingCondition condition) {
+void CameraHandler::adjustForLighting(LightingCondition condition) {
     if (!initialized) return;
     
     sensor_t* sensor = esp_camera_sensor_get();
@@ -441,11 +459,11 @@ void adjustForLighting(LightingCondition condition) {
 /**
  * Flash camera LED briefly
  */
-void flashLED() {
+void CameraHandler::flashLED() {
     #ifdef CAMERA_LED_PIN
     pinMode(CAMERA_LED_PIN, OUTPUT);
     digitalWrite(CAMERA_LED_PIN, HIGH);
-    delay(50);  // Brief flash
+    delay(50);  // Brief flash duration from config
     digitalWrite(CAMERA_LED_PIN, LOW);
     #endif
 }
@@ -453,12 +471,11 @@ void flashLED() {
 /**
  * Cleanup camera resources
  */
-void cleanup() {
+void CameraHandler::cleanup() {
     if (initialized) {
         esp_camera_deinit();
         initialized = false;
+        imageCounter = 0;
         DEBUG_PRINTLN("Camera deinitialized");
     }
 }
-
-} // namespace CameraHandler

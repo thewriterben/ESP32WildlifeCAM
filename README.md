@@ -88,157 +88,152 @@ pio run --target upload
 
 ## 🔧 Configuration Options
 
-All configuration parameters are centralized in `firmware/src/config.h` for easy customization. The following sections detail the available configuration options:
+All configuration parameters are centralized in `firmware/src/config.h`. The following table lists the main categories and options:
 
-### Camera Settings
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `CAMERA_FRAME_SIZE` | `FRAMESIZE_UXGA` | Various | Camera resolution (160x120 to 1600x1200) |
-| `CAMERA_JPEG_QUALITY` | `12` | 10-63 | JPEG compression quality (lower = higher quality) |
-| `CAMERA_FB_COUNT` | `2` | 1-4 | Number of frame buffers |
-| `CAMERA_LED_PIN` | `4` | GPIO | Built-in LED pin for AI-Thinker ESP32-CAM |
+### Camera Configuration
+| Parameter | Description | Default Value | Range/Options |
+|-----------|-------------|---------------|---------------|
+| `CAMERA_FRAME_SIZE` | Image resolution | `FRAMESIZE_UXGA` | 160x120 to 1600x1200 |
+| `CAMERA_JPEG_QUALITY` | JPEG compression quality | `12` | 10-63 (lower = higher quality) |
+| `CAMERA_FB_COUNT` | Frame buffer count | `2` | 1-3 |
+| `CAMERA_BRIGHTNESS_DEFAULT` | Image brightness | `0` | -2 to 2 |
+| `CAMERA_CONTRAST_DEFAULT` | Image contrast | `0` | -2 to 2 |
+| `CAMERA_SATURATION_DEFAULT` | Color saturation | `0` | -2 to 2 |
+| `AUTO_EXPOSURE_ENABLED` | Automatic exposure control | `true` | true/false |
+| `AUTO_WHITE_BALANCE_ENABLED` | Automatic white balance | `true` | true/false |
 
-### Motion Detection
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `PIR_PIN` | `13` | GPIO | PIR motion sensor input pin |
-| `PIR_DEBOUNCE_TIME` | `2000` | ms | Prevent multiple triggers within this time |
-| `MOTION_DETECTION_ENABLED` | `true` | bool | Enable/disable motion detection |
-| `MOTION_SENSITIVITY` | `50` | 0-100 | PIR sensitivity (higher = more sensitive) |
-| `MOTION_CONSECUTIVE_THRESHOLD` | `3` | 1-10 | Consecutive motions needed for valid detection |
-| `DEFAULT_TEMPERATURE` | `20.0` | °C | Default temperature for motion compensation |
+### Motion Detection Configuration
+| Parameter | Description | Default Value | Range/Options |
+|-----------|-------------|---------------|---------------|
+| `PIR_PIN` | PIR sensor GPIO pin | `13` | Valid GPIO pin |
+| `PIR_DEBOUNCE_TIME` | Motion debounce time | `2000` | milliseconds |
+| `MOTION_SENSITIVITY` | Motion detection sensitivity | `50` | 0-100 (higher = more sensitive) |
+| `MOTION_CONSECUTIVE_THRESHOLD` | Required consecutive detections | `3` | 1-10 |
+| `WEATHER_FILTERING_ENABLED` | Enable weather-based filtering | `true` | true/false |
+| `WIND_THRESHOLD` | Maximum wind speed for detection | `15.0` | km/h |
+| `RAIN_THRESHOLD` | Maximum rainfall for detection | `0.5` | mm/h |
+| `TEMP_STABILITY_THRESHOLD` | Temperature stability threshold | `2.0` | °C |
 
-### Power Management
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `SOLAR_VOLTAGE_PIN` | `34` | ADC GPIO | ADC pin for solar voltage monitoring |
-| `BATTERY_VOLTAGE_PIN` | `35` | ADC GPIO | ADC pin for battery voltage monitoring |
-| `SOLAR_VOLTAGE_THRESHOLD` | `3.2` | V | Minimum solar voltage for charging |
-| `BATTERY_LOW_THRESHOLD` | `3.0` | V | Low battery warning threshold |
-| `BATTERY_CRITICAL_THRESHOLD` | `2.8` | V | Critical battery shutdown threshold |
-| `DEEP_SLEEP_DURATION` | `300` | seconds | Sleep duration between checks |
-| `CHARGING_LED_PIN` | `2` | GPIO | Charging indicator LED pin |
-| `NORMAL_CPU_FREQUENCY` | `240` | MHz | Normal operation CPU frequency |
-| `POWER_SAVE_CPU_FREQUENCY` | `80` | MHz | Power saving mode CPU frequency |
+### Power Management Configuration
+| Parameter | Description | Default Value | Range/Options |
+|-----------|-------------|---------------|---------------|
+| `BATTERY_VOLTAGE_PIN` | Battery voltage ADC pin | `35` | Valid ADC pin |
+| `SOLAR_VOLTAGE_PIN` | Solar panel voltage ADC pin | `34` | Valid ADC pin |
+| `BATTERY_FULL_VOLTAGE` | Maximum battery voltage | `4.2` | Volts |
+| `BATTERY_LOW_THRESHOLD` | Low battery warning | `3.0` | Volts |
+| `BATTERY_CRITICAL_THRESHOLD` | Critical battery level | `2.8` | Volts |
+| `SOLAR_CHARGING_VOLTAGE_MIN` | Minimum solar voltage for charging | `4.0` | Volts |
+| `DEEP_SLEEP_DURATION` | Sleep duration between checks | `300` | seconds |
+| `LOW_POWER_CPU_FREQ` | Reduced CPU frequency | `80` | MHz |
 
-### Timing Configuration
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `VOLTAGE_CHECK_INTERVAL` | `5000` | ms | Interval for reading battery/solar voltages |
-| `POWER_LOG_INTERVAL` | `60000` | ms | Interval for logging power status |
-| `SENSOR_READ_INTERVAL` | `1000` | ms | Interval for reading environmental sensors |
-| `HEARTBEAT_INTERVAL` | `30000` | ms | Interval for sending network heartbeats |
-| `SERIAL_INIT_DELAY` | `1000` | ms | Delay for serial port initialization |
-| `NETWORK_RETRY_DELAY` | `2000` | ms | Delay between network transmission attempts |
-| `COMMUNICATION_SETUP_DELAY` | `5000` | ms | Delay for communication module setup |
+### LoRa Mesh Network Configuration
+| Parameter | Description | Default Value | Range/Options |
+|-----------|-------------|---------------|---------------|
+| `LORA_ENABLED` | Enable LoRa functionality | `true` | true/false |
+| `LORA_FREQUENCY` | Operating frequency | `915E6` | 433E6, 868E6, 915E6 Hz |
+| `LORA_TX_POWER` | Transmission power | `20` | 5-20 dBm |
+| `LORA_SPREADING_FACTOR` | LoRa spreading factor | `7` | 6-12 |
+| `LORA_SIGNAL_BANDWIDTH` | Signal bandwidth | `125E3` | Hz |
+| `NODE_ID` | Unique node identifier | `1` | 1-255 |
+| `MAX_MESH_NODES` | Maximum nodes in mesh | `10` | 1-50 |
+| `MESH_RETRY_COUNT` | Message retry attempts | `3` | 1-10 |
 
-### LoRa Mesh Network
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `LORA_ENABLED` | `true` | bool | Enable LoRa mesh networking |
-| `LORA_FREQUENCY` | `915E6` | Hz | LoRa frequency (433E6, 868E6, 915E6) |
-| `LORA_TX_POWER` | `20` | dBm | Transmission power (5-20 dBm) |
-| `LORA_SPREADING_FACTOR` | `7` | 6-12 | LoRa spreading factor |
-| `LORA_SIGNAL_BANDWIDTH` | `125E3` | Hz | Signal bandwidth |
-| `LORA_CODING_RATE` | `5` | 5-8 | Error correction coding rate |
-| `LORA_PREAMBLE_LENGTH` | `8` | 6-65535 | Preamble length |
-| `LORA_SYNC_WORD` | `0x12` | hex | Network identification word |
-| `LORA_MESSAGE_QUEUE_SIZE` | `10` | count | Maximum queued outgoing messages |
-| `LORA_TRANSMISSION_DELAY` | `1000` | ms | Simulated transmission delay |
+### WiFi Configuration
+| Parameter | Description | Default Value | Range/Options |
+|-----------|-------------|---------------|---------------|
+| `WIFI_ENABLED` | Enable WiFi functionality | `false` | true/false |
+| `WIFI_SSID` | Network SSID | `""` | String |
+| `WIFI_PASSWORD` | Network password | `""` | String |
+| `WIFI_TIMEOUT` | Connection timeout | `10000` | milliseconds |
+| `WIFI_RETRY_COUNT` | Connection retry attempts | `3` | 1-10 |
 
-### Satellite Communication
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `SATELLITE_BAUD_RATE` | `19200` | baud | Serial baud rate for satellite module |
-| `SATELLITE_RETRY_COUNT` | `5` | count | Number of retry attempts for commands |
-| `SATELLITE_MESSAGE_MAX_LENGTH` | `100` | bytes | Maximum bytes per satellite message |
-| `SATELLITE_RESPONSE_DELAY` | `2000` | ms | Delay waiting for module response |
-| `SATELLITE_WAKEUP_DELAY` | `100` | ms | Delay for module wake up sequence |
-| `SAT_SLEEP_PIN` | `12` | GPIO | Satellite module sleep control pin |
-| `SAT_RING_PIN` | `13` | GPIO | Satellite module ring indicator pin |
+### Environmental Sensors Configuration
+| Parameter | Description | Default Value | Range/Options |
+|-----------|-------------|---------------|---------------|
+| `WEATHER_SENSOR_ENABLED` | Enable weather sensor | `false` | true/false |
+| `BME280_I2C_ADDRESS` | BME280 sensor I2C address | `0x76` | 0x76, 0x77 |
+| `TEMPERATURE_OFFSET` | Temperature calibration offset | `0.0` | °C |
+| `HUMIDITY_OFFSET` | Humidity calibration offset | `0.0` | % |
 
-### Hardware Configuration
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `ADC_RESOLUTION` | `12` | bits | ADC resolution (8, 10, 11, 12 bits) |
-| `VOLTAGE_DIVIDER_RATIO` | `2.0` | ratio | Voltage divider circuit ratio |
-| `ADC_REFERENCE_VOLTAGE` | `3.3` | V | Reference voltage for ADC measurements |
-| `VOLTAGE_CALIBRATION_SAMPLES` | `10` | count | Samples for voltage averaging |
+### Timing and Trigger Configuration
+| Parameter | Description | Default Value | Range/Options |
+|-----------|-------------|---------------|---------------|
+| `STARTUP_DELAY` | Initial startup delay | `5000` | milliseconds |
+| `CAMERA_WARMUP_TIME` | Camera initialization time | `2000` | milliseconds |
+| `CAPTURE_INTERVAL_MIN` | Minimum time between captures | `30` | seconds |
+| `MAX_DAILY_CAPTURES` | Maximum captures per day | `100` | 1-1000 |
+| `NIGHT_MODE_ENABLED` | Enable night mode operation | `true` | true/false |
+| `QUIET_HOURS_START` | Start of quiet hours | `22` | 0-23 (hour) |
+| `QUIET_HOURS_END` | End of quiet hours | `6` | 0-23 (hour) |
 
-### Weather Filtering
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `WEATHER_FILTERING_ENABLED` | `true` | bool | Enable weather-based motion filtering |
-| `WIND_THRESHOLD` | `15` | km/h | Ignore motion above this wind speed |
-| `RAIN_THRESHOLD` | `0.5` | mm/h | Ignore motion during rain |
-| `TEMP_COMP_ENABLED` | `true` | bool | Temperature compensation for PIR |
+## 🏗️ Architecture Overview
 
-### File System
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `SD_CS_PIN` | `12` | GPIO | SD card chip select pin |
-| `SD_MOSI_PIN` | `15` | GPIO | SD card MOSI pin |
-| `SD_CLK_PIN` | `14` | GPIO | SD card clock pin |
-| `SD_MISO_PIN` | `2` | GPIO | SD card MISO pin |
-| `IMAGE_FOLDER` | `"/images"` | path | Folder for captured images |
-| `LOG_FOLDER` | `"/logs"` | path | Folder for system logs |
-| `MAX_FILES_PER_DAY` | `100` | count | Maximum images per day |
+This firmware implements a modern object-oriented architecture with clear separation of concerns and centralized configuration management.
 
-### Image Processing
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `IMAGE_TIMESTAMP_ENABLED` | `true` | bool | Add timestamp to images |
-| `IMAGE_COMPRESSION_ENABLED` | `true` | bool | Enable image compression for transmission |
-| `THUMBNAIL_ENABLED` | `true` | bool | Generate thumbnails for quick preview |
-| `THUMBNAIL_SIZE` | `160` | pixels | Thumbnail width in pixels |
-| `RLE_MAX_COUNT` | `255` | count | Maximum run-length encoding count |
-| `COMPRESSION_MIN_EFFICIENCY` | `3` | bytes | Minimum bytes for RLE compression |
+### System Components
 
-### Trigger Settings
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `TRIGGER_ACTIVE_HOURS_START` | `6` | hour | Start of active period (24h format) |
-| `TRIGGER_ACTIVE_HOURS_END` | `20` | hour | End of active period (24h format) |
-| `NIGHT_MODE_ENABLED` | `false` | bool | Enable night photography |
-| `MAX_DAILY_TRIGGERS` | `50` | count | Maximum triggers per day |
-
-### Memory and Buffer Configuration
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `BUFFER_SIZE_SMALL` | `256` | bytes | Small buffer size for general use |
-| `BUFFER_SIZE_MEDIUM` | `1024` | bytes | Medium buffer size for general use |
-| `BUFFER_SIZE_LARGE` | `4096` | bytes | Large buffer size for general use |
-| `JSON_BUFFER_SMALL` | `256` | bytes | Small JSON document buffer |
-| `JSON_BUFFER_MEDIUM` | `512` | bytes | Medium JSON document buffer |
-| `JSON_BUFFER_LARGE` | `1024` | bytes | Large JSON document buffer |
-
-### Debug and Logging
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `DEBUG_ENABLED` | `true` | bool | Enable debug output |
-| `SERIAL_BAUD_RATE` | `115200` | baud | Serial monitor baud rate |
-| `CURRENT_LOG_LEVEL` | `LOG_LEVEL_INFO` | level | Current logging verbosity |
-
-### Customization Examples
-
-```cpp
-// Example: High sensitivity setup for small animals
-#define MOTION_SENSITIVITY 80
-#define PIR_DEBOUNCE_TIME 1000
-#define TRIGGER_ACTIVE_HOURS_START 0  // 24/7 monitoring
-#define TRIGGER_ACTIVE_HOURS_END 24
-
-// Example: Power-optimized setup for remote deployment
-#define VOLTAGE_CHECK_INTERVAL 10000   // Check less frequently
-#define POWER_LOG_INTERVAL 300000      // Log every 5 minutes
-#define DEEP_SLEEP_DURATION 600        // Sleep longer between checks
-#define POWER_SAVE_CPU_FREQUENCY 40    // Lower CPU frequency
-
-// Example: High-quality imaging setup
-#define CAMERA_JPEG_QUALITY 8          // Higher quality images
-#define CAMERA_FB_COUNT 3              // More frame buffers
-#define THUMBNAIL_SIZE 320             // Larger thumbnails
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                     SystemManager                          │
+├─────────────────────────────────────────────────────────────┤
+│  • Central coordinator and state management                │
+│  • Handles subsystem initialization and coordination       │
+│  • Manages main update loop and error handling            │
+└─┬───────────────────────────────────────────────────────┬───┘
+  │                                                       │
+┌─▼─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────▼─────┐
+│ CameraHandler │ │MotionFilter │ │PowerManager │ │WiFiManager│
+├───────────────┤ ├─────────────┤ ├─────────────┤ ├───────────┤
+│• Image capture│ │• PIR sensor │ │• Battery    │ │• Network  │
+│• HAL abstraction│ │• Weather   │ │  monitoring │ │  connectivity│
+│• Format handling│ │  filtering  │ │• Solar      │ │• AP mode  │
+│• Quality control│ │• Debouncing │ │  charging   │ │• Power    │
+└───────────────┘ └─────────────┘ └─────────────┘ └───────────┘
+```
+
+### Key Architecture Features
+
+- **Centralized Configuration**: All parameters consolidated in `config.h` with comprehensive documentation
+- **Class-Based Design**: Each major subsystem implemented as a C++ class with proper encapsulation
+- **RAII Pattern**: Automatic resource management with constructors, destructors, and proper cleanup
+- **Error Handling**: Graceful degradation and comprehensive error reporting
+- **Legacy Compatibility**: Namespace wrappers maintain backward compatibility
+- **Extensible Design**: Well-defined interfaces for adding new functionality
+
+### Benefits of the New Architecture
+
+- **Maintainability**: Clear separation of concerns and encapsulation
+- **Extensibility**: Well-defined interfaces for adding new functionality
+- **Configuration Management**: Single source of truth for all system parameters
+- **Code Quality**: Modern C++ patterns with proper resource management
+- **Error Propagation**: Initialization failures are properly reported and handled
+- **Backward Compatibility**: Legacy namespace wrappers maintain compatibility with existing code
+
+## 🔍 Advanced Features
+
+### Weather-Based Motion Filtering
+The system includes intelligent weather-based motion filtering to reduce false positives:
+
+- **Wind Detection**: Filters out motion during high wind conditions
+- **Rain Filtering**: Reduces sensitivity during precipitation
+- **Temperature Stability**: Accounts for thermal fluctuations
+- **Adaptive Thresholds**: Adjusts sensitivity based on environmental conditions
+
+### Mesh Networking Architecture
+The LoRa mesh network enables distributed camera deployments:
+
+- **Multi-hop Routing**: Messages can traverse multiple nodes
+- **Automatic Discovery**: Nodes automatically discover neighbors
+- **Load Balancing**: Traffic distributed across available paths
+- **Fault Tolerance**: Network self-heals when nodes fail
+
+### Power Optimization Strategies
+Advanced power management for extended deployment:
+
+- **Dynamic CPU Scaling**: Reduces processor speed during idle periods
+- **Selective Component Power**: Powers down unused peripherals
+- **Solar Tracking**: Optimizes charging based on available solar energy
+- **Predictive Sleep**: Adjusts sleep duration based on activity patterns
 
 ## 🌦️ Weather Resistance
 
@@ -303,6 +298,29 @@ pio run --target upload
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🚀 Recent Improvements (v1.0.0)
+
+### Firmware Architecture Refactoring
+- **Object-Oriented Design**: Converted from procedural code to proper C++ classes
+- **Centralized Configuration**: All settings moved to `config.h` with comprehensive documentation
+- **SystemManager**: New coordinator class eliminates global variables and provides clean initialization
+- **Modular Subsystems**: CameraHandler, MotionFilter, PowerManager, and WiFiManager classes
+- **Resource Management**: RAII patterns with proper constructors, destructors, and cleanup
+- **Error Handling**: Graceful degradation and proper error propagation throughout the system
+
+### New Features
+- **WiFi Management**: Complete network connectivity with auto-reconnection and AP mode
+- **Enhanced Power Management**: Intelligent power state management with CPU frequency scaling
+- **Advanced Motion Filtering**: Weather-based filtering with environmental sensor integration
+- **Configuration Tables**: Comprehensive documentation of all configuration parameters
+- **Architecture Documentation**: Detailed system overview with subsystem interactions
+
+### Future-Ready Foundation
+- **Runtime Configuration**: Framework prepared for dynamic configuration changes
+- **Logging System**: Foundation laid for comprehensive system logging
+- **Message Buffering**: Infrastructure ready for improved communication reliability
+- **Extensibility**: Clean interfaces for adding new sensors and communication methods
 
 ## 🙏 Acknowledgments
 

@@ -2,10 +2,15 @@
 #define CONFIG_H
 
 // ===========================
-// WILDLIFE CAMERA CONFIG
+// ESP32 WILDLIFE CAMERA CONFIGURATION
+// Centralized configuration for all subsystems
 // ===========================
 
-// Camera Configuration
+// ===========================
+// CAMERA CONFIGURATION
+// ===========================
+
+// Camera Board Selection (choose one)
 #define CAMERA_MODEL_AI_THINKER  // AI-Thinker ESP32-CAM
 // #define CAMERA_MODEL_WROVER_KIT
 // #define CAMERA_MODEL_ESP_EYE
@@ -15,309 +20,309 @@
 // #define CAMERA_MODEL_M5STACK_ESP32CAM
 // #define CAMERA_MODEL_TTGO_T_JOURNAL
 
-// Camera Settings
-#define CAMERA_FRAME_SIZE FRAMESIZE_UXGA  // 1600x1200
-#define CAMERA_JPEG_QUALITY 12            // 10-63 lower means higher quality
-#define CAMERA_FB_COUNT 2                 // Frame buffer count
+// Camera Capture Settings
+#define CAMERA_FRAME_SIZE FRAMESIZE_UXGA  // Image resolution: 1600x1200
+#define CAMERA_JPEG_QUALITY 12            // JPEG quality: 10-63 (lower = higher quality)
+#define CAMERA_FB_COUNT 2                 // Frame buffer count for smooth capture
+#define CAMERA_PIXEL_FORMAT PIXFORMAT_JPEG // Image format
+#define CAMERA_GRAB_MODE CAMERA_GRAB_LATEST // Frame grab mode
+
+// Camera Sensor Configuration
+#define CAMERA_BRIGHTNESS_DEFAULT 0       // Brightness: -2 to 2
+#define CAMERA_CONTRAST_DEFAULT 0         // Contrast: -2 to 2  
+#define CAMERA_SATURATION_DEFAULT 0       // Saturation: -2 to 2
+#define CAMERA_SHARPNESS_DEFAULT 0        // Sharpness: -2 to 2
+#define CAMERA_DENOISE_DEFAULT 0          // Denoise: 0 = disable, 1 = enable
+#define CAMERA_AEC_VALUE_DEFAULT 300      // Auto exposure control value
+#define CAMERA_AGC_GAIN_DEFAULT 0         // Auto gain control value
+#define CAMERA_AWB_GAIN_DEFAULT 1         // Auto white balance gain
+#define CAMERA_WB_MODE_DEFAULT 0          // White balance mode
+#define CAMERA_AE_LEVEL_DEFAULT 0         // Auto exposure level
+#define CAMERA_GAIN_CEILING_DEFAULT GAINCEILING_2X // Maximum sensor gain
+
+// Camera Feature Enables
+#define AUTO_EXPOSURE_ENABLED true        // Enable automatic exposure control
+#define AUTO_WHITE_BALANCE_ENABLED true   // Enable automatic white balance
+#define LENS_CORRECTION_ENABLED true      // Enable lens distortion correction
 
 // ===========================
-// GPIO PIN ALLOCATION TABLE 
+// MOTION DETECTION CONFIGURATION
 // ===========================
-// AI-Thinker ESP32-CAM hardware-fixed pins (CANNOT CHANGE):
-// GPIO 0:  Camera XCLK
-// GPIO 4:  Camera LED/Flash  
-// GPIO 5:  Camera Y2
-// GPIO 18: Camera Y3
-// GPIO 19: Camera Y4
-// GPIO 21: Camera Y5  
-// GPIO 22: Camera PCLK
-// GPIO 23: Camera HREF
-// GPIO 25: Camera VSYNC
-// GPIO 26: Camera SIOD (I2C SDA)
-// GPIO 27: Camera SIOC (I2C SCL)
-// GPIO 32: Camera PWDN
-// GPIO 34: Camera Y8 (input only)
-// GPIO 35: Camera Y9 (input only)
-// GPIO 36: Camera Y6 (input only)
-// GPIO 39: Camera Y7 (input only)
-//
-// Available pins for other functions: 1, 2, 3, 12, 13, 14, 15, 16, 17, 33
-// (Note: GPIO 6-11 are flash pins and should be avoided)
 
-// Motion Detection
-#define PIR_PIN 1                         // PIR sensor pin - Using available GPIO 1
+// PIR Sensor Settings
+#define PIR_PIN 13                        // PIR sensor GPIO pin
 #define PIR_DEBOUNCE_TIME 2000           // ms - prevent multiple triggers
-#define MOTION_DETECTION_ENABLED true    
+#define PIR_TRIGGER_MODE RISING          // Interrupt trigger mode
+#define MOTION_DETECTION_ENABLED true    // Enable/disable motion detection
 #define MOTION_SENSITIVITY 50            // 0-100, higher = more sensitive
+#define MOTION_TIMEOUT 30000             // ms - motion detection timeout
+#define MOTION_CONSECUTIVE_THRESHOLD 3   // Number of consecutive motions to confirm
 
-// Weather Filtering
-#define WEATHER_FILTERING_ENABLED true
-#define WIND_THRESHOLD 15               // km/h - ignore motion above this wind speed
-#define RAIN_THRESHOLD 0.5             // mm/h - ignore motion during rain
-#define TEMP_COMP_ENABLED true         // Temperature compensation for PIR
-
-// ===========================
-// REALISTIC GPIO PIN ALLOCATION
-// ===========================
-// AI-Thinker ESP32-CAM has LIMITED available pins due to camera usage.
-// This configuration prioritizes core functionality and makes some features optional.
-//
-// AVAILABLE PINS: 2, 12, 13, 14, 15, 16, 17, 33 (only 8 pins!)
-// NEEDED FUNCTIONS: PIR(1) + LoRa(6) + SD(4) + LED(1) + Power(2) + Other(3) = 17 pins
-// 
-// SOLUTION: Use input-only pins for ADC, make some features optional/shared
-
-// Motion Detection - PRIORITY 1 
-// NOTE: PIR_PIN is defined above as GPIO 1
-
-// Weather Filtering
-#define WEATHER_FILTERING_ENABLED true
-#define WIND_THRESHOLD 15               // km/h - ignore motion above this wind speed
-#define RAIN_THRESHOLD 0.5             // mm/h - ignore motion during rain
-#define TEMP_COMP_ENABLED true         // Temperature compensation for PIR
-
-// Power Management - Use input-only pins for ADC readings
-#define SOLAR_VOLTAGE_PIN 34           // ADC pin - camera Y8 (shared, input-only)
-#define BATTERY_VOLTAGE_PIN 35         // ADC pin - camera Y9 (shared, input-only)
-#define SOLAR_VOLTAGE_THRESHOLD 3.2    // V - minimum solar voltage for charging
-#define BATTERY_LOW_THRESHOLD 3.0      // V - low battery warning
-#define BATTERY_CRITICAL_THRESHOLD 2.8 // V - critical battery level
-#define DEEP_SLEEP_DURATION 300        // seconds - sleep between checks
-#define CHARGING_LED_PIN 2             // Charging indicator LED - only remaining pin
+// Weather Filtering Settings
+#define WEATHER_FILTERING_ENABLED true   // Enable weather-based motion filtering
+#define WIND_THRESHOLD 15.0              // km/h - ignore motion above this wind speed
+#define RAIN_THRESHOLD 0.5               // mm/h - ignore motion during rain
+#define TEMP_COMP_ENABLED true           // Temperature compensation for PIR
+#define TEMP_STABILITY_THRESHOLD 2.0     // °C - temperature change threshold
+#define WEATHER_READING_INTERVAL 60000   // ms - how often to read weather sensors
 
 // ===========================
-// FINAL PIN ALLOCATION SUMMARY
+// POWER MANAGEMENT CONFIGURATION
 // ===========================
-// Available pins on AI-Thinker ESP32-CAM: 1, 2, 12, 13, 14, 15, 16, 17, 33 (9 pins)
-// 
-// ASSIGNED PINS (no conflicts):
-// GPIO 1:  PIR_PIN
-// GPIO 2:  CHARGING_LED_PIN
-// GPIO 12: LORA_MISO  
-// GPIO 13: Available (could be used for additional features)
-// GPIO 14: LORA_SCK
-// GPIO 15: LORA_MOSI
-// GPIO 16: LORA_CS
-// GPIO 17: LORA_RST
-// GPIO 33: LORA_DIO0
-//
-// SHARED PINS (camera + other functions):
-// GPIO 34: Camera Y8 + SOLAR_VOLTAGE_PIN (input-only, safe to share)
-// GPIO 35: Camera Y9 + BATTERY_VOLTAGE_PIN (input-only, safe to share)
-//
-// DISABLED FEATURES (due to pin conflicts):
-// - SD Card storage (conflicts with LoRa)
-// - Vibration sensor (conflicts with LoRa CS)
-// - IR LED night vision (conflicts with LoRa DIO0)
-// - Satellite communication (conflicts with LoRa and PIR)
-//
-// ALTERNATIVE: To enable SD card, set LORA_ENABLED to false
 
-// LoRa Mesh Network
-#define LORA_ENABLED true
-#define LORA_FREQUENCY 915E6           // 433E6, 868E6, 915E6
-#define LORA_TX_POWER 20              // dBm (5-20)
-#define LORA_SPREADING_FACTOR 7        // 6-12
-#define LORA_SIGNAL_BANDWIDTH 125E3    // 7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3
-#define LORA_CODING_RATE 5            // 5-8
-#define LORA_PREAMBLE_LENGTH 8        // 6-65535
-#define LORA_SYNC_WORD 0x12           // Network ID
+// ADC and Voltage Monitoring
+#define SOLAR_VOLTAGE_PIN 34             // ADC pin for solar voltage monitoring
+#define BATTERY_VOLTAGE_PIN 35           // ADC pin for battery voltage monitoring
+#define ADC_RESOLUTION 12                // ADC resolution in bits (12-bit = 0-4095)
+#define ADC_REFERENCE_VOLTAGE 3.3        // ADC reference voltage
+#define VOLTAGE_DIVIDER_RATIO 2.0        // Voltage divider ratio for scaling
+#define VOLTAGE_READINGS_COUNT 10        // Number of readings to average
+#define VOLTAGE_READING_DELAY 10         // ms - delay between voltage readings
+
+// Battery Thresholds (in volts)
+#define BATTERY_FULL_VOLTAGE 4.2         // Maximum battery voltage
+#define BATTERY_NORMAL_VOLTAGE 3.8       // Normal operation threshold
+#define BATTERY_GOOD_VOLTAGE 3.4         // Good battery level
+#define BATTERY_LOW_THRESHOLD 3.0        // Low battery warning threshold
+#define BATTERY_CRITICAL_THRESHOLD 2.8   // Critical battery level
+#define BATTERY_SHUTDOWN_VOLTAGE 2.5     // Emergency shutdown voltage
+
+// Solar Charging Configuration  
+#define SOLAR_VOLTAGE_THRESHOLD 3.2      // V - minimum solar voltage for charging
+#define SOLAR_CHARGING_VOLTAGE_MIN 4.0   // V - minimum solar voltage to start charging
+#define SOLAR_OPTIMAL_VOLTAGE 5.0        // V - optimal solar voltage
+
+// Power Management Timings
+#define VOLTAGE_CHECK_INTERVAL 5000      // ms - how often to check voltages
+#define POWER_LOG_INTERVAL 60000         // ms - how often to log power status
+#define DEEP_SLEEP_DURATION 300          // seconds - sleep between checks
+#define LOW_POWER_CPU_FREQ 80            // MHz - reduced CPU frequency for power saving
+
+// Power Indicator LED
+#define CHARGING_LED_PIN 2               // Charging indicator LED pin
 
 // ===========================
-// FINAL GPIO PIN ALLOCATION - CONFLICT FREE
+// LORA MESH NETWORK CONFIGURATION
 // ===========================
-// Available pins: 2, 12, 13, 14, 15, 16, 17, 33 (8 pins total)
-// Assignments (no conflicts):
 
-// LoRa Pins (6 pins needed) - CORRECTED TO AVOID ALL CONFLICTS  
-#define LORA_SCK 14     // Available (was conflicting with SD CLK)
-#define LORA_MISO 12    // Available (was conflicting with SD CS)
-#define LORA_MOSI 15    // Available (was conflicting with SD MOSI)
-#define LORA_CS 16      // Available 
-#define LORA_RST 17     // Available
-#define LORA_DIO0 33    // Available
+// LoRa Module Enable/Disable
+#define LORA_ENABLED true                // Enable/disable LoRa functionality
 
-// Network Configuration
-#define NODE_ID 1                     // Unique node identifier
-#define MAX_MESH_NODES 10            // Maximum nodes in mesh
-#define MESH_RETRY_COUNT 3           // Transmission retry attempts
-#define MESH_ACK_TIMEOUT 5000        // ms - acknowledgment timeout
+// LoRa Radio Configuration
+#define LORA_FREQUENCY 915E6             // Frequency: 433E6, 868E6, 915E6 Hz
+#define LORA_TX_POWER 20                 // TX Power: 5-20 dBm
+#define LORA_SPREADING_FACTOR 7          // Spreading Factor: 6-12
+#define LORA_SIGNAL_BANDWIDTH 125E3      // Bandwidth: 7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3
+#define LORA_CODING_RATE 5               // Coding Rate: 5-8
+#define LORA_PREAMBLE_LENGTH 8           // Preamble Length: 6-65535
+#define LORA_SYNC_WORD 0x12              // Network sync word (network ID)
+#define LORA_CRC_ENABLED true            // Enable CRC checking
 
-// File System - DISABLED DUE TO PIN CONFLICTS
-// NOTE: SD card functionality conflicts with LoRa pins on AI-Thinker ESP32-CAM
-// Either disable LoRa OR disable SD card, cannot have both with current pin layout
-#define SD_CARD_ENABLED false        // Disabled due to insufficient pins
-// #define SD_CS_PIN 12                 // CONFLICTS with LORA_MISO
-// #define SD_MOSI_PIN 15               // CONFLICTS with LORA_MOSI  
-// #define SD_CLK_PIN 14                // CONFLICTS with LORA_SCK
-// #define SD_MISO_PIN 2                // Available but only 1 pin not enough
-#define IMAGE_FOLDER "/images"       // Folder for captured images (LittleFS)
-#define LOG_FOLDER "/logs"          // Folder for system logs (LittleFS)
-#define MAX_FILES_PER_DAY 100       // Maximum images per day
+// LoRa GPIO Pin Configuration
+#define LORA_SCK 18                      // SPI clock pin
+#define LORA_MISO 19                     // SPI MISO pin
+#define LORA_MOSI 23                     // SPI MOSI pin
+#define LORA_CS 5                        // Chip select pin
+#define LORA_RST 14                      // Reset pin
+#define LORA_DIO0 26                     // DIO0 interrupt pin
 
-// Time Management
-#define NTP_SERVER "pool.ntp.org"
-#define GMT_OFFSET_SEC 0            // GMT offset in seconds
-#define DAYLIGHT_OFFSET_SEC 3600    // Daylight saving offset
+// Mesh Network Configuration
+#define NODE_ID 1                        // Unique node identifier (1-255)
+#define MAX_MESH_NODES 10                // Maximum nodes in mesh network
+#define MESH_RETRY_COUNT 3               // Transmission retry attempts
+#define MESH_ACK_TIMEOUT 5000            // ms - acknowledgment timeout
+#define MESH_ROUTE_TIMEOUT 30000         // ms - route discovery timeout
+#define MESH_HEARTBEAT_INTERVAL 60000    // ms - heartbeat message interval
+#define MESH_MAX_HOPS 5                  // Maximum hops for message forwarding
 
-// Environmental Sensors (BME280)
-#define BME280_ENABLED false        // Enable weather sensor
-#define BME280_ADDRESS 0x76         // I2C address
-#define BME280_SDA 21              // I2C data pin
-#define BME280_SCL 22              // I2C clock pin
+// Message Configuration
+#define LORA_MAX_PACKET_SIZE 255         // Maximum LoRa packet size
+#define LORA_MESSAGE_QUEUE_SIZE 10       // Maximum queued messages
+#define LORA_TRANSMISSION_TIMEOUT 10000  // ms - transmission timeout
 
-// ADXL345 Accelerometer
-#define ADXL345_ENABLED false       // Enable accelerometer
-#define ADXL345_ADDRESS 0x53        // I2C address (same bus as BME280)
+// ===========================
+// WIFI CONFIGURATION
+// ===========================
 
-// Additional Sensors - DISABLED DUE TO PIN CONFLICTS
-// NOTE: These sensors conflict with LoRa pins on AI-Thinker ESP32-CAM
-#define VIBRATION_ENABLED false       // Disabled - would conflict with LORA_CS pin 16
-// #define VIBRATION_PIN 16            // CONFLICTS with LORA_CS
-#define IR_LED_ENABLED false          // Disabled - would conflict with LORA_DIO0 pin 33
-// #define IR_LED_PIN 33               // CONFLICTS with LORA_DIO0  
-#define NIGHT_VISION_ENABLED false    // Disabled due to IR LED conflict
+#define WIFI_ENABLED false               // Enable/disable WiFi functionality
+#define WIFI_SSID ""                     // WiFi network name
+#define WIFI_PASSWORD ""                 // WiFi network password
+#define WIFI_TIMEOUT 10000               // ms - WiFi connection timeout
+#define WIFI_RETRY_COUNT 3               // WiFi connection retry attempts
+#define WIFI_SLEEP_MODE WIFI_PS_MIN_MODEM // WiFi power save mode
 
-// Trigger Settings
-#define TRIGGER_ACTIVE_HOURS_START 6   // Hour (24h format) - start active period
-#define TRIGGER_ACTIVE_HOURS_END 20    // Hour (24h format) - end active period
-#define NIGHT_MODE_ENABLED false       // Enable night photography
-#define MAX_DAILY_TRIGGERS 50          // Maximum triggers per day
+// ===========================
+// FILE SYSTEM CONFIGURATION
+// ===========================
 
-// Image Processing
-#define IMAGE_TIMESTAMP_ENABLED true   // Add timestamp to images
-#define IMAGE_COMPRESSION_ENABLED true // Enable image compression for transmission
-#define THUMBNAIL_ENABLED true         // Generate thumbnails for quick preview
-#define THUMBNAIL_SIZE 160             // Thumbnail width in pixels
+// SD Card Configuration
+#define SD_CS_PIN 12                     // SD card chip select pin
+#define SD_MOSI_PIN 15                   // SD card MOSI pin
+#define SD_CLK_PIN 14                    // SD card clock pin
+#define SD_MISO_PIN 2                    // SD card MISO pin
+#define SD_SPI_FREQ 40000000            // SD card SPI frequency (40MHz)
 
-// Debug and Logging
-#define DEBUG_ENABLED true
-#define SERIAL_BAUD_RATE 115200
-#define LOG_LEVEL_ERROR 0
-#define LOG_LEVEL_WARN 1
-#define LOG_LEVEL_INFO 2
-#define LOG_LEVEL_DEBUG 3
-#define CURRENT_LOG_LEVEL LOG_LEVEL_INFO
+// Storage Paths and Limits
+#define IMAGE_FOLDER "/images"           // Folder for captured images
+#define LOG_FOLDER "/logs"               // Folder for system logs
+#define CONFIG_FOLDER "/config"          // Folder for configuration files
+#define MAX_FILES_PER_DAY 100            // Maximum images per day
+#define MAX_FILE_SIZE 1048576            // Maximum file size (1MB)
+#define FILENAME_TIMESTAMP_FORMAT "%Y%m%d_%H%M%S" // Timestamp format for filenames
 
-// Firmware Information
-#define FIRMWARE_VERSION "1.0.0"
-#define HARDWARE_VERSION "1.0"
-#define BUILD_DATE __DATE__
-#define BUILD_TIME __TIME__
+// ===========================
+// TIME MANAGEMENT CONFIGURATION
+// ===========================
 
-// Pin Definitions for AI-Thinker ESP32-CAM
+// NTP Configuration
+#define NTP_ENABLED false                // Enable NTP time synchronization
+#define NTP_SERVER "pool.ntp.org"        // NTP server address
+#define GMT_OFFSET_SEC 0                 // GMT offset in seconds
+#define DAYLIGHT_OFFSET_SEC 3600         // Daylight saving offset in seconds
+#define NTP_UPDATE_INTERVAL 86400000     // ms - NTP update interval (24 hours)
+
+// RTC Configuration
+#define RTC_ENABLED false                // Enable external RTC module
+#define RTC_SDA_PIN 21                   // RTC I2C data pin
+#define RTC_SCL_PIN 22                   // RTC I2C clock pin
+
+// ===========================
+// ENVIRONMENTAL SENSORS CONFIGURATION
+// ===========================
+
+// BME280 Weather Sensor
+#define BME280_ENABLED false             // Enable BME280 weather sensor
+#define BME280_ADDRESS 0x76              // I2C address (0x76 or 0x77)
+#define BME280_SDA 21                    // I2C data pin
+#define BME280_SCL 22                    // I2C clock pin
+#define BME280_READING_INTERVAL 30000    // ms - sensor reading interval
+
+// Additional Environmental Sensors
+#define LIGHT_SENSOR_ENABLED false       // Enable light level sensor
+#define LIGHT_SENSOR_PIN 36              // ADC pin for light sensor
+#define WIND_SENSOR_ENABLED false        // Enable wind speed sensor
+#define WIND_SENSOR_PIN 39               // GPIO pin for wind sensor
+
+// ===========================
+// TRIGGER AND TIMING CONFIGURATION
+// ===========================
+
+// Active Hours Configuration
+#define TRIGGER_ACTIVE_HOURS_START 6     // Hour (24h format) - start active period
+#define TRIGGER_ACTIVE_HOURS_END 20      // Hour (24h format) - end active period
+#define NIGHT_MODE_ENABLED false         // Enable night photography
+#define MAX_DAILY_TRIGGERS 50            // Maximum triggers per day
+#define TRIGGER_COOLDOWN_PERIOD 5000     // ms - minimum time between triggers
+
+// Schedule Configuration
+#define DAILY_RESET_HOUR 0               // Hour to reset daily counters
+#define MAINTENANCE_HOUR 3               // Hour for maintenance tasks
+#define STATUS_REPORT_INTERVAL 300000    // ms - system status reporting interval (5 min)
+
+// ===========================
+// IMAGE PROCESSING CONFIGURATION
+// ===========================
+
+// Image Enhancement
+#define IMAGE_TIMESTAMP_ENABLED true     // Add timestamp overlay to images
+#define IMAGE_COMPRESSION_ENABLED true   // Enable image compression for transmission
+#define THUMBNAIL_ENABLED true           // Generate thumbnails for quick preview
+#define THUMBNAIL_SIZE 160               // Thumbnail width in pixels
+#define WATERMARK_ENABLED false          // Add watermark to images
+
+// Image Processing Settings
+#define AUTO_EXPOSURE_ENABLED true       // Enable automatic exposure adjustment
+#define AUTO_WHITE_BALANCE_ENABLED true  // Enable automatic white balance
+#define NOISE_REDUCTION_ENABLED true     // Enable noise reduction
+#define LENS_CORRECTION_ENABLED true     // Enable lens distortion correction
+
+// ===========================
+// DEBUG AND LOGGING CONFIGURATION
+// ===========================
+
+// Debug Settings
+#define DEBUG_ENABLED true               // Enable/disable debug output
+#define SERIAL_BAUD_RATE 115200          // Serial communication baud rate
+#define DEBUG_BUFFER_SIZE 256            // Debug message buffer size
+
+// Logging Levels
+#define LOG_LEVEL_ERROR 0                // Error messages only
+#define LOG_LEVEL_WARN 1                 // Warning and error messages
+#define LOG_LEVEL_INFO 2                 // Info, warning, and error messages
+#define LOG_LEVEL_DEBUG 3                // All messages including debug
+#define CURRENT_LOG_LEVEL LOG_LEVEL_INFO // Current logging level
+
+// Logging Configuration
+#define LOG_TO_SERIAL true               // Enable serial logging
+#define LOG_TO_FILE false                // Enable file logging
+#define LOG_FILE_MAX_SIZE 1048576        // Maximum log file size (1MB)
+#define LOG_ROTATION_ENABLED false       // Enable log file rotation
+
+// ===========================
+// FIRMWARE INFORMATION
+// ===========================
+
+#define FIRMWARE_VERSION "1.0.0"         // Firmware version string
+#define HARDWARE_VERSION "1.0"           // Hardware version string
+#define BUILD_DATE __DATE__               // Build date (automatically set)
+#define BUILD_TIME __TIME__               // Build time (automatically set)
+#define DEVICE_NAME "WildlifeCam"         // Device identification name
+
+// ===========================
+// PIN DEFINITIONS BY CAMERA MODEL
+// ===========================
+
+// AI-Thinker ESP32-CAM Pin Definitions
 #if defined(CAMERA_MODEL_AI_THINKER)
-#define PWDN_GPIO_NUM     32
-#define RESET_GPIO_NUM    -1
-#define XCLK_GPIO_NUM      0
-#define SIOD_GPIO_NUM     26
-#define SIOC_GPIO_NUM     27
+#define PWDN_GPIO_NUM     32             // Power down pin
+#define RESET_GPIO_NUM    -1             // Reset pin (not connected)
+#define XCLK_GPIO_NUM      0             // External clock pin
+#define SIOD_GPIO_NUM     26             // I2C data pin for camera
+#define SIOC_GPIO_NUM     27             // I2C clock pin for camera
 
-#define Y9_GPIO_NUM       35
-#define Y8_GPIO_NUM       34
-#define Y7_GPIO_NUM       39
-#define Y6_GPIO_NUM       36
-#define Y5_GPIO_NUM       21
-#define Y4_GPIO_NUM       19
-#define Y3_GPIO_NUM       18
-#define Y2_GPIO_NUM        5
-#define VSYNC_GPIO_NUM    25
-#define HREF_GPIO_NUM     23
-#define PCLK_GPIO_NUM     22
+// Camera Data Pins
+#define Y9_GPIO_NUM       35             // Camera data bit 9
+#define Y8_GPIO_NUM       34             // Camera data bit 8
+#define Y7_GPIO_NUM       39             // Camera data bit 7
+#define Y6_GPIO_NUM       36             // Camera data bit 6
+#define Y5_GPIO_NUM       21             // Camera data bit 5
+#define Y4_GPIO_NUM       19             // Camera data bit 4
+#define Y3_GPIO_NUM       18             // Camera data bit 3
+#define Y2_GPIO_NUM        5             // Camera data bit 2
+#define VSYNC_GPIO_NUM    25             // Vertical sync pin
+#define HREF_GPIO_NUM     23             // Horizontal reference pin
+#define PCLK_GPIO_NUM     22             // Pixel clock pin
 
-#define CAMERA_LED_PIN     4  // Built-in LED
+#define CAMERA_LED_PIN     4             // Built-in camera LED pin
 #endif
 
-// Utility Macros
+// TODO: Add pin definitions for other camera models as needed
+
+// ===========================
+// UTILITY MACROS AND FUNCTIONS
+// ===========================
+
+// Debug and logging macros
 #define DEBUG_PRINT(x) if(DEBUG_ENABLED) Serial.print(x)
 #define DEBUG_PRINTLN(x) if(DEBUG_ENABLED) Serial.println(x)
 #define DEBUG_PRINTF(format, ...) if(DEBUG_ENABLED) Serial.printf(format, ##__VA_ARGS__)
 
-// ===========================
-// TIMING CONFIGURATION
-// ===========================
-
-// System Update Intervals
-#define VOLTAGE_CHECK_INTERVAL 5000      // ms - interval for reading battery/solar voltages
-#define POWER_LOG_INTERVAL 60000         // ms - interval for logging power status
-#define SENSOR_READ_INTERVAL 1000        // ms - interval for reading environmental sensors
-#define HEARTBEAT_INTERVAL 30000         // ms - interval for sending network heartbeats
-
-// Communication Timeouts and Delays
-#define SERIAL_INIT_DELAY 1000           // ms - delay for serial initialization
-#define NETWORK_RETRY_DELAY 2000         // ms - delay between network transmission attempts
-#define SATELLITE_RESPONSE_DELAY 2000    // ms - delay waiting for satellite module response
-#define SATELLITE_WAKEUP_DELAY 100       // ms - delay for satellite module wake up
-#define LORA_TRANSMISSION_DELAY 1000     // ms - simulated delay for LoRa transmission
-#define COMMUNICATION_SETUP_DELAY 5000   // ms - delay for communication module setup
-
-// ===========================
-// HARDWARE CONFIGURATION
-// ===========================
-
-// ADC and Voltage Measurement
-#define ADC_RESOLUTION 12                // bits - ADC resolution (12-bit = 0-4095)
-#define VOLTAGE_DIVIDER_RATIO 2.0        // ratio for voltage divider circuits
-#define ADC_REFERENCE_VOLTAGE 3.3        // V - reference voltage for ADC
-#define VOLTAGE_CALIBRATION_SAMPLES 10   // number of samples for voltage averaging
-
-// ===========================
-// COMMUNICATION CONFIGURATION
-// ===========================
-
-// Satellite Communication - DISABLED DUE TO PIN CONFLICTS
-// NOTE: Satellite module pins conflict with LoRa on AI-Thinker ESP32-CAM
-#define SATELLITE_ENABLED false             // Disabled due to pin conflicts
-#define SATELLITE_BAUD_RATE 19200        // baud rate for satellite module communication
-#define SATELLITE_RETRY_COUNT 5          // number of retry attempts for satellite commands
-#define SATELLITE_MESSAGE_MAX_LENGTH 100 // max bytes per satellite message
-// #define SAT_SLEEP_PIN 12                 // CONFLICTS with LORA_MISO
-// #define SAT_RING_PIN 13                  // CONFLICTS with PIR_PIN
-
-// LoRa Mesh Network
-#define LORA_MESSAGE_QUEUE_SIZE 10       // maximum queued messages
-#define LORA_ROUTING_TABLE_SIZE MAX_MESH_NODES // size of routing table
-
-// Network Performance
-#define NETWORK_SCORE_EXCELLENT 100      // score for highest priority network
-#define CELLULAR_DATA_CHUNK_SIZE 512     // bytes per cellular transmission chunk
-
-// ===========================
-// ALGORITHM CONFIGURATION
-// ===========================
-
-// Motion Detection
-#define MOTION_CONSECUTIVE_THRESHOLD 3   // consecutive motions needed for valid detection
-#define DEFAULT_TEMPERATURE 20.0         // °C - default temperature for motion compensation
-
-// Data Compression
-#define RLE_MAX_COUNT 255                // maximum run-length encoding count
-#define COMPRESSION_MIN_EFFICIENCY 3     // minimum bytes for RLE compression
-#define BASE64_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
-// Image Processing
-#define THUMBNAIL_GENERATION_ENABLED true // enable thumbnail creation
-#define IMAGE_METADATA_ENABLED true      // enable image metadata embedding
-
-// ===========================
-// SYSTEM CONFIGURATION
-// ===========================
-
-// CPU Performance
-#define NORMAL_CPU_FREQUENCY 240         // MHz - normal operation frequency
-#define POWER_SAVE_CPU_FREQUENCY 80      // MHz - power saving mode frequency
-
-// Memory Management
-#define BUFFER_SIZE_SMALL 256            // bytes - small buffer size
-#define BUFFER_SIZE_MEDIUM 1024          // bytes - medium buffer size  
-#define BUFFER_SIZE_LARGE 4096           // bytes - large buffer size
-#define JSON_BUFFER_SMALL 256            // bytes - small JSON document buffer
-#define JSON_BUFFER_MEDIUM 512           // bytes - medium JSON document buffer
-#define JSON_BUFFER_LARGE 1024           // bytes - large JSON document buffer
-
-// Function-like macros for common operations
+// Voltage and ADC conversion macros
 #define VOLTAGE_TO_ADC(voltage) ((voltage) * 4095 / ADC_REFERENCE_VOLTAGE)
 #define ADC_TO_VOLTAGE(adc) ((adc) * ADC_REFERENCE_VOLTAGE / 4095)
 #define PERCENTAGE(value, max_value) ((value) * 100 / (max_value))
+
+// Time conversion macros
+#define SECONDS_TO_MS(sec) ((sec) * 1000)
+#define MINUTES_TO_MS(min) ((min) * 60 * 1000)
+#define HOURS_TO_MS(hour) ((hour) * 60 * 60 * 1000)
+
+// Memory and size macros
+#define KB_TO_BYTES(kb) ((kb) * 1024)
+#define MB_TO_BYTES(mb) ((mb) * 1024 * 1024)
+
+// Configuration validation macros
+#define VALIDATE_RANGE(value, min, max) ((value) >= (min) && (value) <= (max))
+#define CLAMP(value, min, max) ((value) < (min) ? (min) : ((value) > (max) ? (max) : (value)))
 
 #endif // CONFIG_H
