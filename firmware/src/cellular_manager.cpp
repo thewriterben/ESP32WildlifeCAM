@@ -7,6 +7,7 @@
  */
 
 #include "cellular_manager.h"
+#include "config.h"
 #include <Arduino.h>
 #include <HardwareSerial.h>
 
@@ -145,7 +146,7 @@ bool CellularManager::establishDataConnection() {
     
     // Activate context
     modemSerial.println("AT+CGACT=1,1");
-    delay(5000);
+    delay(COMMUNICATION_SETUP_DELAY);
     
     // Check if context is active
     modemSerial.println("AT+CGACT?");
@@ -214,7 +215,7 @@ bool CellularManager::sendSMS(const String& phoneNumber, const String& message) 
     // Send message
     modemSerial.print(message);
     modemSerial.write(26); // Ctrl+Z to send
-    delay(5000);
+    delay(COMMUNICATION_SETUP_DELAY);
     
     if (modemSerial.available()) {
         String response = modemSerial.readString();

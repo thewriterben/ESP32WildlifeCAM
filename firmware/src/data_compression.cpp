@@ -32,11 +32,11 @@ size_t DataCompression::compressImage(const uint8_t* imageData, size_t imageSize
         // Count consecutive identical bytes
         while (i + count < imageSize && 
                imageData[i + count] == currentByte && 
-               count < 255) {
+               count < RLE_MAX_COUNT) {
             count++;
         }
         
-        if (count > 3 || currentByte == 0xFF) {
+        if (count > COMPRESSION_MIN_EFFICIENCY || currentByte == 0xFF) {
             // Use RLE encoding
             compressedData[compressedSize++] = 0xFF; // Escape sequence
             compressedData[compressedSize++] = count;
@@ -193,7 +193,7 @@ size_t DataCompression::createThumbnail(const uint8_t* imageData, size_t imageSi
 }
 
 String DataCompression::encodeBase64(const uint8_t* data, size_t length) {
-    const char* chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const char* chars = BASE64_CHARS;
     String encoded = "";
     
     for (size_t i = 0; i < length; i += 3) {
