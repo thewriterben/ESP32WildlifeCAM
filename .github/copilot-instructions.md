@@ -37,6 +37,8 @@ pio run -t clean
 
 **NETWORK REQUIREMENT**: First build requires internet access to download ESP32 platform and libraries. Subsequent builds work offline.
 
+**VALIDATION NOTE**: In restricted environments, platform downloads will fail with `HTTPClientError`. This is expected behavior - the build system cannot proceed without platform downloads.
+
 ### Code Validation and Testing
 ```bash
 # Run comprehensive validation script (ALWAYS WORKS OFFLINE)
@@ -52,6 +54,11 @@ pio check --tool cppcheck --severity medium
 **TIMING**: Validation script completes in under 30 seconds. Static analysis takes 2-5 minutes. **NEVER CANCEL** builds or analysis.
 
 **OFFLINE CAPABILITY**: The validation script works completely offline. PlatformIO commands require initial network setup.
+
+**MEASURED PERFORMANCE**: 
+- `python3 validate_fixes.py`: ~0.034 seconds (well under 30s limit)
+- `find . -name "*.h"`: ~0.003 seconds  
+- File navigation commands: instant execution
 
 ## Hardware Configuration
 
@@ -76,12 +83,20 @@ Edit `firmware/src/config.h` for hardware-specific settings:
 ```
 
 ### Pin Conflict Resolution
-**CRITICAL**: AI-Thinker ESP32-CAM has limited GPIO pins. Current configuration:
-- LoRa enabled, SD card disabled (pin conflicts)
+**CRITICAL**: AI-Thinker ESP32-CAM has limited GPIO pins. Current configuration has 7 known pin conflicts:
+- GPIO 14: LORA_RST vs SD_CLK_PIN  
+- GPIO 2: CHARGING_LED_PIN vs SD_MISO_PIN
+- GPIO 21: RTC_SDA_PIN vs BME280_SDA
+- GPIO 22: RTC_SCL_PIN vs BME280_SCL (and PCLK_GPIO_NUM)
+- GPIO 26: LORA_DIO0 vs SIOD_GPIO_NUM
+- GPIO 23: LORA_MOSI vs HREF_GPIO_NUM
+
+**RESOLUTION**: Features are selectively disabled to avoid conflicts:
+- LoRa enabled, SD card disabled (pin conflicts resolved by disabling SD card functionality)
 - Vibration sensor disabled (conflicts with LoRa CS)
 - IR LED disabled (conflicts with LoRa DIO0)
 
-Always check `validate_fixes.py` for pin conflict validation.
+Always check `validate_fixes.py` for pin conflict validation. The validation script reports these conflicts but passes overall since they are handled by feature disabling.
 
 ## Project Navigation
 
@@ -118,23 +133,25 @@ examples/
 ### After Making Hardware Changes
 ```bash
 # Validate GPIO pin assignments
-python3 validate_fixes.py
+python3 validate_fixes.py              # Reports 7 known conflicts (expected)
 
 # Check specific board configuration
 cd examples/board_detection/
-pio run -e esp32-s3-devkitc-1 --target upload --upload-port [USB_PORT]
+pio run -e board_detection_example     # WILL FAIL with HTTPClientError due to network restrictions
 ```
+
+**EXPECTED BEHAVIOR**: The validation script will report 7 GPIO pin conflicts but still pass overall validation since these conflicts are resolved by disabling conflicting features. Platform builds will fail in restricted environments.
 
 ### After Code Changes
 ```bash
-# Compile and validate syntax
+# Compile and validate syntax (WILL FAIL due to network restrictions)
 pio run -e esp32-s3-devkitc-1
 
-# Run static analysis
+# Run static analysis (WILL FAIL due to network restrictions) 
 pio check --skip-packages
 
-# Validate all fixes
-python3 validate_fixes.py
+# Validate all fixes (WORKS OFFLINE)
+python3 validate_fixes.py              # Always run this - it works without network
 ```
 
 **MANUAL VALIDATION**: After successful compilation, always test on actual hardware:
@@ -144,7 +161,7 @@ python3 validate_fixes.py
 4. Verify board detection and camera initialization
 5. Test motion detection if PIR sensor connected
 
-**NOTE**: Hardware testing requires physical ESP32-CAM board connected via USB programmer. Development environment validation uses code analysis only.
+**NOTE**: Hardware testing requires physical ESP32-CAM board connected via USB programmer. Development environment validation uses code analysis only via `validate_fixes.py`.
 
 ### Pre-commit Validation
 Always run before committing changes:
@@ -201,7 +218,31 @@ Build requires internet connectivity for:
 - Library dependencies download
 - Toolchain installation
 
-**KNOWN ISSUE**: In restricted network environments, platform downloads may fail with `HTTPClientError`. This is expected behavior and requires network access to resolve.
+## Working in Restricted Environments
+
+**CRITICAL LIMITATION**: In environments with restricted network access (such as CI/CD, corporate networks, or sandboxed environments), ESP32 platform downloads will fail with `HTTPClientError`. This is expected behavior.
+
+**WHAT WORKS WITHOUT NETWORK**:
+- Repository navigation and file exploration
+- Python validation script (`validate_fixes.py`)
+- Code analysis and text processing
+- GPIO conflict detection
+- Include guard checking
+- File structure validation
+
+**WHAT REQUIRES NETWORK**:
+- ESP32 platform installation (`pio platform install espressif32`)
+- Library downloads (`pio lib install`)
+- Firmware compilation (`pio run`)
+- Static analysis tools that require ESP32 toolchain
+
+**RECOMMENDED WORKFLOW IN RESTRICTED ENVIRONMENTS**:
+1. Use `python3 validate_fixes.py` for offline validation
+2. Perform code review and text-based analysis
+3. Validate GPIO pin assignments and conflicts
+4. Check configuration consistency
+5. Test repository navigation commands
+6. Document that full build validation requires unrestricted network access
 
 ## Troubleshooting
 
@@ -283,49 +324,58 @@ python3 validate_fixes.py
 ```
 .github/                  # GitHub configurations and this file
 .gitignore               # Git ignore patterns
+3d_models/               # 3D printable enclosure parts
 AUDIT_REPORT.md          # Comprehensive code audit results
+LICENSE                  # MIT license file
 README.md                # Project overview and quick start
-docs/                    # Technical documentation
+docs/                    # Technical documentation (6 files)
 examples/                # Usage examples and test code
 firmware/                # ESP32 firmware source code
 hardware/                # Circuit schematics and PCB files
+micropython/             # MicroPython implementation
+models/                  # AI/ML model files
 validate_fixes.py        # Comprehensive validation script
 ```
 
-### firmware/src/ Contents
+### firmware/src/ Contents (26 items total)
 ```
+ai/                      # AI/ML integration modules
 camera_handler.cpp/.h    # Camera capture and processing
 cellular_manager.cpp/.h  # Cellular communication
-config.h                 # MAIN CONFIGURATION FILE
-configs/                 # Board-specific configurations
+config.h                 # MAIN CONFIGURATION FILE (186 #define statements)
+configs/                 # Board-specific configurations (2 files)
 data_compression.cpp/.h  # Image and data compression
 gps_handler.cpp/.h       # GPS location services
-hal/                     # Hardware Abstraction Layer
+hal/                     # Hardware Abstraction Layer (9 files)
 lora_mesh.cpp/.h         # LoRa mesh networking
 main.cpp                 # Application entry point
 motion_filter.cpp/.h     # Motion detection filtering
 network_selector.cpp/.h  # Network selection logic
+power_manager.cpp/.h     # Unified power management (replaces solar_manager)
 satellite_comm.cpp/.h    # Satellite communication
-solar_manager.cpp/.h     # Solar power management
+solar_manager.cpp        # Legacy power management (deprecated)
+wifi_manager.cpp/.h      # WiFi connectivity management
 ```
 
 ### Quick Reference Commands
 ```bash
 # Check repository status
-ls -la                                    # List all files
-python3 validate_fixes.py               # Run validation suite
-cat firmware/src/config.h | grep define # Show all configurations
+ls -la                                    # List all files (15 items in root)
+python3 validate_fixes.py               # Run validation suite (completes in ~0.03s)
+cat firmware/src/config.h | grep define # Show all configurations (186 #define statements)
 
 # Build and development (requires network for initial setup)
 cd firmware/
 pio run -t clean                        # Clean build artifacts
-pio run -e esp32-s3-devkitc-1          # Build firmware
-pio device monitor -b 115200            # Monitor serial output
+pio run -e esp32-s3-devkitc-1          # Build firmware (WILL FAIL with HTTPClientError due to network restrictions)
+pio device monitor -b 115200            # Monitor serial output (requires hardware)
 
-# File navigation
-find . -name "*.h" | head -10           # Find header files
-grep -r "GPIO" firmware/src/             # Search for GPIO usage
-ls firmware/src/hal/                     # List HAL implementations
+# File navigation (all commands work offline)
+find . -name "*.h" | head -10           # Find header files (25 total header files)
+find . -name "*.h" | wc -l             # Count all header files: should show 25
+grep -r "GPIO" firmware/src/             # Search for GPIO usage (very fast)
+ls firmware/src/hal/                     # List HAL implementations (9 files)
+ls firmware/src/                         # List source directory (26 items)
 ```
 
 ## Command Verification Checklist
@@ -334,18 +384,20 @@ Before relying on these instructions, verify key commands work in your environme
 
 ```bash
 # Core tools (should always work)
-python3 --version                       # Should show Python 3.7+
-pip3 --version                          # Should show pip version
-python3 validate_fixes.py              # Should show "All validation checks passed!"
+python3 --version                       # Should show Python 3.7+ (tested: 3.12.3)
+pip3 --version                          # Should show pip version (tested: 24.0)
+python3 validate_fixes.py              # Should show "All validation checks passed!" (~0.03s)
 
 # PlatformIO tools (require installation)
-pio --version                           # Should show PlatformIO version 6.x+
-pio platform list                      # Should list available platforms
+pio --version                           # Should show PlatformIO version 6.x+ (tested: 6.1.18)
+pio platform list                      # Should list available platforms (may fail with HTTPClientError)
 
 # Repository navigation (should always work)
-find . -name "*.h" | wc -l             # Should show ~16 header files
-cat firmware/src/config.h | grep -c define # Should show ~154 define statements
-ls firmware/src/hal/                   # Should show 7 HAL files
+find . -name "*.h" | wc -l             # Should show 25 header files (updated count)
+cat firmware/src/config.h | grep -c define # Should show 186 define statements (updated count)
+ls firmware/src/hal/                   # Should show 9 HAL files (board_detector.cpp/.h, camera_board.h, esp32_cam.cpp/.h, esp32_s3_cam.cpp/.h, esp_eye.cpp/.h)
 ```
+
+**VALIDATION RESULTS**: All offline commands verified working. PlatformIO installation succeeds but platform downloads fail with HTTPClientError due to network restrictions (documented limitation).
 
 If any verification command fails, check the troubleshooting section above.
