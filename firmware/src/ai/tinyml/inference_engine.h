@@ -1,9 +1,10 @@
 /**
  * @file inference_engine.h
- * @brief TinyML Inference Engine for ESP32 Wildlife Camera
+ * @brief Enhanced TinyML Inference Engine for ESP32 Wildlife Camera
  * 
  * Provides a unified interface for running TensorFlow Lite models
- * on ESP32 hardware with optimizations for wildlife detection.
+ * on ESP32 hardware with advanced optimizations for wildlife detection,
+ * intelligent caching, and predictive model loading.
  */
 
 #ifndef INFERENCE_ENGINE_H
@@ -12,6 +13,7 @@
 #include "../ai_common.h"
 #include <vector>
 #include <memory>
+#include <set>
 
 // Forward declarations for TensorFlow Lite
 namespace tflite {
@@ -19,6 +21,10 @@ namespace tflite {
     class Model;
     class MicroOpResolver;
 }
+
+// Forward declarations for AI optimization classes
+class ModelCache;
+class ModelPredictor;
 
 /**
  * Model Types supported by the inference engine
@@ -32,10 +38,11 @@ enum class ModelType {
 };
 
 /**
- * TinyML Inference Engine Class
+ * Enhanced TinyML Inference Engine Class
  * 
  * Handles loading, optimizing, and running TensorFlow Lite models
- * optimized for ESP32 hardware constraints.
+ * optimized for ESP32 hardware constraints with intelligent caching
+ * and predictive model management.
  */
 class InferenceEngine {
 public:
@@ -49,13 +56,24 @@ public:
     void unloadModel(ModelType type);
     bool isModelLoaded(ModelType type) const;
     
-    // Inference operations
+    // Enhanced inference operations with caching
     AIResult runInference(const CameraFrame& frame, ModelType type);
     std::vector<AIResult> runMultipleInference(const CameraFrame& frame);
+    
+    // Predictive model management
+    std::vector<ModelType> getPredictedModels(float temperature = 25.0f, float lightLevel = 0.5f);
+    void preloadPredictedModels();
+    float getPredictedAccuracy(ModelType type);
+    
+    // Cache management
+    float getCacheHitRate() const;
+    void clearCache();
+    void printCacheStats();
     
     // Performance and optimization
     void enableQuantization(bool enable = true);
     void enablePowerOptimization(bool enable = true);
+    void enableIntelligentCaching(bool enable = true);
     void setMemoryLimit(size_t maxMemoryBytes);
     AIMetrics getPerformanceMetrics() const;
     void resetMetrics();
@@ -70,10 +88,19 @@ public:
     float getConfidenceThreshold() const;
     void setMaxInferenceTime(unsigned long maxTimeMs);
     
+    // Progressive inference settings
+    void enableEarlyExit(bool enable = true);
+    void setEarlyExitThreshold(float threshold);
+    
+    // Environmental adaptation
+    void updateEnvironmentalConditions(float temperature, float humidity, float lightLevel);
+    void enableContextualConfidence(bool enable = true);
+    
     // Debug and diagnostics
     bool testModel(ModelType type);
     void printModelDetails(ModelType type);
     bool validateModelIntegrity(ModelType type);
+    void printSystemDiagnostics();
 
 private:
     struct ModelContainer {
@@ -84,9 +111,12 @@ private:
         size_t arenaSize;
         ModelInfo info;
         bool isLoaded;
+        unsigned long lastUsed;
+        uint32_t usageCount;
         
         ModelContainer() : 
-            tensorArena(nullptr), arenaSize(0), isLoaded(false) {}
+            tensorArena(nullptr), arenaSize(0), isLoaded(false),
+            lastUsed(0), usageCount(0) {}
         ~ModelContainer();
     };
 
@@ -101,15 +131,43 @@ private:
     bool allocateTensorArena(ModelContainer* container, size_t requiredSize);
     void deallocateTensorArena(ModelContainer* container);
     
-    // Preprocessing and postprocessing
+    // Enhanced preprocessing and postprocessing
     bool preprocessImage(const CameraFrame& frame, float* inputTensor, ModelType type);
+    bool preprocessImageEnhanced(const CameraFrame& frame, float* inputTensor, ModelType type);
+    bool preprocessForMotionDetection(const CameraFrame& frame, float* inputTensor);
+    bool preprocessForSpeciesClassification(const CameraFrame& frame, float* inputTensor);
+    bool preprocessForBehaviorAnalysis(const CameraFrame& frame, float* inputTensor);
+    
     AIResult postprocessOutput(const float* outputTensor, ModelType type, const CameraFrame& frame);
+    AIResult postprocessOutputEnhanced(const float* outputTensor, ModelType type, const CameraFrame& frame);
+    
+    // Progressive inference
+    float quickMotionCheck(const CameraFrame& frame);
+    bool shouldUseEarlyExit(ModelType type, float preliminaryConfidence);
+    
+    // Context-aware processing
+    float calculateContextualConfidence(const AIResult& result, const CameraFrame& frame);
+    float calculateImageBrightness(const CameraFrame& frame);
+    float getTimeOfDayFactor();
+    
+    // Intelligent caching and prediction
+    std::unique_ptr<ModelCache> modelCache_;
+    std::unique_ptr<ModelPredictor> modelPredictor_;
+    bool intelligentCachingEnabled_;
     
     // Optimization features
     bool quantizationEnabled_;
     bool powerOptimizationEnabled_;
+    bool earlyExitEnabled_;
+    bool contextualConfidenceEnabled_;
     float confidenceThreshold_;
+    float earlyExitThreshold_;
     unsigned long maxInferenceTime_;
+    
+    // Environmental conditions
+    float currentTemperature_;
+    float currentHumidity_;
+    float currentLightLevel_;
     
     // Performance tracking
     mutable AIMetrics metrics_;
@@ -130,6 +188,7 @@ private:
     static const size_t DEFAULT_ARENA_SIZE = 64 * 1024;  // 64KB
     static const size_t MAX_MEMORY_LIMIT = 512 * 1024;   // 512KB
     static const float DEFAULT_CONFIDENCE_THRESHOLD;
+    static const float DEFAULT_EARLY_EXIT_THRESHOLD;
     static const unsigned long DEFAULT_MAX_INFERENCE_TIME;
 };
 
