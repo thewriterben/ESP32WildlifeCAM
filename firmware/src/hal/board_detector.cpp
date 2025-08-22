@@ -6,6 +6,7 @@
 #include "board_detector.h"
 #include "esp32_cam.h"
 #include "esp32_s3_cam.h"
+#include "esp_eye.h"
 #include "../config.h"
 #include <esp_system.h>
 #include <esp_chip_info.h>
@@ -66,9 +67,7 @@ std::unique_ptr<CameraBoard> BoardDetector::createBoard(BoardType type) {
             return std::make_unique<ESP32S3CAM>();
             
         case BOARD_ESP_EYE:
-            // ESP-EYE implementation not yet completed, falling back to ESP32-CAM
-            DEBUG_PRINTLN("ESP-EYE not yet implemented, falling back to ESP32-CAM");
-            return std::make_unique<ESP32CAM>();
+            return std::make_unique<ESPEYE>();
             
         case BOARD_M5STACK_TIMER_CAM:
             // M5Stack Timer Camera implementation not yet completed, falling back to ESP32-CAM
@@ -110,8 +109,8 @@ bool BoardDetector::isBoardSupported(BoardType type) {
     switch (type) {
         case BOARD_AI_THINKER_ESP32_CAM:
         case BOARD_ESP32_S3_CAM:
-            return true;
         case BOARD_ESP_EYE:
+            return true;
         case BOARD_M5STACK_TIMER_CAM:
         case BOARD_TTGO_T_CAMERA:
         case BOARD_XIAO_ESP32S3_SENSE:
@@ -163,7 +162,19 @@ BoardType BoardDetector::detectByPinConfiguration() {
             }
         }
     } else if (strstr(chip_model, "ESP32")) {
-        DEBUG_PRINTLN("ESP32 chip detected, checking for ESP32-CAM configuration");
+        DEBUG_PRINTLN("ESP32 chip detected, checking for board configurations");
+        
+        // Test for ESP-EYE specific pin configuration first
+        // ESP-EYE uses GPIO 4 for XCLK and GPIO 21 for LED, no PWDN pin
+        if (testGPIOPin(4, false)) { // GPIO 4 for XCLK
+            if (testGPIOPin(21, false)) { // GPIO 21 for LED
+                // Additional verification - ESP-EYE typically has PSRAM
+                if (hasPSRAM()) {
+                    DEBUG_PRINTLN("ESP-EYE pin configuration detected");
+                    return BOARD_ESP_EYE;
+                }
+            }
+        }
         
         // Test for AI-Thinker ESP32-CAM pin configuration
         // Check if GPIO 0 (XCLK) is available - common for ESP32-CAM
