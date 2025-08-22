@@ -29,8 +29,8 @@ SatelliteComm::SatelliteComm() :
 bool SatelliteComm::initialize(SatelliteModule module) {
     moduleType = module;
     
-    // Initialize serial communication
-    satSerial.begin(19200);
+    // Initialize serial communication with configurable baud rate
+    satSerial.begin(SATELLITE_BAUD_RATE);
     
     // Configure control pins
     pinMode(SAT_SLEEP_PIN, OUTPUT);
@@ -56,10 +56,10 @@ bool SatelliteComm::initialize(SatelliteModule module) {
 bool SatelliteComm::initializeIridium() {
     Serial.println("Initializing Iridium 9603N module");
     
-    // Test AT communication
-    for (int i = 0; i < 5; i++) {
+    // Test AT communication with configurable retry count
+    for (int i = 0; i < SATELLITE_RETRY_COUNT; i++) {
         satSerial.println("AT");
-        delay(1000);
+        delay(SERIAL_INIT_DELAY);
         if (satSerial.available()) {
             String response = satSerial.readString();
             if (response.indexOf("OK") != -1) {
@@ -77,7 +77,7 @@ bool SatelliteComm::initializeSwarm() {
     
     // Swarm uses different command structure
     satSerial.println("$CS*");
-    delay(2000);
+    delay(SATELLITE_RESPONSE_DELAY);
     
     if (satSerial.available()) {
         String response = satSerial.readString();
@@ -116,9 +116,9 @@ void SatelliteComm::configureSwarm() {
 
 void SatelliteComm::wakeUpModule() {
     digitalWrite(SAT_SLEEP_PIN, HIGH);
-    delay(100);
+    delay(SATELLITE_WAKEUP_DELAY);
     digitalWrite(SAT_SLEEP_PIN, LOW);
-    delay(2000); // Wait for module to wake up
+    delay(SATELLITE_RESPONSE_DELAY); // Wait for module to wake up
 }
 
 bool SatelliteComm::checkSatelliteAvailability() {
@@ -347,7 +347,7 @@ void SatelliteComm::exitSleepMode() {
     wakeUpModule();
     
     // Re-establish communication
-    delay(5000);
+    delay(COMMUNICATION_SETUP_DELAY);
     
     switch (moduleType) {
         case MODULE_IRIDIUM:

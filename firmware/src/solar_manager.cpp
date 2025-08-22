@@ -39,7 +39,7 @@ bool init() {
     pinMode(CHARGING_LED_PIN, OUTPUT);
     
     // Set ADC resolution for better accuracy
-    analogReadResolution(12);  // 12-bit resolution (0-4095)
+    analogReadResolution(ADC_RESOLUTION);  // Configurable ADC resolution
     
     // Initial voltage readings
     update();
@@ -58,13 +58,13 @@ void update() {
     
     unsigned long now = millis();
     
-    // Update voltages every 5 seconds
-    if (now - lastVoltageCheck > 5000) {
-        // Read battery voltage (assuming voltage divider)
-        batteryVoltage = readVoltage(BATTERY_VOLTAGE_PIN, 2.0);
+    // Update voltages at configured interval
+    if (now - lastVoltageCheck > VOLTAGE_CHECK_INTERVAL) {
+        // Read battery voltage (using configured voltage divider ratio)
+        batteryVoltage = readVoltage(BATTERY_VOLTAGE_PIN, VOLTAGE_DIVIDER_RATIO);
         
-        // Read solar panel voltage (assuming voltage divider)
-        solarVoltage = readVoltage(SOLAR_VOLTAGE_PIN, 2.0);
+        // Read solar panel voltage (using configured voltage divider ratio)
+        solarVoltage = readVoltage(SOLAR_VOLTAGE_PIN, VOLTAGE_DIVIDER_RATIO);
         
         // Update power state
         updatePowerState();
@@ -74,9 +74,9 @@ void update() {
         
         lastVoltageCheck = now;
         
-        // Log status every minute
+        // Log status at configured interval
         static unsigned long lastLog = 0;
-        if (now - lastLog > 60000) {
+        if (now - lastLog > POWER_LOG_INTERVAL) {
             logPowerStatus();
             lastLog = now;
         }
@@ -265,7 +265,7 @@ void enterPowerSaving() {
     DEBUG_PRINTLN("Entering power saving mode...");
     
     // Reduce system clock frequency
-    setCpuFrequencyMhz(80);  // Reduce from 240MHz to 80MHz
+    setCpuFrequencyMhz(POWER_SAVE_CPU_FREQUENCY);  // Configurable power saving frequency
     
     // Turn off non-essential peripherals
     // This would typically include disabling WiFi, reducing camera quality, etc.
@@ -280,7 +280,7 @@ void exitPowerSaving() {
     DEBUG_PRINTLN("Exiting power saving mode...");
     
     // Restore normal system clock
-    setCpuFrequencyMhz(240);
+    setCpuFrequencyMhz(NORMAL_CPU_FREQUENCY);
     
     // Re-enable peripherals as needed
     

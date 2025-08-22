@@ -23,7 +23,7 @@ static bool motionDetected = false;
 static int consecutiveMotions = 0;
 static float currentWindSpeed = 0.0;
 static float currentRainfall = 0.0;
-static float currentTemperature = 20.0;
+static float currentTemperature = DEFAULT_TEMPERATURE;
 
 #ifdef BME280_ENABLED
 static Adafruit_BME280 bme;
