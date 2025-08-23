@@ -198,21 +198,28 @@
 #define DAYLIGHT_OFFSET_SEC 3600         // Daylight saving offset in seconds
 #define NTP_UPDATE_INTERVAL 86400000     // ms - NTP update interval (24 hours)
 
-// RTC Configuration - DISABLED due to BME280 I2C pin conflicts  
-#define RTC_ENABLED false                // External RTC disabled due to I2C conflicts
-// #define RTC_SDA_PIN 21                // CONFLICTS with BME280_SDA
-// #define RTC_SCL_PIN 22                // CONFLICTS with BME280_SCL and PCLK_GPIO_NUM
+// RTC Configuration - CAN NOW BE ENABLED with ESP-IDF I2C system
+#define RTC_ENABLED true                 // NOW ENABLED with smart I2C pin assignment
+#define RTC_TYPE_DS3231 true             // Use DS3231 RTC (more accurate)
+#define RTC_TYPE_PCF8563 false           // Alternative RTC option
 
 // ===========================
 // ENVIRONMENTAL SENSORS CONFIGURATION
 // ===========================
 
-// BME280 Weather Sensor - DISABLED due to I2C pin conflicts with camera
-#define BME280_ENABLED false             // Disabled due to I2C pin conflicts with camera and RTC
-// #define BME280_ADDRESS 0x76           // I2C address (0x76 or 0x77)
-// #define BME280_SDA 21                 // CONFLICTS with RTC_SDA_PIN and camera Y5 pin
-// #define BME280_SCL 22                 // CONFLICTS with RTC_SCL_PIN and PCLK_GPIO_NUM
-#define BME280_READING_INTERVAL 30000    // ms - sensor reading interval (unused when disabled)
+// ===========================
+// ESP-IDF I2C SYSTEM CONFIGURATION
+// ===========================
+
+// ESP-IDF I2C System - Replaces Arduino Wire library with intelligent pin management
+#define ESP_IDF_I2C_ENABLED true         // Enable ESP-IDF native I2C system
+#define I2C_MASTER_ENABLED true          // Enable I2C master mode
+#define I2C_SLAVE_ENABLED true           // Enable I2C slave mode for multi-board communication
+#define I2C_AUTO_PIN_ASSIGNMENT true     // Automatically resolve pin conflicts per board
+
+// BME280 Weather Sensor - NOW ENABLED with ESP-IDF I2C system
+#define BME280_ENABLED true              // ENABLED with smart pin assignment
+#define BME280_READING_INTERVAL 30000    // ms - sensor reading interval
 
 // Additional Environmental Sensors - DISABLED due to camera pin conflicts
 #define LIGHT_SENSOR_ENABLED false       // Disabled due to GPIO 36 conflict with Y6_GPIO_NUM
