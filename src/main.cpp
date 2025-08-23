@@ -25,12 +25,16 @@
 #include "camera/camera_manager.h"
 #include "detection/hybrid_motion_detector.h"
 #include "power/power_manager.h"
+#include "ai/wildlife_classifier.h"
+#include "data/data_collector.h"
 #include "utils/logger.h"
 
 // System components
 CameraManager cameraManager;
 HybridMotionDetector motionDetector;
 PowerManager powerManager;
+WildlifeClassifier wildlifeClassifier;
+DataCollector dataCollector;
 
 // System state
 bool systemInitialized = false;
@@ -154,7 +158,7 @@ void resetDailyCounts() {
 }
 
 /**
- * @brief Handle motion detection and image capture
+ * @brief Handle motion detection and image capture with AI analysis
  */
 void handleMotionEvent() {
     LOG_DEBUG("Processing motion event...");
@@ -178,6 +182,32 @@ void handleMotionEvent() {
         systemStats.totalImages++;
         
         LOG_INFO("Image captured: " + result.filename + " (" + String(result.imageSize) + " bytes, " + String(result.captureTime) + "ms)");
+        
+        // Perform AI classification if enabled
+        if (wildlifeClassifier.isEnabled()) {
+            WildlifeClassifier::ClassificationResult aiResult = wildlifeClassifier.classifyFrame(result.frameBuffer);
+            
+            if (aiResult.isValid) {
+                LOG_INFO("Species detected: " + aiResult.speciesName + " (confidence: " + String(aiResult.confidence, 2) + ")");
+                
+                // Collect classification data
+                dataCollector.collectClassificationData(result.frameBuffer->buf, result.frameBuffer->len, aiResult);
+                
+                // Check for dangerous species
+                if (WildlifeClassifier::isDangerousSpecies(aiResult.species)) {
+                    LOG_WARNING("Dangerous species detected: " + aiResult.speciesName);
+                }
+            } else {
+                // Collect motion data without classification
+                dataCollector.collectMotionData(result.frameBuffer->buf, result.frameBuffer->len, 0.8f, "Hybrid");
+            }
+        } else {
+            // Collect motion data only
+            dataCollector.collectMotionData(result.frameBuffer->buf, result.frameBuffer->len, 0.8f, "Hybrid");
+        }
+        
+        // Return frame buffer
+        cameraManager.returnFrameBuffer(result.frameBuffer);
         
         // Update statistics
         systemStats.motionEvents++;
@@ -311,6 +341,22 @@ void setup() {
     if (!motionDetector.initialize(&cameraManager)) {
         LOG_CRITICAL("Motion detector initialization failed");
         return;
+    }
+    
+    // Initialize AI wildlife classifier
+    if (!wildlifeClassifier.initialize()) {
+        LOG_WARNING("Wildlife classifier initialization failed - continuing without AI");
+        // Continue without AI functionality
+    } else {
+        LOG_INFO("Wildlife classifier initialized successfully");
+    }
+    
+    // Initialize data collector
+    if (!dataCollector.initialize()) {
+        LOG_WARNING("Data collector initialization failed - continuing with basic functionality");
+        // Continue without advanced data collection
+    } else {
+        LOG_INFO("Data collector initialized successfully");
     }
     
     // Configure motion detector for wildlife monitoring
