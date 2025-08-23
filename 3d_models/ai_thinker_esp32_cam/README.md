@@ -26,7 +26,7 @@ This directory contains 3D printable enclosures specifically designed for the AI
 ### Mounting System
 - **solar_panel_mount_bracket.stl** - Adjustable solar panel mount
   - Fits standard 5V solar panels (80-120mm)
-  - Tilt adjustment: 0-45 degrees
+  - Tilt adjustment: 0-45°
   - Secure panel attachment points
 
 - **tree_mounting_strap_clips.stl** - Tree mounting clips
