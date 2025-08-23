@@ -1,34 +1,65 @@
 # ESP32 Wildlife Camera Project
 
-A solar-powered wildlife trail camera system built with ESP32-S3, featuring intelligent motion detection, LoRa mesh networking, and weatherproof design.
+Professional-grade solar-powered wildlife monitoring system featuring OV5640 5MP camera, IR Cut filter, and advanced AI-powered motion detection.
 
-## 🌟 Features
+## 🌟 Enhanced Features (v2.0)
 
-- **ESP32-S3** with high-resolution camera module
-- **Solar-powered** using repurposed solar path lights
-- **LoRa mesh networking** for remote deployment
-- **Weather motion filtering** to eliminate false positives
-- **3D printable** weatherproof enclosure
-- **Low power consumption** with deep sleep optimization
-- **Modular architecture** for easy customization
+### 📸 **OV5640 5MP Camera System**
+- **Full 5MP Resolution** (2592x1944) wildlife photography
+- **Auto Focus Capability** for sharp animal captures
+- **IR Cut Filter Control** for 24/7 day/night operation
+- **Wildlife-Optimized Settings** for color accuracy and detail
+
+### 🔍 **Advanced Motion Detection**
+- **PIR Sensor Integration** with configurable sensitivity
+- **Weather Filtering** to eliminate false positives from wind/rain
+- **Intelligent Triggering** with animal behavior analysis
+- **Motion Statistics** and pattern recognition
+
+### ⚡ **Professional Power Management**
+- **Solar Power Optimization** with MPPT charging
+- **Extended Battery Life** through intelligent deep sleep
+- **Voltage Monitoring** for battery and solar panel health
+- **Low Power Mode** for extended field deployment
+
+### 🌐 **Connectivity & Remote Monitoring**
+- **WiFi Web Interface** for configuration and image access
+- **REST API** for integration with monitoring systems
+- **Real-time Status** monitoring and diagnostics
+- **OTA Updates** for field-deployed cameras
+
+### 🏠 **Field-Ready Design**
+- **Weatherproof Operation** (IP65+ rated enclosures)
+- **Temperature Compensation** (-20°C to +60°C operation)
+- **Professional Mounting** systems for long-term deployment
+- **Anti-theft Features** and tamper detection
 
 ## 📋 Hardware Requirements
 
-### Core Components
-- ESP32-S3 development board with PSRAM
-- OV2640 or OV5640 camera module
-- LoRa radio module (SX1276 or SX1262)
-- Solar panel (5V, 2W minimum)
-- 18650 Li-ion battery (3000mAh+)
-- TP4056 charging module
-- PIR motion sensor
-- Weather sensors (optional: BME280)
+### 🎯 **Recommended Configuration (OV5640 5MP System)**
+- **Main Board**: LilyGO T-Camera Plus S3 (ESP32-S3 with PSRAM)
+- **Camera**: OV5640 5MP module with auto focus
+- **IR Cut Filter**: AP1511B_FBC with GPIO16 control
+- **Motion Sensor**: PIR sensor on GPIO17
+- **Storage**: MicroSD card (Class 10, 32GB+)
+- **Power**: 6V 2W solar panel + 3.7V 2000mAh LiPo battery
 
-### Power Management
-- Solar panel: 5V/2W (repurposed path light)
-- Battery: 18650 Li-ion 3.7V 3000mAh
-- Charging: TP4056 with protection
-- Power consumption: <100µA in sleep mode
+### 🔧 **Core Components**
+- ESP32-S3 development board with PSRAM (8MB recommended)
+- **OV5640 5MP camera** (primary) or OV2640/OV3660 (compatible)
+- **IR Cut filter mechanism** for day/night switching
+- **PIR motion sensor** with adjustable sensitivity
+- Solar panel (6V, 2W minimum for 24/7 operation)
+- LiPo battery (3.7V, 2000mAh+ for 2-3 day autonomy)
+- TP4056 charging module with protection
+- Weather sensors (optional: BME280 for environmental data)
+
+### ⚡ **Power System Specifications**
+- **Solar Panel**: 6V/2W monocrystalline (weather resistant)
+- **Battery**: 3.7V LiPo 2000-5000mAh (temperature rated)
+- **Charging**: TP4056 with overcurrent/undervoltage protection
+- **Consumption**: <10µA deep sleep, 100-300mA active operation
+- **Autonomy**: 3+ days without sunlight (with 2000mAh battery)
 
 ## 📷 Supported Camera Boards
 
@@ -36,25 +67,43 @@ The ESP32WildlifeCAM project supports **15 different ESP32 camera boards**, maki
 
 ### Fully Supported Boards ✅
 
-| Board | Chip | PSRAM | Features | Power Profile |
-|-------|------|-------|----------|---------------|
-| **AI-Thinker ESP32-CAM** | ESP32 | Optional | Most popular, good all-around | 120mA active, 10mA sleep |
-| **ESP32-S3-CAM** | ESP32-S3 | Yes | High performance, AI ready | 100mA active, 7mA sleep |
-| **ESP-EYE** | ESP32 | Yes | Espressif official, OLED display | 110mA active, 8mA sleep |
-| **M5Stack Timer CAM** | ESP32 | Optional | Battery optimized, external power | 90mA active, 5mA sleep |
-| **TTGO T-Camera** | ESP32 | Yes | Built-in display, compact | 95mA active, 6mA sleep |
-| **XIAO ESP32S3 Sense** | ESP32-S3 | Yes | Ultra-compact, microphone | 80mA active, 4mA sleep |
-| **FireBeetle ESP32-CAM** | ESP32 | Optional | **Extreme low power design** | 70mA active, 3mA sleep |
-| **ESP32-S3-EYE** | ESP32-S3 | Yes | Advanced AI vision board | 100mA active, 5mA sleep |
-| **Freenove ESP32-WROVER-CAM** | ESP32 | Yes | Educational favorite, well documented | 110mA active, 8mA sleep |
-| **M5Stack ESP32CAM** | ESP32 | Optional | Stackable modular design | 95mA active, 6mA sleep |
+| Board | Chip | PSRAM | Features | Power Profile | **OV5640 Support** |
+|-------|------|-------|----------|---------------|-------------------|
+| **LilyGO T-Camera Plus S3** | ESP32-S3 | Yes | **🌟 OV5640 5MP + IR Cut optimized** | 80mA active, 3mA sleep | **✅ Full Support** |
+| **ESP32-S3-CAM** | ESP32-S3 | Yes | High performance, AI ready | 100mA active, 7mA sleep | **✅ Compatible** |
+| **ESP32-S3-EYE** | ESP32-S3 | Yes | Advanced AI vision board | 100mA active, 5mA sleep | **✅ Compatible** |
+| **AI-Thinker ESP32-CAM** | ESP32 | Optional | Most popular, OV2640 standard | 120mA active, 10mA sleep | **⚠️ Limited** |
+| **ESP-EYE** | ESP32 | Yes | Espressif official, OLED display | 110mA active, 8mA sleep | **⚠️ Limited** |
+| **XIAO ESP32S3 Sense** | ESP32-S3 | Yes | Ultra-compact, microphone | 80mA active, 4mA sleep | **✅ Compatible** |
+| **M5Stack Timer CAM** | ESP32 | Optional | Battery optimized, external power | 90mA active, 5mA sleep | **⚠️ OV2640 Only** |
+| **TTGO T-Camera** | ESP32 | Yes | Built-in display, compact | 95mA active, 6mA sleep | **⚠️ OV2640 Only** |
+| **FireBeetle ESP32-CAM** | ESP32 | Optional | Extreme low power design | 70mA active, 3mA sleep | **⚠️ OV2640 Only** |
+| **Freenove ESP32-WROVER-CAM** | ESP32 | Yes | Educational favorite, well documented | 110mA active, 8mA sleep | **⚠️ OV2640 Only** |
 
-**📖 For detailed hardware specifications and deployment guides, see [docs/deployment/](docs/deployment/README.md)**
-| **TTGO T-Journal** | ESP32 | Yes | E-paper display integration | 120mA active, 8mA sleep |
-| **LilyGO T-Camera Plus** | ESP32 | Yes | Enhanced features | 90mA active, 5mA sleep |
-| **Espressif ESP32-CAM-MB** | ESP32 | Optional | Official development board | 115mA active, 9mA sleep |
-| **M5Stack UnitCAM** | ESP32 | Optional | **Tiny form factor** for stealth | 70mA active, 3mA sleep |
-| **TTGO T-Camera V1.7** | ESP32 | Yes | Latest version with improvements | 85mA active, 4mA sleep |
+### 🎯 **Recommended Boards for OV5640 5MP System**
+
+#### **🥇 Primary Recommendation: LilyGO T-Camera Plus S3**
+- **Full OV5640 5MP support** with optimized pin configuration
+- **Built-in IR Cut filter control** (AP1511B_FBC on GPIO16)
+- **Enhanced power management** for solar operation
+- **ESP32-S3 performance** for image processing and AI features
+- **Professional wildlife monitoring** capabilities
+
+#### **🥈 Alternative Options: ESP32-S3 Based Boards**
+- Compatible with OV5640 with minor pin reassignment
+- Full processing power for 5MP image handling
+- PSRAM support for large image buffers
+- Future-proof for AI and advanced features
+
+### **📋 OV5640 Compatibility Matrix**
+
+| Feature | T-Camera Plus S3 | ESP32-S3-CAM | ESP32-S3-EYE | Other ESP32-S3 | ESP32 Boards |
+|---------|------------------|--------------|--------------|----------------|--------------|
+| **5MP Capture** | ✅ Native | ✅ Full | ✅ Full | ✅ Full | ⚠️ Limited RAM |
+| **Auto Focus** | ✅ Optimized | ✅ Basic | ✅ Basic | ✅ Basic | ❌ No Support |
+| **IR Cut Filter** | ✅ Built-in | 🔧 External | 🔧 External | 🔧 External | 🔧 External |
+| **Power Efficiency** | ✅ Excellent | ✅ Good | ✅ Good | ✅ Good | ⚠️ Higher |
+| **Wildlife Features** | ✅ Optimized | ✅ Compatible | ✅ Compatible | ✅ Compatible | ⚠️ Basic |
 
 ### Wildlife-Specific Optimizations
 
@@ -86,12 +135,77 @@ Each board implementation includes optimizations specifically for wildlife monit
 
 ### Board Selection Guide
 
+**For OV5640 5MP Wildlife Monitoring**: LilyGO T-Camera Plus S3 (Primary), ESP32-S3-CAM  
 **For Maximum Battery Life**: FireBeetle ESP32-CAM, M5Stack UnitCAM
 **For AI/ML Features**: ESP32-S3-EYE, ESP32-S3-CAM, XIAO ESP32S3 Sense  
 **For Stealth Monitoring**: XIAO ESP32S3 Sense, M5Stack UnitCAM
 **For Development/Testing**: AI-Thinker ESP32-CAM, ESP-EYE
-**For Remote Deployment**: M5Stack Timer CAM, LilyGO T-Camera Plus
+**For Remote Deployment**: M5Stack Timer CAM, LilyGO T-Camera Plus S3
 **For Educational Use**: Freenove ESP32-WROVER-CAM, ESP-EYE
+
+---
+
+## 🚀 Quick Start - OV5640 5MP System
+
+### **📦 Example Applications**
+
+#### **🦌 Complete Wildlife Monitoring System**
+```bash
+# Upload the comprehensive monitoring application
+platformio run --target upload --environment esp32-cam \
+  --upload-port /dev/ttyUSB0 \
+  examples/wildlife_monitoring_ov5640.ino
+```
+
+**Features:**
+- **5MP Image Capture** with automatic quality optimization
+- **PIR Motion Detection** with configurable sensitivity  
+- **Day/Night IR Cut Control** for 24/7 operation
+- **Solar Power Management** with battery monitoring
+- **WiFi Web Interface** for remote configuration
+- **SD Card Storage** with timestamped files and metadata
+
+#### **🔬 IR Cut Filter Testing Utility**
+```bash
+# Test IR Cut filter operation
+platformio run --target upload --environment esp32-cam \
+  --upload-port /dev/ttyUSB0 \
+  examples/ir_cut_test.ino
+```
+
+**Features:**
+- **Manual IR Cut Control** via serial commands
+- **Automatic Day/Night Cycling** tests
+- **Image Comparison** between day/night modes
+- **Performance Measurement** of filter response time
+- **Visual LED Feedback** for operation status
+
+### **📚 Documentation**
+
+#### **🎯 [Enhanced OV5640 Wildlife Guide](docs/Enhanced_OV5640_Wildlife_Guide.md)**
+Complete setup and usage guide covering:
+- OV5640 5MP sensor optimization
+- IR Cut filter integration and control  
+- Professional wildlife monitoring features
+- API reference and configuration options
+- Field deployment best practices
+
+#### **🔧 [Hardware Setup Guide](docs/Hardware_Setup.md)**
+Detailed hardware assembly instructions:
+- Bill of materials and component specifications
+- Pin connection diagrams for T-Camera Plus S3
+- Power system sizing and solar panel setup
+- Enclosure assembly and weatherproofing
+- Testing procedures and troubleshooting
+
+#### **⚙️ [WiFi Configuration Template](wifi_config.h)**
+Secure network configuration:
+- WiFi credentials and connectivity settings
+- MQTT broker and cloud storage configuration
+- Security best practices and encryption
+- Remote monitoring and OTA update setup
+
+---
 
 ### Automatic Board Detection
 
