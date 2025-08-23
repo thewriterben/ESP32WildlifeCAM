@@ -42,6 +42,13 @@
 #include "hal/board_detector.h"
 #include "audio/acoustic_detection.h"
 
+// Meshtastic Integration
+#include "meshtastic/mesh_config.h"
+#include "meshtastic/lora_driver.h"
+#include "meshtastic/mesh_interface.h"
+#include "meshtastic/wildlife_telemetry.h"
+#include "meshtastic/image_mesh.h"
+
 // AI/ML Integration (conditionally compiled)
 #ifdef ESP32_AI_ENABLED
 #include "ai/ai_wildlife_system.h"
@@ -103,10 +110,17 @@ private:
     AcousticDetection audioSystem;
     std::unique_ptr<CameraBoard> detectedBoard;
     
+    // Meshtastic subsystems
+    LoRaDriver* loraDriver;
+    MeshInterface* meshInterface;
+    WildlifeTelemetry* wildlifeTelemetry;
+    ImageMesh* imageMesh;
+    
     // System state
     bool sdCardInitialized;
     bool loraInitialized;
     bool audioInitialized;
+    bool meshInitialized;
     unsigned long lastMotionTime;
     unsigned long bootTime;
     int dailyTriggerCount;
@@ -123,6 +137,9 @@ private:
     bool initializeFileSystem();
     bool initializeSDCard();
     bool initializeLoRa();
+    bool initializeMeshNetwork();
+    bool initializeWildlifeTelemetry();
+    bool initializeImageMesh();
     bool initializeAudioSystem();
     bool isWithinActiveHours();
     void resetDailyCounts();
