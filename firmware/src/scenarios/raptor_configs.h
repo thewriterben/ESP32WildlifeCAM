@@ -19,7 +19,8 @@ enum class RaptorScenario {
     NESTING_MONITORING,      // Ultra-low disturbance nesting site monitoring
     MIGRATION_TRACKING,      // Seasonal migration pattern documentation
     HUNTING_BEHAVIOR,        // Predation pattern and prey selection analysis
-    TERRITORIAL_BOUNDARY     // Territorial dispute and boundary monitoring
+    TERRITORIAL_BOUNDARY,    // Territorial dispute and boundary monitoring
+    GENERAL_MONITORING       // General-purpose wildlife monitoring
 };
 
 /**

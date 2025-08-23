@@ -301,6 +301,103 @@
 #define LOG_ROTATION_ENABLED false       // Enable log file rotation
 
 // ===========================
+// AUDIO MONITORING CONFIGURATION
+// ===========================
+
+// Audio System Enable/Disable
+#define AUDIO_MONITORING_ENABLED true    // Enable comprehensive audio monitoring
+#define AUDIO_TRIGGERED_CAPTURE true     // Enable sound-triggered camera activation
+#define AUDIO_RECORDING_ENABLED true     // Enable audio file recording
+#define AUDIO_WILDLIFE_DETECTION true    // Enable wildlife sound classification
+
+// Hardware Configuration
+#define I2S_MICROPHONE_ENABLED true      // Enable I2S digital microphone support
+#define ANALOG_MICROPHONE_ENABLED false  // Enable analog microphone support (ADC-based)
+#define MICROPHONE_AMPLIFIER_ENABLED false // Enable external microphone amplifier
+
+// I2S Microphone Configuration (INMP441 and similar)
+// Note: I2S pins reuse SD card pins when SD is disabled for LoRa
+#define I2S_WS_PIN 15                     // I2S Word Select (LR Clock) pin - SD_MOSI_PIN when SD disabled
+#define I2S_SCK_PIN 14                    // I2S Serial Clock pin - SD_CLK_PIN when SD disabled  
+#define I2S_SD_PIN 2                      // I2S Serial Data pin - SD_MISO_PIN when SD disabled
+#define I2S_PORT I2S_NUM_0                // I2S port number
+#define I2S_SAMPLE_RATE 16000             // Default sample rate (Hz)
+#define I2S_BITS_PER_SAMPLE 16            // Bits per audio sample
+#define I2S_CHANNELS 1                    // Number of audio channels (mono)
+
+// Analog Microphone Configuration (when enabled)
+// Note: Analog microphone reuses camera Y6 pin when camera is in digital-only mode
+#define ANALOG_MIC_PIN 36                 // ADC pin for analog microphone - Y6_GPIO_NUM when camera disabled
+#define ANALOG_MIC_GAIN 1.0               // Analog microphone gain multiplier
+#define ANALOG_MIC_BIAS_VOLTAGE 1.65      // Bias voltage for electret microphones
+#define ADC_SAMPLE_RATE 8000              // ADC sampling rate for analog microphone
+
+// Audio Processing Configuration
+#define AUDIO_BUFFER_SIZE_MS 100          // Audio buffer size in milliseconds
+#define AUDIO_PROCESSING_INTERVAL 50      // Audio processing interval in milliseconds
+#define AUDIO_FFT_SIZE 512                // FFT size for frequency analysis
+#define AUDIO_WINDOW_OVERLAP 0.5          // Window overlap for spectral analysis
+
+// Sound Detection Thresholds
+#define SOUND_DETECTION_THRESHOLD 0.1     // Sound detection threshold (0.0-1.0)
+#define WILDLIFE_DETECTION_THRESHOLD 0.7  // Wildlife sound confidence threshold
+#define NOISE_GATE_THRESHOLD 0.05         // Noise gate threshold to filter quiet sounds
+#define SOUND_TRIGGER_DURATION_MS 500     // Minimum sound duration to trigger camera (ms)
+
+// Audio Quality and Compression
+#define AUDIO_SAMPLE_RATES {8000, 16000, 44100} // Supported sample rates
+#define AUDIO_DEFAULT_SAMPLE_RATE 16000   // Default sample rate for recording
+#define AUDIO_COMPRESSION_ENABLED true    // Enable audio compression for storage
+#define AUDIO_COMPRESSION_QUALITY 4       // Compression quality (1-10, higher=better)
+
+// Recording Configuration
+#define AUDIO_MAX_RECORDING_DURATION 300  // Maximum recording duration in seconds
+#define AUDIO_PRE_TRIGGER_DURATION 2      // Pre-trigger audio buffer duration in seconds
+#define AUDIO_POST_TRIGGER_DURATION 5     // Post-trigger recording duration in seconds
+#define AUDIO_FILE_FORMAT_WAV true        // Enable WAV file format
+#define AUDIO_FILE_ROTATION_SIZE_MB 10    // Audio file rotation size in MB
+
+// Frequency Analysis Configuration
+#define WILDLIFE_FREQ_MIN 100             // Minimum frequency for wildlife detection (Hz)
+#define WILDLIFE_FREQ_MAX 8000            // Maximum frequency for wildlife detection (Hz)
+#define RAPTOR_FREQ_MIN 200               // Minimum frequency for raptor calls (Hz)
+#define RAPTOR_FREQ_MAX 4000              // Maximum frequency for raptor calls (Hz)
+#define BIRD_FREQ_MIN 500                 // Minimum frequency for general bird calls (Hz)
+#define BIRD_FREQ_MAX 6000                // Maximum frequency for general bird calls (Hz)
+
+// Environmental Sound Filtering
+#define WIND_NOISE_FILTER_ENABLED true    // Enable wind noise filtering
+#define RAIN_NOISE_FILTER_ENABLED true    // Enable rain noise filtering
+#define HUMAN_VOICE_FILTER_ENABLED true   // Enable human voice filtering
+#define VEHICLE_NOISE_FILTER_ENABLED true // Enable vehicle noise filtering
+
+// Power Management for Audio
+#define AUDIO_LOW_POWER_MODE true         // Enable low power audio monitoring
+#define AUDIO_DEEP_SLEEP_DURATION 30      // Audio system sleep duration in seconds
+#define AUDIO_CONTINUOUS_MONITORING false // Enable 24/7 audio monitoring (high power)
+#define AUDIO_SCHEDULED_MONITORING true   // Enable scheduled audio monitoring
+#define AUDIO_ACTIVE_HOURS_START 5        // Start hour for audio monitoring
+#define AUDIO_ACTIVE_HOURS_END 22         // End hour for audio monitoring
+
+// Data Storage and Logging
+#define AUDIO_EVENT_LOGGING true          // Enable audio event logging
+#define AUDIO_METADATA_LOGGING true       // Enable detailed audio metadata logging
+#define AUDIO_SPECTROGRAM_STORAGE false   // Enable spectrogram image storage (high storage)
+#define AUDIO_RAW_DATA_STORAGE false      // Enable raw audio data storage (very high storage)
+
+// Performance and Memory Configuration
+#define AUDIO_TASK_PRIORITY 2             // Audio processing task priority
+#define AUDIO_TASK_STACK_SIZE 8192        // Audio task stack size
+#define AUDIO_DMA_BUFFER_COUNT 4          // Number of DMA buffers for I2S
+#define AUDIO_DMA_BUFFER_SIZE 1024        // Size of each DMA buffer
+
+// Pin Conflict Resolution Notes:
+// - I2S pins use SD card pins when SD is disabled for LoRa
+// - Analog microphone uses camera Y6 pin when analog mode is selected
+// - Audio system automatically switches between I2S and analog based on configuration
+// - LoRa mesh networking takes priority over audio when both enabled
+
+// ===========================
 // HMI (HUMAN MACHINE INTERFACE) CONFIGURATION
 // ===========================
 

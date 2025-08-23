@@ -17,6 +17,15 @@
 #include <deque>
 
 /**
+ * Microphone Types
+ */
+enum class MicrophoneType {
+    I2S_DIGITAL,                // I2S digital microphone (INMP441, etc.)
+    ANALOG_ADC,                 // Analog microphone via ADC
+    UNKNOWN
+};
+
+/**
  * Audio Processing Configuration
  */
 struct AudioConfig {
@@ -344,12 +353,25 @@ private:
     RaptorScenario currentScenario;
     AudioConfig audioConfig;
     
+    // Hardware state
+    MicrophoneType microphoneType;
+    uint32_t sampleRate;
+    uint32_t bufferSize;
+    
     // Audio processing components
     std::unique_ptr<uint8_t[]> audioBuffer;
     std::unique_ptr<float[]> fftBuffer;
     std::unique_ptr<float[]> spectrogramBuffer;
     std::deque<int16_t> audioHistory;
     static const size_t MAX_AUDIO_HISTORY = 44100 * 30; // 30 seconds at 44.1kHz
+    
+    // Task management
+    static bool g_audioTaskRunning;
+    static TaskHandle_t g_audioTaskHandle;
+    
+    // Performance tracking
+    unsigned long lastProcessingTime;
+    uint64_t totalSamplesProcessed;
     
     // Call pattern database
     std::vector<CallPattern> callDatabase;
@@ -362,22 +384,44 @@ private:
     
     // Environmental calibration
     struct {
-        bool calibrated;
-        float baselineNoise_dB;
-        std::vector<float> noiseProfile;        // Background noise by frequency
+        float backgroundNoiseLevel_dB;
+        float windNoiseLevel_dB;
+        unsigned long lastCalibrationTime;
         float adaptiveThreshold;
-        unsigned long lastCalibration;
+        std::vector<float> noiseProfile;        // Background noise by frequency
     } environmentalState;
     
     // Performance tracking
     struct {
-        uint32_t totalSamples;
-        float totalProcessingTime;
-        uint32_t totalDetections;
-        uint32_t confirmedDetections;
+        uint32_t samplesProcessed;
+        float averageProcessingTime_ms;
+        uint32_t callsDetected;
         uint32_t falsePositives;
-        unsigned long lastPerformanceUpdate;
+        float accuracyRate_percent;
+        float cpuUsage_percent;
+        float memoryUsage_KB;
     } performanceMetrics;
+    
+    // Hardware initialization methods
+    bool initI2SMicrophone();
+    bool initAnalogMicrophone();
+    bool allocateBuffers();
+    void initializeCallDatabase();
+    bool startAudioTask();
+    static void audioTaskWrapper(void* parameter);
+    void audioProcessingTask();
+    void cleanup();
+    
+    // Audio data acquisition
+    bool readAudioData();
+    bool readI2SAudioData();
+    bool readAnalogAudioData();
+    void processAudioBuffer();
+    
+    // Utility methods
+    const char* getSpeciesName(RaptorSpecies species);
+    void triggerCameraCapture(const AcousticDetectionResult& result);
+    void updatePerformanceMetrics();
     
     // Audio processing methods
     void preprocessAudio(int16_t* audioData, uint32_t sampleCount);
@@ -415,7 +459,6 @@ private:
     
     // Database management
     void loadDefaultCallPatterns();
-    void initializeCallDatabase();
     bool loadCallPatternFromFile(const String& filename);
     void optimizeCallDatabase();
     
@@ -426,7 +469,6 @@ private:
     std::vector<float> computeMFCC(const float* melSpectrum, uint32_t size);
     
     // Performance optimization
-    void updatePerformanceMetrics(float processingTime, bool validDetection);
     void optimizeProcessingParameters();
     bool shouldSkipProcessing() const;
     void manageMemoryUsage();
