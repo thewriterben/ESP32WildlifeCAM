@@ -1,43 +1,100 @@
 # 3D Models - ESP32 Wildlife Camera
 
-This is a placeholder README for the 3D printable components of the ESP32 Wildlife Camera project.
+This directory contains 3D printable enclosures and mounting hardware for the ESP32 Wildlife Camera system, supporting multiple board types and deployment scenarios.
 
 ## Overview
 
-This directory contains 3D models for printing weatherproof enclosures and mounting hardware for the ESP32 Wildlife Camera system.
+The 3D models are organized by board type and use case, providing complete enclosure solutions from budget-friendly conservation projects to professional wildlife monitoring installations.
 
 ## File Structure
 
 ```
 3d_models/
-├── README.md              # This file
-├── enclosure/             # Main housing components
-│   ├── main_body.stl      # Primary enclosure body
-│   ├── lid.stl           # Weatherproof lid
-│   └── camera_mount.stl   # Camera mounting bracket
-└── mounting/              # Mounting brackets and hardware
-    ├── tree_mount.stl     # Tree mounting bracket
-    ├── post_mount.stl     # Post mounting bracket
-    └── adjustable_arm.stl # Adjustable positioning arm
+├── README.md                           # This file
+├── ai_thinker_esp32_cam/              # AI-Thinker ESP32-CAM specific enclosures
+│   ├── README.md                      # Detailed AI-Thinker documentation
+│   ├── ai_thinker_main_enclosure.stl  # Primary weatherproof housing
+│   ├── ai_thinker_front_cover.stl     # Transparent camera cover
+│   ├── ai_thinker_back_cover.stl      # Access panel with hinges
+│   ├── solar_panel_mount_bracket.stl  # Adjustable solar mount
+│   ├── tree_mounting_strap_clips.stl  # Tree mounting system
+│   └── ventilation_grilles.stl        # Condensation prevention
+├── budget_enclosures/                 # Cost-effective universal designs
+│   ├── README.md                      # Budget project guide
+│   ├── basic_wildlife_cam_case.stl    # Universal ESP32 housing
+│   ├── solar_panel_mount.stl          # Simple fixed-angle mount
+│   ├── camera_lens_hood.stl           # Lens protection
+│   └── battery_compartment.stl        # 18650 battery housing
+├── esp32_s3_cam/                      # ESP32-S3-CAM future support
+│   └── README.md                      # Planned development guide
+└── common/                            # Shared components
+    ├── mounting_hardware.stl          # Universal mounting brackets
+    ├── cable_management.stl           # Cable routing solutions
+    └── weatherproofing_gaskets.stl    # Rubber gasket profiles
 ```
+
+## Board Compatibility Matrix
+
+| Board Type | Enclosure Directory | Status | Notes |
+|------------|-------------------|---------|-------|
+| AI-Thinker ESP32-CAM | `ai_thinker_esp32_cam/` | ✅ Complete | Primary support, full feature set |
+| ESP32-S3-CAM | `esp32_s3_cam/` | 🔄 Planned | Future development |
+| Generic ESP32 | `budget_enclosures/` | ✅ Available | Universal compatibility |
+| ESP-EYE | `budget_enclosures/` | ⚠️ Compatible | Use universal designs |
+| M5Stack Timer Camera | `budget_enclosures/` | ⚠️ Compatible | May require modifications |
+
+## Design Categories
+
+### Professional Deployment (`ai_thinker_esp32_cam/`)
+- **Target**: Research installations, long-term monitoring
+- **Features**: IP65 weatherproofing, modular design, professional mounting
+- **Materials**: PETG/ASA for durability
+- **Cost**: $15-25 per unit
+
+### Budget Conservation (`budget_enclosures/`)
+- **Target**: Educational projects, community conservation
+- **Features**: Simple assembly, minimal material usage
+- **Materials**: PLA with UV coating acceptable
+- **Cost**: Under $10 per unit
+
+### Future Platforms (`esp32_s3_cam/`)
+- **Target**: Next-generation ESP32-S3 boards
+- **Features**: Enhanced processing, AI integration
+- **Status**: Development planned for 2025
 
 ## Printing Guidelines
 
-### Recommended Settings
-- **Layer Height**: 0.2mm
-- **Infill**: 20-30%
-- **Material**: PETG or ABS (outdoor durability)
-- **Support**: Required for overhangs >45°
+### Material Selection by Use Case
 
-### Material Recommendations
+**Long-term Outdoor (1+ years):**
+- **ASA**: Best UV resistance, requires enclosed printer
+- **PETG**: Good balance of printability and durability
+- **ABS**: Strong and temperature resistant
 
-**Outdoor Deployment:**
-- PETG: Good UV resistance, easier to print
-- ABS: Higher temperature resistance
-- ASA: Best UV resistance for long-term outdoor use
+**Short-term/Budget (6-12 months):**
+- **PLA+**: Enhanced PLA with better outdoor performance
+- **PLA with UV coating**: Most economical option
 
-**Indoor/Short-term:**
-- PLA: Easy to print, adequate for testing
+**Prototyping/Testing:**
+- **PLA**: Fastest and easiest for initial testing
+
+### Optimized Print Settings
+
+```
+Professional Enclosures:
+- Layer Height: 0.2mm
+- Infill: 25-30%
+- Walls: 3 perimeters (1.2mm)
+- Top/Bottom: 5 layers
+- Support: Required for overhangs >45°
+
+Budget Enclosures:
+- Layer Height: 0.3mm (faster)
+- Infill: 15-20%
+- Walls: 2 perimeters (0.8mm)
+- Top/Bottom: 3 layers
+- Support: Minimized by design
+```
 
 ## Assembly Instructions
 
