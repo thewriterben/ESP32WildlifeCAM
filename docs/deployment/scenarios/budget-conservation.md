@@ -36,11 +36,16 @@ Budget conservation deployments focus on cost-effective wildlife monitoring for 
 
 ### Basic Weather Protection
 ```stl
-// Files available in hardware/3d_models/budget_enclosures/
+// Files available in 3d_models/budget_enclosures/
 - basic_wildlife_cam_case.stl      // Main enclosure
 - solar_panel_mount.stl            // Panel mounting bracket
 - camera_lens_hood.stl             // Lens protection
 - battery_compartment.stl          // Secure battery housing
+
+// Common components in 3d_models/common/
+- mounting_hardware.stl            // Universal mounting brackets
+- cable_management.stl             // Cable routing solutions
+- weatherproofing_gaskets.stl      // Flexible sealing gaskets
 ```
 
 ### Camouflage Designs

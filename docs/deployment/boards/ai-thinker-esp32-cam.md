@@ -287,13 +287,18 @@ struct EnclosureSpecifications {
 
 ### 3D Printable Enclosure
 ```stl
-// 3D printable files available in hardware/3d_models/ai_thinker/
+// 3D printable files available in 3d_models/ai_thinker_esp32_cam/
 - ai_thinker_main_enclosure.stl          // Main housing
 - ai_thinker_front_cover.stl             // Camera front cover
 - ai_thinker_back_cover.stl              // Access panel
 - solar_panel_mount_bracket.stl          // Solar panel mount
 - tree_mounting_strap_clips.stl          // Tree mounting clips
 - ventilation_grilles.stl                // Condensation prevention
+
+// Common components in 3d_models/common/
+- mounting_hardware.stl                  // Universal mounting system
+- cable_management.stl                   // Cable routing and strain relief
+- weatherproofing_gaskets.stl            // Flexible sealing gaskets
 ```
 
 ## Firmware Optimization
