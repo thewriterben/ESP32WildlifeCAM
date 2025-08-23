@@ -296,6 +296,193 @@ The AI-Thinker ESP32-CAM is the most popular and cost-effective ESP32 camera boa
 #define AVAILABLE_SENSORS {12, 13, 14, 15, 16}  // More options available
 ```
 
+## Troubleshooting
+
+### Common Issues
+
+#### Camera Initialization Failed
+**Symptoms**: "Camera init failed with error 0x..." in serial monitor
+
+**Solutions**:
+1. **Check Power Supply**:
+   ```cpp
+   // Add voltage check to your code
+   if (getVoltage() < 3.2) {
+       Serial.println("ERROR: Voltage too low for camera operation");
+   }
+   ```
+2. **Verify Camera Module Connection**: Ensure camera module is properly seated
+3. **Check I2C Communication**: 
+   ```cpp
+   Wire.begin(SIOD_GPIO_NUM, SIOC_GPIO_NUM);
+   Wire.beginTransmission(0x30);  // OV2640 I2C address
+   if (Wire.endTransmission() == 0) {
+       Serial.println("Camera I2C communication OK");
+   }
+   ```
+4. **Reset Camera Module**: 
+   ```cpp
+   digitalWrite(PWDN_GPIO_NUM, HIGH);
+   delay(100);
+   digitalWrite(PWDN_GPIO_NUM, LOW);
+   delay(100);
+   ```
+
+#### Upload/Programming Issues
+**Problem**: "Failed to connect to ESP32" or upload timeout
+
+**Solutions**:
+1. **Verify Programming Mode**:
+   - GPIO 0 MUST be connected to GND during upload
+   - Press and hold RESET, then release to enter programming mode
+   
+2. **Check Connections**:
+   ```
+   Double-check:
+   ESP32-CAM TX -> FTDI RX
+   ESP32-CAM RX -> FTDI TX  (Most common error - these should be crossed)
+   ESP32-CAM GND -> FTDI GND
+   ESP32-CAM 5V -> FTDI 5V
+   ```
+
+3. **Power Supply Issues**:
+   - Use external 5V power supply if FTDI cannot provide enough current
+   - Add 470μF capacitor between 5V and GND for power stability
+
+4. **Driver Issues**:
+   - Install latest FTDI drivers from manufacturer website
+   - Try different USB ports
+   - Check Device Manager for proper COM port recognition
+
+#### Brownout Detector Triggered
+**Symptoms**: "Brownout detector was triggered" error message
+
+**Solutions**:
+1. **Increase Power Supply Current**: Use external 2A power supply
+2. **Add Power Filtering**: 
+   ```
+   - 470μF electrolytic capacitor (5V to GND)
+   - 100nF ceramic capacitor (3.3V to GND)
+   ```
+3. **Lower CPU Frequency**: Set to 160MHz instead of 240MHz in Arduino IDE
+4. **Disable Power-Hungry Features**: Turn off WiFi during camera initialization
+
+### Pin Conflicts
+
+#### SD Card vs External Sensors
+**Issue**: Cannot use SD card and LoRa/sensors simultaneously
+
+**Solution**: Choose configuration based on needs:
+```cpp
+// Configuration 1: SD Card Priority
+#define ENABLE_SD_CARD true
+#define ENABLE_LORA false
+// Available pins: 13, 16 only
+
+// Configuration 2: Sensor Priority  
+#define ENABLE_SD_CARD false
+#define ENABLE_LORA true
+// Available pins: 12, 13, 14, 15, 16
+```
+
+#### GPIO 0 Dual Purpose
+**Issue**: GPIO 0 used for both camera clock and programming mode
+
+**Solution**: 
+- Always disconnect programming circuit after upload
+- Use external pull-up resistor (10kΩ) on GPIO 0 for stable operation
+- Never connect GPIO 0 to GND during normal operation
+
+### Power Issues
+
+#### Insufficient Current Supply
+**Symptoms**: Random resets, camera initialization failures, WiFi connection drops
+
+**Diagnostic Code**:
+```cpp
+void checkPowerSystem() {
+    // Monitor voltage under load
+    float voltage = analogRead(A0) * 3.3 / 4095.0 * 2.0; // Voltage divider
+    Serial.printf("System voltage: %.2fV\n", voltage);
+    
+    if (voltage < 3.2) {
+        Serial.println("WARNING: Low voltage detected");
+        Serial.println("- Use external 5V/2A power supply");
+        Serial.println("- Check for loose connections");
+    }
+}
+```
+
+**Solutions**:
+1. **Use External Power**: 5V/2A regulated power supply
+2. **Proper Decoupling**: Add capacitors as mentioned above
+3. **Check Connections**: Ensure solid, low-resistance connections
+4. **Power Distribution**: Use proper gauge wires for power connections
+
+#### Power Management Optimization
+```cpp
+// Optimize power consumption
+void optimizePower() {
+    // Reduce CPU frequency
+    setCpuFrequencyMhz(80);
+    
+    // Disable unused peripherals
+    esp_wifi_stop();
+    esp_bt_controller_disable();
+    
+    // Enable automatic light sleep
+    esp_pm_config_esp32_t pm_config = {
+        .max_freq_mhz = 80,
+        .min_freq_mhz = 10,
+        .light_sleep_enable = true
+    };
+    esp_pm_configure(&pm_config);
+}
+```
+
+### Performance Troubleshooting
+
+#### Poor Image Quality
+**Solutions**:
+1. **Adjust JPEG Quality**: Lower numbers = higher quality
+   ```cpp
+   config.jpeg_quality = 8;  // High quality (larger files)
+   ```
+2. **Increase Frame Size**: 
+   ```cpp
+   config.frame_size = FRAMESIZE_UXGA;  // Maximum resolution
+   ```
+3. **Enable PSRAM**: Required for high-quality captures
+   ```cpp
+   config.fb_count = 2;  // Enable frame buffering with PSRAM
+   ```
+
+#### Slow Capture Speed
+**Solutions**:
+1. **Lower Resolution**: Use FRAMESIZE_VGA for faster captures
+2. **Increase JPEG Quality Number**: Higher numbers = more compression, faster processing
+3. **Optimize Clock**: Ensure 20MHz camera clock
+   ```cpp
+   config.xclk_freq_hz = 20000000;
+   ```
+
+#### WiFi Connection Issues
+**Troubleshooting Code**:
+```cpp
+void diagnoseWiFi() {
+    Serial.printf("WiFi Status: %d\n", WiFi.status());
+    Serial.printf("RSSI: %d dBm\n", WiFi.RSSI());
+    Serial.printf("IP Address: %s\n", WiFi.localIP().toString().c_str());
+    
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("WiFi connection failed");
+        Serial.println("- Check SSID and password");
+        Serial.println("- Verify router is in range");
+        Serial.println("- Check for interference on 2.4GHz band");
+    }
+}
+```
+
 ## Board-Specific Considerations
 
 ### Unique Features and Limitations
