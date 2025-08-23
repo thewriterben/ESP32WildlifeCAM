@@ -8,6 +8,7 @@
 #include "../../config.h"
 #include <esp_timer.h>
 #include <algorithm>
+#include <cmath>  // For fabs() function
 
 // TensorFlow Lite Micro includes (these would be from the actual TFLite library)
 // #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -182,7 +183,7 @@ public:
         for (auto& pattern : patterns_) {
             if (pattern.modelType == type && 
                 pattern.hourOfDay == currentHour &&
-                abs(pattern.temperature - temperature) < 5.0f) {
+                fabs(pattern.temperature - temperature) < 5.0f) {
                 
                 pattern.usageCount++;
                 pattern.probability = calculateProbability(pattern.usageCount, confidence);
@@ -238,8 +239,8 @@ public:
             }
             
             // Environmental condition scoring
-            float tempDiff = abs(pattern.temperature - currentTemp);
-            float lightDiff = abs(pattern.lightLevel - currentLight);
+            float tempDiff = fabs(pattern.temperature - currentTemp);
+            float lightDiff = fabs(pattern.lightLevel - currentLight);
             
             if (tempDiff < 5.0f) score += 0.2f;
             if (lightDiff < 0.2f) score += 0.2f;

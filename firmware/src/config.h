@@ -172,12 +172,14 @@
 // ===========================
 
 // SD Card Configuration - ENABLED when LoRa is disabled
-#define SD_CARD_ENABLED true             // SD card enabled when LoRa disabled 
+#define SD_CARD_ENABLED true             // SD card enabled when LoRa disabled
+#if SD_CARD_ENABLED
 #define SD_CS_PIN 12                     // SD card chip select pin
 #define SD_MOSI_PIN 15                   // SD card MOSI pin
 #define SD_CLK_PIN 14                    // SD card clock pin (available when LORA_RST disabled)
 #define SD_MISO_PIN 2                    // SD card MISO pin (available when charging LED disabled)
 #define SD_SPI_FREQ 40000000            // SD card SPI frequency (40MHz)
+#endif
 
 // Storage Paths and Limits
 #define IMAGE_FOLDER "/images"           // Folder for captured images
@@ -324,9 +326,16 @@
 
 // I2S Microphone Configuration (INMP441 and similar)
 // Note: I2S pins reuse SD card pins when SD is disabled for LoRa
+// CONDITIONAL PIN ASSIGNMENT: Only define I2S pins when SD card is disabled
+#if !SD_CARD_ENABLED
 #define I2S_WS_PIN 15                     // I2S Word Select (LR Clock) pin - SD_MOSI_PIN when SD disabled
 #define I2S_SCK_PIN 14                    // I2S Serial Clock pin - SD_CLK_PIN when SD disabled  
 #define I2S_SD_PIN 2                      // I2S Serial Data pin - SD_MISO_PIN when SD disabled
+#else
+// When SD card is enabled, I2S digital microphone is disabled to avoid conflicts
+#undef I2S_MICROPHONE_ENABLED
+#define I2S_MICROPHONE_ENABLED false
+#endif
 #define I2S_PORT I2S_NUM_0                // I2S port number
 #define I2S_SAMPLE_RATE 16000             // Default sample rate (Hz)
 #define I2S_BITS_PER_SAMPLE 16            // Bits per audio sample
@@ -334,7 +343,14 @@
 
 // Analog Microphone Configuration (when enabled)
 // Note: Analog microphone reuses camera Y6 pin when camera is in digital-only mode
+// CONDITIONAL PIN ASSIGNMENT: Only define analog mic pin when camera Y6 is not needed
+#if !defined(CAMERA_MODEL_AI_THINKER) || ANALOG_MICROPHONE_ENABLED == false
+// Analog microphone disabled on AI-Thinker ESP32-CAM due to camera Y6 pin conflict
+#undef ANALOG_MICROPHONE_ENABLED
+#define ANALOG_MICROPHONE_ENABLED false
+#else
 #define ANALOG_MIC_PIN 36                 // ADC pin for analog microphone - Y6_GPIO_NUM when camera disabled
+#endif
 #define ANALOG_MIC_GAIN 1.0               // Analog microphone gain multiplier
 #define ANALOG_MIC_BIAS_VOLTAGE 1.65      // Bias voltage for electret microphones
 #define ADC_SAMPLE_RATE 8000              // ADC sampling rate for analog microphone

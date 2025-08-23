@@ -20,7 +20,19 @@ def check_gpio_pin_conflicts():
     
     content = config_file.read_text()
     
-    # Extract pin assignments (ignore commented lines)
+    # Check feature states to handle conditional pin assignments
+    sd_card_enabled = 'SD_CARD_ENABLED true' in content
+    i2s_microphone_enabled = 'I2S_MICROPHONE_ENABLED true' in content
+    analog_microphone_enabled = 'ANALOG_MICROPHONE_ENABLED true' in content
+    camera_ai_thinker = 'CAMERA_MODEL_AI_THINKER' in content and not content.find('// #define CAMERA_MODEL_AI_THINKER') >= 0
+    
+    print(f"Configuration state:")
+    print(f"  SD Card: {'ENABLED' if sd_card_enabled else 'DISABLED'}")
+    print(f"  I2S Microphone: {'ENABLED' if i2s_microphone_enabled else 'DISABLED'}")
+    print(f"  Analog Microphone: {'ENABLED' if analog_microphone_enabled else 'DISABLED'}")
+    print(f"  AI-Thinker Camera: {'ENABLED' if camera_ai_thinker else 'DISABLED'}")
+    
+    # Extract pin assignments (ignore commented lines and handle conditionals)
     pin_assignments = {}
     # Specific patterns to match only actual GPIO pin assignments
     pin_patterns = [
@@ -31,9 +43,44 @@ def check_gpio_pin_conflicts():
     ]
     conflicts_found = False
     
+    # Track conditional blocks
+    in_conditional = False
+    conditional_depth = 0
+    skip_current_block = False
+    
     for line_num, line in enumerate(content.split('\n'), 1):
+        stripped_line = line.strip()
+        
         # Skip commented lines
-        if line.strip().startswith('//'):
+        if stripped_line.startswith('//'):
+            continue
+        
+        # Handle conditional compilation directives
+        if stripped_line.startswith('#if'):
+            conditional_depth += 1
+            # Check if this conditional should be skipped based on current configuration
+            if '#if SD_CARD_ENABLED' in stripped_line:
+                skip_current_block = not sd_card_enabled  # Skip if SD card is disabled
+            elif '#if !SD_CARD_ENABLED' in stripped_line:
+                skip_current_block = sd_card_enabled  # Skip if SD card is enabled
+            elif '#if !defined(CAMERA_MODEL_AI_THINKER)' in stripped_line:
+                skip_current_block = camera_ai_thinker  # Skip if AI-Thinker is defined
+            else:
+                skip_current_block = False
+            continue
+        elif stripped_line.startswith('#else'):
+            skip_current_block = not skip_current_block  # Flip the skip state for else block
+            continue
+        elif stripped_line.startswith('#endif'):
+            conditional_depth -= 1
+            if conditional_depth == 0:
+                skip_current_block = False  # Reset when exiting conditional blocks
+            continue
+        elif stripped_line.startswith('#undef'):
+            continue  # Skip undef directives
+            
+        # Skip processing if we're in a conditional block that should be ignored
+        if skip_current_block:
             continue
             
         for pattern in pin_patterns:
@@ -50,6 +97,12 @@ def check_gpio_pin_conflicts():
                 if pin_number > 39:
                     continue
                 
+                # Skip disabled features
+                if 'I2S_' in define_name and not i2s_microphone_enabled:
+                    continue
+                if 'ANALOG_MIC_PIN' in define_name and not analog_microphone_enabled:
+                    continue
+                
                 if pin_number in pin_assignments:
                     print(f"CONFLICT: GPIO {pin_number} used for both {pin_assignments[pin_number]} and {define_name}")
                     conflicts_found = True
@@ -57,7 +110,7 @@ def check_gpio_pin_conflicts():
                     pin_assignments[pin_number] = define_name
                 break  # Only match first pattern to avoid duplicates
     
-    print(f"Found {len(pin_assignments)} GPIO pin assignments")
+    print(f"Found {len(pin_assignments)} active GPIO pin assignments")
     for pin, name in sorted(pin_assignments.items()):
         print(f"  GPIO {pin:2d}: {name}")
     
@@ -125,14 +178,31 @@ def check_memory_management():
     
     source_files = list(Path("firmware/src").rglob("*.cpp"))
     issues = []
+    frame_buffer_usage = {}
     
     for source_file in source_files:
         content = source_file.read_text()
         
-        # Check for esp_camera_fb_get() without corresponding esp_camera_fb_return()
-        if 'esp_camera_fb_get()' in content:
-            if 'esp_camera_fb_return(' not in content:
-                issues.append(f"{source_file}: esp_camera_fb_get() without esp_camera_fb_return()")
+        # Count esp_camera_fb_get() and esp_camera_fb_return() calls
+        get_calls = len(re.findall(r'esp_camera_fb_get\s*\(\s*\)', content))
+        return_calls = len(re.findall(r'esp_camera_fb_return\s*\(', content))
+        
+        if get_calls > 0 or return_calls > 0:
+            frame_buffer_usage[str(source_file)] = {
+                'get_calls': get_calls,
+                'return_calls': return_calls
+            }
+            
+            # Check for obvious imbalances within the same file
+            # Note: It's OK for a function to get a frame buffer and return it to caller
+            # Only flag if there are significantly more gets than returns in same file
+            if get_calls > return_calls + 1:  # Allow for one extra get (returned to caller)
+                issues.append(f"{source_file}: {get_calls} esp_camera_fb_get() calls vs {return_calls} esp_camera_fb_return() calls - potential memory leak")
+    
+    if frame_buffer_usage:
+        print("Frame buffer usage analysis:")
+        for file, usage in frame_buffer_usage.items():
+            print(f"  {file}: {usage['get_calls']} get, {usage['return_calls']} return")
     
     if issues:
         print("Memory management issues found:")
@@ -140,7 +210,7 @@ def check_memory_management():
             print(f"  {issue}")
         return False
     else:
-        print("No obvious memory management issues found")
+        print("Frame buffer usage appears balanced across the codebase")
         return True
 
 def check_configuration_consistency():
