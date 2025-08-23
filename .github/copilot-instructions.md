@@ -1,23 +1,21 @@
-# Copilot Instructions
-
-... (existing content before the new section) ...
-
-## Working Effectively
-
-... (existing content in the Working Effectively section) ...
-
 ## Firewall Fixes
 
-### Offline Validation Script
-To ensure that your development environment is functioning correctly, utilize the offline validation script that checks for common issues with your setup.
+### Offline Development Procedures
+- Ensure that all necessary libraries and dependencies are installed locally.
+- Use the PlatformIO IDE to manage your projects offline.
 
-### PlatformIO Firewall Configuration Fixes
-Make sure to configure your firewall settings to allow PlatformIO to operate smoothly. This includes whitelisting the PlatformIO IDE and allowing outgoing connections on the necessary ports.
+### Specific PlatformIO Configuration Settings
+- Make sure to configure your `platformio.ini` file with the required environment settings.
+- Include the necessary build flags to ensure compatibility with offline development.
 
-### Avoiding Network Issues During Development
-To avoid common network issues during development, consider the following tips:
-- Regularly check your network connection to ensure stability.
-- If possible, use a wired connection instead of Wi-Fi to minimize interruptions.
-- Keep your development environment updated to benefit from the latest fixes and improvements.
+### Blocked Domains Documentation
+- Document any domains that are blocked by the firewall that may affect development.
+- Provide workarounds or alternative methods to access necessary resources.
 
-... (existing content after the new section) ...
+### Emergency Procedures
+- Outline steps to take if encountering issues related to firewall restrictions.
+- Include contact information for IT support if needed.
+
+### Network-Free Validation Commands for ESP32 Development
+- List commands that can be run locally to validate the ESP32 setup without network access.
+- Provide examples of how to test the ESP32 functionality in an offline environment.
