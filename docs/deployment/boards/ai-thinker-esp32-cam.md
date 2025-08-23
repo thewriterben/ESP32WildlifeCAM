@@ -2,218 +2,171 @@
 
 ## Overview
 
-The AI-Thinker ESP32-CAM is the most popular and cost-effective ESP32 camera board, making it ideal for budget conservation projects, educational deployments, and large-scale research networks where cost per node is critical. This comprehensive guide provides step-by-step deployment instructions and can serve as a template for other ESP32 camera board deployments.
+The AI-Thinker ESP32-CAM is the most popular and cost-effective ESP32 camera board, making it ideal for budget conservation projects, educational deployments, and large-scale research networks where cost per node is critical. This comprehensive guide provides step-by-step deployment instructions while serving as a template for other ESP32 camera boards.
 
 ## Prerequisites
 
 ### Hardware Requirements
-- **AI-Thinker ESP32-CAM board**
-- **FTDI USB-to-Serial adapter** (CP2102 or similar for programming)
-- **Jumper wires** (male-to-female and male-to-male)
-- **External 5V power supply** (recommended for stable operation)
-- **MicroSD card** (32GB or smaller, Class 10 recommended)
-- **Computer** with Arduino IDE installed
-- **Breadboard or PCB** for prototyping connections
-- **External antenna** (optional, for improved WiFi range)
+- **AI-Thinker ESP32-CAM board** - Main camera module
+- **USB-to-TTL programmer** (FTDI FT232RL or CP2102 based)
+- **Jumper wires** - For programming connections
+- **Breadboard or PCB** - For prototyping connections
+- **MicroSD card** (8-32GB, Class 10 recommended)
+- **External antenna** (optional, for better WiFi range)
+- **Power supply** - 5V/2A adapter or 3.3V regulated supply
 
 ### Software Requirements
-- **Latest Arduino IDE** (version 2.0+ recommended)
-- **ESP32 board package** for Arduino IDE
-- **Required libraries**: ESP32 Camera, AsyncWebServer, WiFi, ArduinoJson
-- **USB drivers** for your FTDI programmer (if not automatically detected)
+- **Arduino IDE** (version 1.8.19 or later) or **PlatformIO**
+- **ESP32 Board Package** - Latest version from Espressif
+- **Required Libraries:**
+  - ESP32 Camera library (built-in with ESP32 package)
+  - WiFi library (built-in)
+  - SD library (for local storage)
+  - ArduinoJson (for configuration management)
 
 ### Skill Level
-- **Beginner to Intermediate**: Basic knowledge of Arduino programming and electronics required
-- **Time Required**: 2-4 hours for complete setup and testing
-- **Difficulty**: Moderate (requires careful attention to wiring and pin conflicts)
+- **Beginner to Intermediate** - Basic electronics knowledge helpful
+- **Programming experience** - Basic Arduino/C++ understanding
+- **Soldering skills** - Optional (only if modifications needed)
 
 ## Step-by-Step Instructions
 
 ### 1. Setting Up the Arduino IDE
-1. **Open the Arduino IDE**
-2. **Add ESP32 Board Support**:
+
+1. **Download and Install Arduino IDE**
+   - Download from [arduino.cc/en/software](https://www.arduino.cc/en/software)
+   - Install following the platform-specific instructions
+
+2. **Add ESP32 Board Package**
+   - Open Arduino IDE
    - Go to `File` > `Preferences`
-   - In **Additional Boards Manager URLs**, add:
+   - Add this URL to "Additional Boards Manager URLs":
      ```
      https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
      ```
-   - Click `OK`
-3. **Install ESP32 Board Package**:
-   - Navigate to `Tools` > `Board` > `Boards Manager`
-   - Search for **ESP32**
-   - Install **esp32 by Espressif Systems** (latest version)
+   - Go to `Tools` > `Board` > `Boards Manager`
+   - Search for "ESP32" and install "esp32 by Espressif Systems"
+
+3. **Select Board and Configuration**
+   - Go to `Tools` > `Board` > `ESP32 Arduino`
+   - Select "AI Thinker ESP32-CAM"
+   - Set `Tools` > `Flash Size` to "4MB (32Mb)"
+   - Set `Tools` > `Partition Scheme` to "Huge APP (3MB No OTA/1MB SPIFFS)"
 
 ### 2. Installing Libraries and Board Packages
-1. **Install Required Libraries**:
-   - Go to `Tools` > `Manage Libraries`
-   - Install the following libraries:
-     - **ESP32 Camera** (by Espressif)
-     - **AsyncWebServer** (by lacamera)
-     - **ArduinoJson** (by Benoit Blanchon)
-     - **WiFi** (usually included with ESP32 package)
 
-2. **Configure Board Settings**:
-   - Go to `Tools` > `Board` > `ESP32 Arduino`
-   - Select **AI Thinker ESP32-CAM**
-   - Set the following parameters:
-     - **Upload Speed**: 115200
-     - **CPU Frequency**: 240MHz (WiFi/BT)
-     - **Flash Mode**: QIO
-     - **Flash Size**: 4MB (32Mb)
-     - **Partition Scheme**: Default 4MB with spiffs
+1. **Install Required Libraries**
+   - Go to `Tools` > `Manage Libraries`
+   - Install the following:
+     - ArduinoJson by Benoit Blanchon
+     - AsyncTCP by me-no-dev (for ESP32)
+     - ESPAsyncWebServer by me-no-dev
+
+2. **Verify Installation**
+   - Go to `File` > `Examples` > `ESP32` > `Camera`
+   - Open `CameraWebServer` example to verify ESP32 Camera library is available
 
 ### 3. Connecting the Board
-1. **Programming Mode Connections**:
+
+1. **Programming Connection Setup**
    ```
-   ESP32-CAM Pin    FTDI Programmer Pin
-   --------------   ------------------
-   5V           ->  5V (or VCC)
-   GND          ->  GND
-   U0R (GPIO3)  ->  TX
-   U0T (GPIO1)  ->  RX
-   GPIO 0       ->  GND (for programming mode)
+   ESP32-CAM Pin    USB Programmer Pin
+   ────────────     ─────────────────
+   5V           →   5V (or 3.3V)
+   GND          →   GND  
+   GPIO 0       →   GND (for programming mode)
+   U0R (GPIO 3) →   TX
+   U0T (GPIO 1) →   RX
    ```
 
-2. **Important Notes**:
-   - **Double-check connections** - reversed TX/RX is the most common error
-   - **GPIO 0 to GND** is essential for programming mode
-   - **Use external 5V power** if FTDI cannot provide sufficient current
-   - **Never connect 5V and 3.3V simultaneously**
+2. **Important Connection Notes**
+   - **GPIO 0 to GND**: Essential for programming mode
+   - **Power Supply**: Use 5V if available, or stable 3.3V (minimum 2A)
+   - **TX/RX Crossing**: Programmer TX → ESP32 RX, Programmer RX → ESP32 TX
 
-3. **Select Port**:
-   - Connect FTDI programmer to computer
-   - In Arduino IDE: `Tools` > `Port` > Select your FTDI port (usually COM3-COM20 on Windows, /dev/ttyUSB0 on Linux)
+3. **Physical Connection Verification**
+   - Double-check all connections before powering on
+   - Ensure stable power supply (insufficient power causes programming failures)
+   - Connect external antenna if using one
 
 ### 4. Loading the Code
-1. **Create New Sketch**:
-   ```cpp
-   #include "esp_camera.h"
-   #include <WiFi.h>
-   #include "camera_config.h"  // Create this file for pin definitions
-   
-   // Camera pin definitions for AI-Thinker ESP32-CAM
-   #define PWDN_GPIO_NUM     32
-   #define RESET_GPIO_NUM    -1
-   #define XCLK_GPIO_NUM      0
-   #define SIOD_GPIO_NUM     26
-   #define SIOC_GPIO_NUM     27
-   #define Y9_GPIO_NUM       35
-   #define Y8_GPIO_NUM       34
-   #define Y7_GPIO_NUM       39
-   #define Y6_GPIO_NUM       36
-   #define Y5_GPIO_NUM       21
-   #define Y4_GPIO_NUM       19
-   #define Y3_GPIO_NUM       18
-   #define Y2_GPIO_NUM        5
-   #define VSYNC_GPIO_NUM    25
-   #define HREF_GPIO_NUM     23
-   #define PCLK_GPIO_NUM     22
-   
-   void setup() {
-     Serial.begin(115200);
-     Serial.println("AI-Thinker ESP32-CAM Test");
-     
-     // Camera configuration
-     camera_config_t config;
-     config.ledc_channel = LEDC_CHANNEL_0;
-     config.ledc_timer = LEDC_TIMER_0;
-     config.pin_d0 = Y2_GPIO_NUM;
-     config.pin_d1 = Y3_GPIO_NUM;
-     config.pin_d2 = Y4_GPIO_NUM;
-     config.pin_d3 = Y5_GPIO_NUM;
-     config.pin_d4 = Y6_GPIO_NUM;
-     config.pin_d5 = Y7_GPIO_NUM;
-     config.pin_d6 = Y8_GPIO_NUM;
-     config.pin_d7 = Y9_GPIO_NUM;
-     config.pin_xclk = XCLK_GPIO_NUM;
-     config.pin_pclk = PCLK_GPIO_NUM;
-     config.pin_vsync = VSYNC_GPIO_NUM;
-     config.pin_href = HREF_GPIO_NUM;
-     config.pin_sscb_sda = SIOD_GPIO_NUM;
-     config.pin_sscb_scl = SIOC_GPIO_NUM;
-     config.pin_pwdn = PWDN_GPIO_NUM;
-     config.pin_reset = RESET_GPIO_NUM;
-     config.xclk_freq_hz = 20000000;
-     config.pixel_format = PIXFORMAT_JPEG;
-     config.frame_size = FRAMESIZE_SVGA;
-     config.jpeg_quality = 12;
-     config.fb_count = 1;
-     
-     // Initialize camera
-     esp_err_t err = esp_camera_init(&config);
-     if (err != ESP_OK) {
-       Serial.printf("Camera init failed with error 0x%x", err);
-       return;
-     }
-     
-     Serial.println("Camera initialized successfully!");
-   }
-   
-   void loop() {
-     delay(1000);
-   }
+
+1. **Download Project Code**
+   ```bash
+   git clone https://github.com/thewriterben/ESP32WildlifeCAM.git
+   cd ESP32WildlifeCAM/firmware
    ```
 
-2. **Save the sketch** with a descriptive name (e.g., `ESP32CAM_Test`)
+2. **Open in Arduino IDE**
+   - Open `firmware/src/main.cpp` in Arduino IDE
+   - Or use `firmware/platformio.ini` if using PlatformIO
+
+3. **Configure Board-Specific Settings**
+   - Verify `#define CAMERA_MODEL_AI_THINKER` is uncommented in config file
+   - Check WiFi credentials in configuration
+   - Set camera resolution and quality preferences
 
 ### 5. Compiling the Code
-1. **Verify/Compile**:
-   - Click the **checkmark (✓)** button or press `Ctrl+R`
-   - **Check for errors** in the output console
-   - **Common compilation errors**:
-     - Missing libraries: Install required libraries
-     - Board not selected: Ensure AI-Thinker ESP32-CAM is selected
-     - Syntax errors: Check code syntax carefully
 
-2. **Compilation Success Indicators**:
-   - Output shows "Done compiling"
-   - Sketch size information displayed
-   - No error messages in red
+1. **Select Correct Board Settings**
+   - Board: "AI Thinker ESP32-CAM"
+   - Flash Mode: "QIO"
+   - Flash Size: "4MB (32Mb)"
+   - Flash Frequency: "80MHz"
+   - Upload Speed: "115200"
+
+2. **Compile the Sketch**
+   - Click the checkmark (✓) button to compile
+   - Wait for compilation to complete
+   - Resolve any compilation errors if they occur
+
+3. **Common Compilation Issues**
+   - Missing libraries: Install via Library Manager
+   - Board package issues: Reinstall ESP32 board package
+   - Memory issues: Check partition scheme settings
 
 ### 6. Uploading the Code
-1. **Enter Programming Mode**:
-   - Ensure **GPIO 0 is connected to GND**
-   - **Press and hold** the RESET button on ESP32-CAM
-   - **Release** the RESET button (board should be in programming mode)
 
-2. **Upload**:
-   - Click the **arrow (→)** button or press `Ctrl+U`
-   - Monitor upload progress in console
-   - Look for "Writing at 0x..." messages
+1. **Enter Programming Mode**
+   - Ensure GPIO 0 is connected to GND
+   - Reset the ESP32-CAM (press reset button or cycle power)
+   - The board should now be in programming mode
 
-3. **Exit Programming Mode**:
+2. **Upload the Code**
+   - Select the correct COM port under `Tools` > `Port`
+   - Click the upload button (→)
+   - Monitor the upload progress in the output window
+
+3. **Exit Programming Mode**
    - **Disconnect GPIO 0 from GND**
-   - **Press RESET button** to start normal operation
+   - Reset the ESP32-CAM again
+   - The board should now run the uploaded firmware
 
 ### 7. Testing the Deployment
-1. **Monitor Serial Output**:
-   - Open `Tools` > `Serial Monitor`
-   - Set baud rate to **115200**
-   - **Press RESET** on ESP32-CAM
-   - Look for "Camera initialized successfully!" message
 
-2. **Troubleshoot if needed**:
-   - If no output: Check connections and baud rate
-   - If camera init failed: Check power supply and camera module connection
-   - If upload failed: Verify programming mode connections
+1. **Monitor Serial Output**
+   - Open Serial Monitor (`Tools` > `Serial Monitor`)
+   - Set baud rate to 115200
+   - Reset the board and observe initialization messages
 
-3. **Basic Functionality Test**:
-   ```cpp
-   // Add to loop() function for basic camera test
-   camera_fb_t * fb = esp_camera_fb_get();
-   if (fb) {
-     Serial.printf("Picture taken! Size: %d bytes\n", fb->len);
-     esp_camera_fb_return(fb);
-   } else {
-     Serial.println("Camera capture failed");
-   }
-   delay(5000);
-   ```
+2. **Verify Camera Initialization**
+   - Look for "Camera init succeeded" message
+   - Check for any error messages related to camera or sensors
+
+3. **Test Network Connectivity**
+   - Verify WiFi connection status
+   - Note the assigned IP address
+   - Test web interface access (if enabled)
+
+4. **Test Camera Functionality**
+   - Trigger a test image capture
+   - Verify image quality and storage
+   - Test any configured sensors (PIR, environmental, etc.)
 
 ## Hardware Specifications
 
-### Board Features
-- **Microcontroller**: ESP32 (240MHz dual-core Tensilica LX6)
+### Hardware Features
+- **Microcontroller**: ESP32 (240MHz dual-core)
 - **Camera**: OV2640 2MP camera with adjustable lens
 - **Memory**: 520KB SRAM + 4MB PSRAM (optional)
 - **Flash**: 4MB SPI Flash
@@ -221,8 +174,6 @@ The AI-Thinker ESP32-CAM is the most popular and cost-effective ESP32 camera boa
 - **GPIO**: 9 available GPIO pins
 - **Power**: 5V via external programmer or 3.3V direct
 - **Dimensions**: 40mm x 27mm x 12mm
-- **Operating Voltage**: 3.3V (internal regulation from 5V input)
-- **Operating Current**: 160mA (active), 15μA (deep sleep)
 
 ### Camera Specifications
 - **Sensor**: OV2640 CMOS sensor
@@ -231,35 +182,34 @@ The AI-Thinker ESP32-CAM is the most popular and cost-effective ESP32 camera boa
 - **Features**: Auto exposure, auto white balance, auto gain
 - **Frame Rate**: Up to 60fps at lower resolutions
 - **Field of View**: ~66° diagonal
-- **Low Light Performance**: Minimum 2 lux illumination
-- **Focus**: Fixed focus, optimized for 1-3 meters
 
 ## Pin Configuration
 
-### Camera Interface Pins (Do Not Modify)
+### Standard GPIO Map
 ```cpp
-// Camera pin definitions for AI-Thinker ESP32-CAM
-#define PWDN_GPIO_NUM     32  // Camera power down
-#define RESET_GPIO_NUM    -1  // Camera reset (not connected)
-#define XCLK_GPIO_NUM      0  // Camera clock
-#define SIOD_GPIO_NUM     26  // Camera SDA (I2C data)
-#define SIOC_GPIO_NUM     27  // Camera SCL (I2C clock)
+// AI-Thinker ESP32-CAM Pin Definitions
+#define PWDN_GPIO_NUM     32
+#define RESET_GPIO_NUM    -1
+#define XCLK_GPIO_NUM      0
+#define SIOD_GPIO_NUM     26  // SDA
+#define SIOC_GPIO_NUM     27  // SCL
 
-// Camera parallel data interface
-#define Y9_GPIO_NUM       35  // Camera data bit 9
-#define Y8_GPIO_NUM       34  // Camera data bit 8
-#define Y7_GPIO_NUM       39  // Camera data bit 7
-#define Y6_GPIO_NUM       36  // Camera data bit 6
-#define Y5_GPIO_NUM       21  // Camera data bit 5
-#define Y4_GPIO_NUM       19  // Camera data bit 4
-#define Y3_GPIO_NUM       18  // Camera data bit 3
-#define Y2_GPIO_NUM        5  // Camera data bit 2
-#define VSYNC_GPIO_NUM    25  // Camera vertical sync
-#define HREF_GPIO_NUM     23  // Camera horizontal reference
-#define PCLK_GPIO_NUM     22  // Camera pixel clock
+// Camera data pins
+#define Y9_GPIO_NUM       35
+#define Y8_GPIO_NUM       34
+#define Y7_GPIO_NUM       39
+#define Y6_GPIO_NUM       36
+#define Y5_GPIO_NUM       21
+#define Y4_GPIO_NUM       19
+#define Y3_GPIO_NUM       18
+#define Y2_GPIO_NUM        5
+#define VSYNC_GPIO_NUM    25
+#define HREF_GPIO_NUM     23
+#define PCLK_GPIO_NUM     22
 
 // Built-in peripherals
 #define LED_GPIO_NUM       4  // Built-in LED/Flash
+#define SD_CS_PIN         12  // SD card chip select
 ```
 
 ### Available GPIO for External Sensors
@@ -267,524 +217,473 @@ The AI-Thinker ESP32-CAM is the most popular and cost-effective ESP32 camera boa
 // Available pins for sensors and peripherals
 #define AVAILABLE_GPIOS {12, 13, 14, 15, 16}
 
-// Usage recommendations
-#define PIR_SENSOR_PIN    13  // PIR motion sensor (recommended)
-#define DHT_SENSOR_PIN    15  // Temperature/humidity sensor (if SD disabled)
-#define LORA_CS_PIN       12  // LoRa chip select (if SD disabled)
-#define LORA_RST_PIN      14  // LoRa reset (if SD disabled)
-#define STATUS_LED_PIN    16  // External status LED
+// Pin conflict warnings
+// GPIO 4: Used for built-in LED/Flash
+// GPIO 2: Used for SD card data when SD enabled
+// GPIO 14: Used for SD card clock when SD enabled
+// GPIO 15: Used for SD card command when SD enabled
 ```
 
 ### Pin Limitations and Conflicts
-**Critical Pin Conflicts:**
-- **GPIO 2, 12, 14, 15**: Used by SD card interface (disable SD to free these pins)
-- **GPIO 4**: Built-in LED/Flash (can be shared but may cause interference)
-- **GPIO 0**: Camera clock (also used for programming mode - connect to GND during upload)
-- **GPIO 16**: Generally safe for external sensors
-- **GPIO 13**: Safest choice for PIR sensors and general I/O
-
-**SD Card vs External Sensors:**
 ```cpp
-// Choose one configuration:
-
-// Option 1: Enable SD Card (limits external sensors)
-#define SD_CARD_ENABLED true
-#define AVAILABLE_SENSORS {13, 16}  // Only GPIO 13, 16 available
-
-// Option 2: Disable SD Card (more pins for sensors)  
-#define SD_CARD_ENABLED false
-#define AVAILABLE_SENSORS {12, 13, 14, 15, 16}  // More options available
+// Critical pin conflicts on AI-Thinker ESP32-CAM
+struct PinConflicts {
+    // SD Card vs LoRa conflicts
+    bool sd_card_enabled = false;      // Disable SD to enable LoRa
+    bool lora_enabled = true;          // Enable LoRa for networking
+    
+    // LoRa pin assignments (when SD disabled)
+    int lora_cs_pin = 12;              // Conflicts with SD_CS
+    int lora_rst_pin = 14;             // Conflicts with SD_CLK
+    int lora_dio0_pin = 2;             // Conflicts with SD_MISO
+    
+    // PIR sensor options
+    int pir_pin = 13;                  // GPIO 13 (safe choice)
+    
+    // Alternative PIR pins if GPIO 13 unavailable
+    // GPIO 15 (if not using SD card)
+    // GPIO 16 (generally safe)
+};
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
+#### Board Not Detected
+1. **Check GPIO connections**
+   - Verify GPIO 0 is connected to GND during programming
+   - Ensure TX/RX connections are crossed correctly (TX→RX, RX→TX)
+   - Check power supply connections (5V or 3.3V)
+
+2. **Verify power supply voltage**
+   - Use external 5V supply, not just USB power from computer
+   - Check current capacity (minimum 2A recommended)
+   - Add capacitors for power supply stability if needed
+
+3. **Test programming setup**
+   - Try different USB-to-TTL programmer if available
+   - Check driver installation for programmer
+   - Verify correct COM port selection in Arduino IDE
+
 #### Camera Initialization Failed
-**Symptoms**: "Camera init failed with error 0x..." in serial monitor
+1. **Verify camera module connection**
+   - Check all camera data pins are properly connected
+   - Ensure camera module is seated properly in connector
+   - Verify camera power supply (3.3V to camera module)
 
-**Solutions**:
-1. **Check Power Supply**:
-   ```cpp
-   // Add voltage check to your code
-   if (getVoltage() < 3.2) {
-       Serial.println("ERROR: Voltage too low for camera operation");
-   }
-   ```
-2. **Verify Camera Module Connection**: Ensure camera module is properly seated
-3. **Check I2C Communication**: 
-   ```cpp
-   Wire.begin(SIOD_GPIO_NUM, SIOC_GPIO_NUM);
-   Wire.beginTransmission(0x30);  // OV2640 I2C address
-   if (Wire.endTransmission() == 0) {
-       Serial.println("Camera I2C communication OK");
-   }
-   ```
-4. **Reset Camera Module**: 
-   ```cpp
-   digitalWrite(PWDN_GPIO_NUM, HIGH);
-   delay(100);
-   digitalWrite(PWDN_GPIO_NUM, LOW);
-   delay(100);
-   ```
+2. **Check PSRAM requirements**
+   - Enable PSRAM in board settings if using high resolutions
+   - Try lower resolution settings first (SVGA or VGA)
+   - Verify "Huge APP" partition scheme is selected
 
-#### Upload/Programming Issues
-**Problem**: "Failed to connect to ESP32" or upload timeout
+3. **Test with minimal configuration**
+   - Start with basic camera test sketch
+   - Remove any additional peripherals temporarily
+   - Check I2C communication on pins 26/27
 
-**Solutions**:
-1. **Verify Programming Mode**:
-   - GPIO 0 MUST be connected to GND during upload
-   - Press and hold RESET, then release to enter programming mode
-   
-2. **Check Connections**:
-   ```
-   Double-check:
-   ESP32-CAM TX -> FTDI RX
-   ESP32-CAM RX -> FTDI TX  (Most common error - these should be crossed)
-   ESP32-CAM GND -> FTDI GND
-   ESP32-CAM 5V -> FTDI 5V
-   ```
+#### WiFi Connection Issues
+1. **Network configuration**
+   - Verify WiFi credentials are correct
+   - Check if network supports 2.4GHz (ESP32 doesn't support 5GHz)
+   - Ensure network is not hidden or has MAC filtering
 
-3. **Power Supply Issues**:
-   - Use external 5V power supply if FTDI cannot provide enough current
-   - Add 470μF capacitor between 5V and GND for power stability
-
-4. **Driver Issues**:
-   - Install latest FTDI drivers from manufacturer website
-   - Try different USB ports
-   - Check Device Manager for proper COM port recognition
-
-#### Brownout Detector Triggered
-**Symptoms**: "Brownout detector was triggered" error message
-
-**Solutions**:
-1. **Increase Power Supply Current**: Use external 2A power supply
-2. **Add Power Filtering**: 
-   ```
-   - 470μF electrolytic capacitor (5V to GND)
-   - 100nF ceramic capacitor (3.3V to GND)
-   ```
-3. **Lower CPU Frequency**: Set to 160MHz instead of 240MHz in Arduino IDE
-4. **Disable Power-Hungry Features**: Turn off WiFi during camera initialization
+2. **Signal strength**
+   - Move closer to router for initial testing
+   - Consider external antenna for better range
+   - Check for interference from other devices
 
 ### Pin Conflicts
 
-#### SD Card vs External Sensors
-**Issue**: Cannot use SD card and LoRa/sensors simultaneously
+#### SD Card vs LoRa Module
+- **GPIO 12**: SD CS conflicts with LoRa CS
+- **GPIO 14**: SD CLK conflicts with LoRa RST  
+- **GPIO 2**: SD MISO conflicts with LoRa DIO0
+- **Solution**: Disable SD card when using LoRa, or use software SPI
 
-**Solution**: Choose configuration based on needs:
-```cpp
-// Configuration 1: SD Card Priority
-#define ENABLE_SD_CARD true
-#define ENABLE_LORA false
-// Available pins: 13, 16 only
-
-// Configuration 2: Sensor Priority  
-#define ENABLE_SD_CARD false
-#define ENABLE_LORA true
-// Available pins: 12, 13, 14, 15, 16
-```
-
-#### GPIO 0 Dual Purpose
-**Issue**: GPIO 0 used for both camera clock and programming mode
-
-**Solution**: 
-- Always disconnect programming circuit after upload
-- Use external pull-up resistor (10kΩ) on GPIO 0 for stable operation
-- Never connect GPIO 0 to GND during normal operation
+#### Available GPIO Pins
+- **GPIO 13**: Generally safe for PIR sensor
+- **GPIO 15**: Available if SD card disabled
+- **GPIO 16**: Generally safe for additional sensors
 
 ### Power Issues
 
-#### Insufficient Current Supply
-**Symptoms**: Random resets, camera initialization failures, WiFi connection drops
+#### Brownout Detection
+1. **Symptoms**: Random resets, "Brownout detector was triggered" messages
+2. **Solutions**:
+   - Use external 5V power supply (not USB)
+   - Add large capacitors (1000µF) across power rails
+   - Check current capacity of power supply
 
-**Diagnostic Code**:
-```cpp
-void checkPowerSystem() {
-    // Monitor voltage under load
-    float voltage = analogRead(A0) * 3.3 / 4095.0 * 2.0; // Voltage divider
-    Serial.printf("System voltage: %.2fV\n", voltage);
-    
-    if (voltage < 3.2) {
-        Serial.println("WARNING: Low voltage detected");
-        Serial.println("- Use external 5V/2A power supply");
-        Serial.println("- Check for loose connections");
-    }
-}
-```
+#### Battery Life Optimization
+1. **Enable deep sleep mode**
+   - Configure wake-up sources (timer, PIR sensor)
+   - Power down camera between captures
+   - Disable unnecessary peripherals
 
-**Solutions**:
-1. **Use External Power**: 5V/2A regulated power supply
-2. **Proper Decoupling**: Add capacitors as mentioned above
-3. **Check Connections**: Ensure solid, low-resistance connections
-4. **Power Distribution**: Use proper gauge wires for power connections
-
-#### Power Management Optimization
-```cpp
-// Optimize power consumption
-void optimizePower() {
-    // Reduce CPU frequency
-    setCpuFrequencyMhz(80);
-    
-    // Disable unused peripherals
-    esp_wifi_stop();
-    esp_bt_controller_disable();
-    
-    // Enable automatic light sleep
-    esp_pm_config_esp32_t pm_config = {
-        .max_freq_mhz = 80,
-        .min_freq_mhz = 10,
-        .light_sleep_enable = true
-    };
-    esp_pm_configure(&pm_config);
-}
-```
-
-### Performance Troubleshooting
-
-#### Poor Image Quality
-**Solutions**:
-1. **Adjust JPEG Quality**: Lower numbers = higher quality
-   ```cpp
-   config.jpeg_quality = 8;  // High quality (larger files)
-   ```
-2. **Increase Frame Size**: 
-   ```cpp
-   config.frame_size = FRAMESIZE_UXGA;  // Maximum resolution
-   ```
-3. **Enable PSRAM**: Required for high-quality captures
-   ```cpp
-   config.fb_count = 2;  // Enable frame buffering with PSRAM
-   ```
-
-#### Slow Capture Speed
-**Solutions**:
-1. **Lower Resolution**: Use FRAMESIZE_VGA for faster captures
-2. **Increase JPEG Quality Number**: Higher numbers = more compression, faster processing
-3. **Optimize Clock**: Ensure 20MHz camera clock
-   ```cpp
-   config.xclk_freq_hz = 20000000;
-   ```
-
-#### WiFi Connection Issues
-**Troubleshooting Code**:
-```cpp
-void diagnoseWiFi() {
-    Serial.printf("WiFi Status: %d\n", WiFi.status());
-    Serial.printf("RSSI: %d dBm\n", WiFi.RSSI());
-    Serial.printf("IP Address: %s\n", WiFi.localIP().toString().c_str());
-    
-    if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("WiFi connection failed");
-        Serial.println("- Check SSID and password");
-        Serial.println("- Verify router is in range");
-        Serial.println("- Check for interference on 2.4GHz band");
-    }
-}
-```
-
-## Board-Specific Considerations
-
-### Unique Features and Limitations
-
-#### Built-in LED/Flash (GPIO 4)
-- **Dual Purpose**: Serves as both status LED and camera flash
-- **Power Consumption**: 20mA when active
-- **Usage**: Can be controlled independently but may affect camera exposure
-- **Code Example**:
-  ```cpp
-  #define FLASH_LED_PIN 4
-  digitalWrite(FLASH_LED_PIN, HIGH);  // Turn on LED/Flash
-  delay(100);
-  digitalWrite(FLASH_LED_PIN, LOW);   // Turn off LED/Flash
-  ```
-
-#### No On-board USB Programming
-- **Requires External Programmer**: FTDI or CP2102 USB-to-serial adapter needed
-- **Programming Mode**: Manual entry required (GPIO 0 to GND)
-- **Reset Required**: Manual reset needed after programming
-- **Advantage**: Lower cost and smaller form factor
-
-#### Limited PSRAM Options
-- **Standard Version**: No PSRAM (4MB SRAM only)
-- **Enhanced Version**: 4MB PSRAM available (not all modules)
-- **Detection Code**:
-  ```cpp
-  if (psramFound()) {
-      Serial.printf("PSRAM found: %d bytes\n", ESP.getPsramSize());
-      config.fb_count = 2;  // Enable dual frame buffer
-  } else {
-      Serial.println("No PSRAM found - single frame buffer only");
-      config.fb_count = 1;
-  }
-  ```
-
-#### Pin Scarcity
-- **Limited Available Pins**: Only 5 pins (12,13,14,15,16) available for external sensors
-- **SD Card Conflict**: Using SD card reduces available pins to 2 (13,16)
-- **Priority Planning Required**: Must choose between SD card and external sensors
-
-### Special Setup Requirements
-
-#### Camera Module Variants
-Different suppliers may provide different camera modules:
-```cpp
-// Test camera module compatibility
-void detectCameraModule() {
-    // Initialize I2C
-    Wire.begin(SIOD_GPIO_NUM, SIOC_GPIO_NUM);
-    Wire.beginTransmission(0x30);  // OV2640 address
-    
-    if (Wire.endTransmission() == 0) {
-        Serial.println("OV2640 camera detected");
-    } else {
-        Serial.println("WARNING: Camera module not detected");
-        Serial.println("- Check camera module connection");
-        Serial.println("- Verify camera module compatibility");
-    }
-}
-```
-
-#### Power Supply Considerations
-- **5V Input Required**: Unlike ESP32 dev boards, requires 5V input for stable operation
-- **Current Requirements**: Minimum 500mA, recommended 1A for stable operation
-- **Power-on Sequence**: Camera requires specific power-on sequence for proper initialization
-
-#### Antenna Considerations
-- **PCB Antenna**: Built-in PCB antenna with moderate performance
-- **External Antenna Option**: IPEX connector available for external antenna
-- **Range Improvement**: External antenna can significantly improve WiFi range
-- **Mounting**: External antenna requires proper mounting for optimal performance
-
-### Performance Characteristics
-
-#### Memory Limitations
-```cpp
-// Memory usage optimization for AI-Thinker ESP32-CAM
-void optimizeMemory() {
-    // Check available heap
-    Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
-    Serial.printf("Largest free block: %d bytes\n", ESP.getMaxAllocHeap());
-    
-    if (ESP.getFreeHeap() < 50000) {
-        Serial.println("WARNING: Low memory - reduce image quality");
-        // Reduce JPEG quality or frame size
-    }
-}
-```
-
-#### Processing Limitations
-- **Single Core Available**: Second core reserved for WiFi/Bluetooth operations
-- **Clock Speed**: 240MHz maximum, can be reduced for power savings
-- **No Hardware Encryption**: Software encryption only, impacts performance
-- **Limited AI Capabilities**: Basic ESP32 - no AI acceleration hardware
-
-#### Network Performance
-```cpp
-// Network performance optimization
-struct NetworkOptimization {
-    // WiFi settings
-    uint8_t wifi_tx_power = 20;          // Maximum: 20dBm
-    bool wifi_power_save = false;        // Disable for better performance
-    uint32_t wifi_timeout_ms = 10000;    // Connection timeout
-    
-    // TCP settings for image transfer
-    uint16_t tcp_mss = 1460;             // Maximum segment size
-    uint8_t tcp_retry_count = 3;         // Retry attempts
-    bool tcp_nodelay = true;             // Disable Nagle algorithm
-    
-    // Buffer sizes
-    uint16_t tx_buffer_size = 8192;      // Transmit buffer
-    uint16_t rx_buffer_size = 4096;      // Receive buffer
-};
-```
+2. **Solar charging issues**
+   - Verify solar panel voltage output
+   - Check charging circuit operation
+   - Monitor battery voltage levels
 
 ## Advanced Configuration
 
-### Memory Optimization Techniques
+### Budget Conservation Setup
 ```cpp
-// Advanced memory management for AI-Thinker ESP32-CAM
-class MemoryManager {
-private:
-    static const uint32_t HEAP_THRESHOLD = 50000;
+// Minimal cost wildlife monitoring
+struct BudgetConservationConfig {
+    // Camera settings
+    framesize_t frame_size = FRAMESIZE_SVGA;    // 800x600
+    uint8_t jpeg_quality = 15;                  // Moderate compression
+    bool enable_psram = false;                  // No PSRAM to reduce cost
     
-public:
-    static bool checkMemoryHealth() {
-        uint32_t free_heap = ESP.getFreeHeap();
-        uint32_t min_free_heap = ESP.getMinFreeHeap();
-        
-        Serial.printf("Current free heap: %d bytes\n", free_heap);
-        Serial.printf("Minimum free heap: %d bytes\n", min_free_heap);
-        
-        if (free_heap < HEAP_THRESHOLD) {
-            Serial.println("WARNING: Memory fragmentation detected");
-            return false;
-        }
-        return true;
-    }
+    // Power optimization
+    bool enable_deep_sleep = true;
+    uint32_t sleep_duration_ms = 300000;        // 5 minutes
+    bool enable_motion_wake = true;
     
-    static void defragmentMemory() {
-        // Force garbage collection
-        Serial.println("Attempting memory defragmentation...");
-        delay(100);
-        
-        // Check if improvement occurred
-        if (checkMemoryHealth()) {
-            Serial.println("Memory defragmentation successful");
-        } else {
-            Serial.println("Memory issues persist - consider restart");
-        }
-    }
+    // Storage
+    bool sd_card_enabled = false;               // Local storage only
+    bool enable_file_rotation = true;
+    
+    // Networking
+    bool lora_enabled = true;                   // Basic LoRa networking
+    bool wifi_enabled = false;                  // Disable WiFi to save power
+    bool cellular_enabled = false;              // No cellular for budget
+    
+    // Sensors
+    bool pir_sensor_enabled = true;            // PIR motion detection
+    bool environmental_sensors = false;        // No additional sensors
+    
+    // Estimated cost: $60-80 total
+    // Battery life: 30-45 days
+    // Range: 5-10km LoRa
 };
 ```
 
-### Power Management Profiles
+### Research Network Node
 ```cpp
-// Advanced power management configurations
-enum PowerProfile {
-    PERFORMANCE,      // Maximum performance, higher power consumption
-    BALANCED,         // Balance between performance and power
-    POWER_SAVE,       // Minimum power consumption
-    CUSTOM           // User-defined settings
-};
-
-class PowerManager {
-public:
-    static void setPowerProfile(PowerProfile profile) {
-        esp_pm_config_esp32_t pm_config;
-        
-        switch (profile) {
-            case PERFORMANCE:
-                pm_config.max_freq_mhz = 240;
-                pm_config.min_freq_mhz = 240;
-                pm_config.light_sleep_enable = false;
-                break;
-                
-            case BALANCED:
-                pm_config.max_freq_mhz = 240;
-                pm_config.min_freq_mhz = 80;
-                pm_config.light_sleep_enable = true;
-                break;
-                
-            case POWER_SAVE:
-                pm_config.max_freq_mhz = 80;
-                pm_config.min_freq_mhz = 10;
-                pm_config.light_sleep_enable = true;
-                break;
-        }
-        
-        esp_pm_configure(&pm_config);
-        Serial.printf("Power profile set to: %d\n", profile);
-    }
+// Research-grade data collection
+struct ResearchNodeConfig {
+    // High-quality imaging
+    framesize_t frame_size = FRAMESIZE_UXGA;    // 1600x1200
+    uint8_t jpeg_quality = 10;                  // High quality
+    bool enable_psram = true;                   // Enable PSRAM for quality
+    
+    // Research features
+    bool enable_sequence_capture = true;        // Multiple images per trigger
+    uint8_t sequence_length = 3;                // 3 images per sequence
+    bool enable_metadata = true;                // Detailed metadata
+    
+    // Networking for research
+    bool lora_enabled = true;                   // Primary networking
+    bool wifi_enabled = true;                   // Secondary networking
+    bool mesh_coordination = true;              // Coordinate with other nodes
+    
+    // Data validation
+    bool enable_data_validation = true;         // Validate image quality
+    bool enable_ai_validation = false;          // No AI on basic ESP32
+    
+    // Estimated cost: $100-120 total
+    // Battery life: 20-30 days
+    // Data quality: Research grade
 };
 ```
 
-### Camera Configuration Profiles
+### Urban Monitoring Setup
 ```cpp
-// Predefined camera configurations for different use cases
-struct CameraProfile {
-    framesize_t frame_size;
-    pixformat_t pixel_format;
-    uint8_t jpeg_quality;
-    uint8_t fb_count;
-    bool psram_required;
-    const char* description;
-};
-
-const CameraProfile CAMERA_PROFILES[] = {
-    {
-        FRAMESIZE_VGA,     // 640x480
-        PIXFORMAT_JPEG,
-        15,                // Moderate quality
-        1,                 // Single buffer
-        false,             // No PSRAM required
-        "Fast capture - wildlife motion detection"
-    },
-    {
-        FRAMESIZE_SVGA,    // 800x600
-        PIXFORMAT_JPEG,
-        12,                // Good quality
-        2,                 // Dual buffer
-        true,              // PSRAM recommended
-        "Balanced - general wildlife monitoring"
-    },
-    {
-        FRAMESIZE_UXGA,    // 1600x1200
-        PIXFORMAT_JPEG,
-        8,                 // High quality
-        2,                 // Dual buffer
-        true,              // PSRAM required
-        "High quality - detailed documentation"
-    }
+// Stealth urban wildlife monitoring
+struct UrbanMonitoringConfig {
+    // Balanced image quality
+    framesize_t frame_size = FRAMESIZE_SVGA;    // 800x600
+    uint8_t jpeg_quality = 12;                  // Good quality
+    bool enable_psram = true;                   // Better processing
+    
+    // Urban-specific features
+    bool motion_filtering = true;               // Filter human activity
+    bool vehicle_filtering = true;              // Filter vehicle motion
+    uint8_t motion_sensitivity = 6;             // Moderate sensitivity
+    
+    // Stealth operation
+    bool disable_led = true;                    // No visible indicators
+    bool quiet_operation = true;                // Minimize noise
+    bool encrypted_storage = false;             // Basic ESP32 limitation
+    
+    // Urban networking
+    bool wifi_enabled = true;                   // Primary in urban areas
+    bool lora_enabled = false;                  // May interfere in urban RF
+    bool cellular_backup = false;               // Cost consideration
+    
+    // Estimated cost: $80-100 total
+    // Battery life: 25-35 days
+    // Stealth factor: High
 };
 ```
 
-### Deployment-Specific Configurations
+## Hardware Assembly Guide
+
+### Basic Assembly Steps
+1. **Prepare Components**
+   - AI-Thinker ESP32-CAM board
+   - USB-to-TTL programmer (FTDI or CP2102)
+   - Jumper wires
+   - Breadboard or PCB
+   - External antenna (optional)
+
+2. **Programming Connection**
+   ```
+   ESP32-CAM    USB Programmer
+   --------     --------------
+   5V       ->  5V (or 3.3V)
+   GND      ->  GND
+   GPIO 0   ->  GND (programming mode)
+   U0R      ->  TX
+   U0T      ->  RX
+   ```
+
+3. **Initial Programming**
+   - Connect GPIO 0 to GND for programming mode
+   - Upload firmware using Arduino IDE or PlatformIO
+   - Disconnect GPIO 0 from GND for normal operation
+   - Reset board to start firmware
+
+### External Sensor Integration
 ```cpp
-// Configuration templates for different deployment scenarios
-namespace DeploymentConfigs {
-    
-    // Budget conservation monitoring
-    const struct {
-        bool enable_sd_card = false;        // Save cost
-        bool enable_wifi = true;            // Basic connectivity
-        bool enable_lora = false;           // Additional cost
-        uint32_t sleep_duration_min = 5;    // 5-minute intervals
-        framesize_t frame_size = FRAMESIZE_VGA;
-        uint8_t jpeg_quality = 15;
-    } BUDGET_CONSERVATION = {};
-    
-    // Research-grade monitoring
-    const struct {
-        bool enable_sd_card = true;         // Local storage
-        bool enable_wifi = true;            // Data upload
-        bool enable_lora = true;            // Mesh networking
-        uint32_t sleep_duration_min = 1;    // 1-minute intervals
-        framesize_t frame_size = FRAMESIZE_UXGA;
-        uint8_t jpeg_quality = 8;
-    } RESEARCH_GRADE = {};
-    
-    // Remote area monitoring
-    const struct {
-        bool enable_sd_card = true;         // Essential for remote areas
-        bool enable_wifi = false;           // Not available
-        bool enable_lora = true;            // Long-range communication
-        uint32_t sleep_duration_min = 10;   // Extended battery life
-        framesize_t frame_size = FRAMESIZE_SVGA;
-        uint8_t jpeg_quality = 12;
-    } REMOTE_AREA = {};
-}
+// PIR Motion Sensor Connection
+// VCC  -> 3.3V
+// GND  -> GND  
+// OUT  -> GPIO 13
+
+// Environmental Sensor (DHT22) - Optional
+// VCC  -> 3.3V
+// GND  -> GND
+// DATA -> GPIO 15 (if SD card disabled)
+
+// LoRa Module (SX1276) Connection
+// VCC  -> 3.3V
+// GND  -> GND
+// SCK  -> GPIO 18
+// MISO -> GPIO 19
+// MOSI -> GPIO 23
+// CS   -> GPIO 12 (if SD disabled)
+// RST  -> GPIO 14 (if SD disabled)
+// DIO0 -> GPIO 2  (if SD disabled)
 ```
+
+### Power System Integration
+```cpp
+// Solar Power System for AI-Thinker ESP32-CAM
+struct PowerSystemComponents {
+    // Solar panel
+    float solar_panel_watts = 5.0;             // 5W monocrystalline
+    float solar_panel_voltage = 6.0;           // 6V output
+    
+    // Battery
+    uint32_t battery_capacity_mah = 2000;      // 2Ah Li-ion 18650
+    float battery_voltage = 3.7;               // 3.7V nominal
+    
+    // Charge controller
+    String charge_controller = "TP4056";       // Simple Li-ion charger
+    bool enable_protection = true;             // Battery protection circuit
+    
+    // Voltage regulation
+    String voltage_regulator = "AMS1117-3.3";  // 3.3V LDO regulator
+    uint32_t max_current_ma = 800;             // Maximum current capacity
+    
+    // Power distribution
+    bool enable_power_switch = true;           // Manual power switch
+    bool enable_status_led = true;             // Power status LED
+};
+```
+
+## Enclosure and Mounting
+
+### Weatherproof Enclosure Requirements
+```cpp
+struct EnclosureSpecifications {
+    // Environmental protection
+    String ip_rating = "IP65";                  // Dust and water resistant
+    float operating_temp_min = -20.0;          // °C
+    float operating_temp_max = 60.0;            // °C
+    bool uv_resistant = true;                   // UV-resistant materials
+    
+    // Physical dimensions
+    uint16_t internal_width_mm = 80;            // Internal width
+    uint16_t internal_height_mm = 60;           // Internal height
+    uint16_t internal_depth_mm = 40;            // Internal depth
+    
+    // Mounting features
+    bool wall_mount_brackets = true;           // Wall mounting
+    bool tree_mount_straps = true;             // Tree mounting
+    bool ground_stake_option = true;           // Ground mounting
+    
+    // Access features
+    bool hinged_front = true;                  // Easy access
+    bool cable_glands = true;                  // Sealed cable entry
+    bool desiccant_compartment = true;         // Moisture control
+};
+```
+
+### 3D Printable Enclosure
+```stl
+// 3D printable files available in 3d_models/ai_thinker_esp32_cam/
+- ai_thinker_main_enclosure.stl          // Main housing
+- ai_thinker_front_cover.stl             // Camera front cover
+- ai_thinker_back_cover.stl              // Access panel
+- solar_panel_mount_bracket.stl          // Solar panel mount
+- tree_mounting_strap_clips.stl          // Tree mounting clips
+- ventilation_grilles.stl                // Condensation prevention
+
+// Common components in 3d_models/common/
+- mounting_hardware.stl                  // Universal mounting system
+- cable_management.stl                   // Cable routing and strain relief
+- weatherproofing_gaskets.stl            // Flexible sealing gaskets
+```
+
+## Firmware Optimization
+
+### Memory Optimization for 4MB Flash
+```cpp
+// Optimize for limited flash memory
+struct MemoryOptimization {
+    // Partition scheme
+    String partition_scheme = "minimal_spiffs";  // Minimal file system
+    uint32_t app_partition_size = 1280;         // KB - application space
+    uint32_t spiffs_partition_size = 512;       // KB - file system
+    uint32_t ota_partition_size = 1280;         // KB - OTA updates
+    
+    // Code optimization
+    bool enable_compiler_optimization = true;   // -Os optimization
+    bool strip_debug_symbols = true;           // Remove debug info
+    bool minimize_libraries = true;            // Include only needed libraries
+    
+    // Runtime optimization
+    bool enable_psram_cache = true;            // Use PSRAM for caching
+    bool optimize_jpeg_buffer = true;          // Optimize JPEG memory
+    uint8_t fb_count = 1;                      // Single frame buffer
+};
+```
+
+### Power Consumption Optimization
+```cpp
+// Optimize power consumption for extended battery life
+struct PowerOptimization {
+    // Sleep mode configuration
+    esp_sleep_wakeup_cause_t wakeup_sources = ESP_SLEEP_WAKEUP_EXT0 | ESP_SLEEP_WAKEUP_TIMER;
+    uint32_t deep_sleep_duration_us = 300000000; // 5 minutes
+    
+    // CPU frequency scaling
+    uint32_t cpu_freq_mhz = 80;                // Reduce from 240MHz to 80MHz
+    bool enable_automatic_light_sleep = true;  // Auto light sleep
+    
+    // Peripheral power management
+    bool disable_bluetooth = true;             // Disable BT to save power
+    bool wifi_power_save = true;              // Enable WiFi power save
+    uint8_t wifi_tx_power = 15;               // Reduce TX power (dBm)
+    
+    // Camera power management
+    bool camera_power_down = true;            // Power down camera between captures
+    uint32_t camera_init_time_ms = 2000;     // Camera initialization time
+    
+    // Expected power consumption
+    float active_current_ma = 160;            // During capture/transmission
+    float sleep_current_ua = 15;              // Deep sleep current
+    float average_current_ma = 8;             // Average over 24 hours
+};
+```
+
+## Performance Characteristics
+
+### Image Quality Analysis
+```cpp
+struct ImageQualityMetrics {
+    // Resolution capabilities
+    uint16_t max_resolution_width = 1600;      // UXGA width
+    uint16_t max_resolution_height = 1200;     // UXGA height
+    uint16_t recommended_width = 800;          // SVGA width (balance)
+    uint16_t recommended_height = 600;         // SVGA height (balance)
+    
+    // Quality settings
+    uint8_t jpeg_quality_high = 8;             // High quality (large files)
+    uint8_t jpeg_quality_balanced = 12;        // Balanced quality/size
+    uint8_t jpeg_quality_compressed = 18;      // High compression (small files)
+    
+    // File sizes (approximate)
+    uint32_t file_size_uxga_high_kb = 400;     // UXGA high quality
+    uint32_t file_size_svga_balanced_kb = 100; // SVGA balanced
+    uint32_t file_size_vga_compressed_kb = 40; // VGA compressed
+    
+    // Low light performance
+    float min_illumination_lux = 2.0;          // Minimum light level
+    bool infrared_sensitivity = true;          // IR sensitive (remove filter)
+    uint16_t max_exposure_ms = 1000;          // Maximum exposure time
+};
+```
+
+### Network Performance
+```cpp
+struct NetworkPerformanceMetrics {
+    // WiFi performance
+    float wifi_range_meters = 100;             // Typical WiFi range
+    uint32_t wifi_throughput_kbps = 1000;      // Typical throughput
+    uint8_t wifi_power_consumption_ma = 160;   // WiFi active current
+    
+    // LoRa performance (with SX1276 module)
+    float lora_range_km = 5;                   // Typical LoRa range
+    uint32_t lora_throughput_bps = 5000;       // LoRa data rate
+    uint8_t lora_power_consumption_ma = 120;   // LoRa TX current
+    
+    // Mesh networking
+    uint8_t max_mesh_hops = 4;                 // Maximum mesh hops
+    uint32_t mesh_coordination_delay_ms = 500; // Mesh coordination delay
+    uint8_t mesh_reliability_percent = 85;     // Mesh reliability
+};
+```
+
+### Cost Analysis and ROI
+
+The AI-Thinker ESP32-CAM offers excellent value for wildlife monitoring deployments:
+
+#### Budget Breakdown (USD)
+- **Basic setup**: $60 (Camera + basic power + enclosure)
+- **Standard setup**: $85 (Add LoRa networking)  
+- **Advanced setup**: $110 (Add all sensors and features)
+
+#### Key Cost Components
+- ESP32-CAM board: $12
+- USB-TTL programmer: $8
+- MicroSD card (32GB): $8
+- Solar panel (5W): $18
+- Li-ion battery: $6
+- LoRa module (optional): $10
+- Enclosure and mounting: $20
+
+#### Return on Investment
+- **vs Commercial trail cameras**: $115-315 savings per unit
+- **vs Manual monitoring**: Payback in ~3 months
+- **Cost per image**: $0.025 (compared to $1-5 for commercial solutions)
 
 ## Conclusion
 
-Congratulations! You have successfully deployed the AI-Thinker ESP32-CAM for wildlife monitoring. This comprehensive guide has covered:
+Congratulations! You have successfully deployed the AI-Thinker ESP32-CAM for wildlife monitoring. This cost-effective solution provides:
 
-- **Complete deployment process** from initial setup to testing
-- **Hardware specifications** and pin configurations
-- **Troubleshooting solutions** for common issues
-- **Board-specific considerations** and limitations
-- **Advanced configuration options** for optimal performance
+- **Reliable image capture** with OV2640 camera sensor
+- **Flexible connectivity** via WiFi and optional LoRa
+- **Extended operation** with solar power and deep sleep
+- **Comprehensive monitoring** with optional sensor integration
+- **Remote accessibility** for data collection and system management
+
+The AI-Thinker ESP32-CAM serves as an excellent foundation for conservation projects, research deployments, and educational initiatives. Its popularity ensures strong community support and readily available components.
 
 ### Next Steps
+1. **Monitor system performance** through the web interface or serial output
+2. **Optimize settings** based on your specific environment and requirements  
+3. **Scale deployment** by replicating this setup for additional monitoring locations
+4. **Integrate with data analysis** tools for wildlife behavior studies
+5. **Contribute improvements** to the open-source community
 
-1. **Customize for Your Environment**: Adapt the configuration based on your specific wildlife monitoring needs
-2. **Add External Sensors**: Use available GPIO pins to add PIR sensors, environmental sensors, or LoRa modules
-3. **Optimize Power Management**: Implement deep sleep and solar power systems for extended field deployment
-4. **Scale Your Network**: Use this setup as a template for additional camera nodes
-
-### Template Adaptation for Other Boards
-
-This guide structure can be adapted for other ESP32 camera boards by:
-
-1. **Updating Pin Definitions**: Modify GPIO assignments in Step 4
-2. **Adjusting Hardware Specifications**: Update board-specific features and capabilities
-3. **Modifying Connection Diagrams**: Adapt wiring instructions for different form factors
-4. **Customizing Board Selection**: Update Arduino IDE board selection instructions
-5. **Tailoring Troubleshooting**: Add board-specific common issues and solutions
-
-The AI-Thinker ESP32-CAM provides an excellent foundation for wildlife monitoring deployments, offering cost-effective performance suitable for most conservation and research applications. Its widespread adoption ensures excellent community support and component availability.
+For advanced configurations, sensor integration, and mesh networking setup, refer to the project's main documentation and example configurations.
 
 ---
 
-*For additional support, consult the [Board Compatibility Guide](../../board_compatibility.md) and [Hardware Selection Guide](../../hardware_selection_guide.md) for comparative analysis with other ESP32 camera boards.*
+*This guide can be adapted for other ESP32 camera boards by modifying the specific pin configurations, board selection settings, and hardware requirements as needed.*
