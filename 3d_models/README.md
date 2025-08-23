@@ -143,4 +143,4 @@ Before final deployment, test print with:
 
 ---
 
-*This 3D printing guide is currently a placeholder and will be expanded with detailed models and instructions.*
+*Detailed 3D printing guides, assembly instructions, and model files are available in the respective subdirectories: `ai_thinker_esp32_cam/` and `budget_enclosures/`.*

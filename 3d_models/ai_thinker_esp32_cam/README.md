@@ -7,7 +7,7 @@ This directory contains 3D printable enclosures specifically designed for the AI
 ### Main Housing
 - **ai_thinker_main_enclosure.stl** - Primary weatherproof housing
   - Dimensions: 85mm x 65mm x 45mm (internal)
-  - IP65 weather protection
+  - IP54+ weather protection (with proper assembly)
   - Camera lens opening: 12mm diameter
   - Antenna access port
   - Ventilation channels for heat dissipation
@@ -51,11 +51,11 @@ This directory contains 3D printable enclosures specifically designed for the AI
 ### Pin Access Requirements
 ```cpp
 // Critical pins requiring external access
-#define PROGRAMMING_TX_PIN    1    // Serial programming
-#define PROGRAMMING_RX_PIN    3    // Serial programming  
-#define RESET_PIN            -1    // Reset button access
-#define GPIO_FLASH_PIN        0    // Flash button access
-#define EXTERNAL_ANTENNA     -1    // Optional external antenna
+#define PROGRAMMING_TX_PIN    1    // Serial programming (TX)
+#define PROGRAMMING_RX_PIN    3    // Serial programming (RX)  
+#define RESET_PIN           N/A    // Reset button (not connected on AI-Thinker)
+#define GPIO_FLASH_PIN        0    // Flash button access (GPIO0)
+#define EXTERNAL_ANTENNA    N/A    // Optional external antenna (not implemented)
 ```
 
 ## Print Settings
@@ -109,8 +109,10 @@ Print Speed: 40-60mm/s
 
 ### Step 4: Weatherproofing
 1. Apply silicone sealant to all cable entry points
-2. Install breathable membrane in ventilation ports
+2. Install breathable membrane in ventilation ports  
 3. Test seal integrity before deployment
+
+> **Detailed weatherproofing guidance:** See `../common/README.md` for comprehensive gasket installation, sealant application, and testing procedures.
 
 ## Customization Options
 
@@ -167,7 +169,7 @@ The STL files in this directory are based on open-source designs and community c
 
 - Base enclosure design derived from ESP32-CAM community projects
 - Mounting systems adapted from trail camera designs
-- Weather sealing based on IP65 electronic enclosure standards
+- Weather sealing targets IP54+ protection with proper gasket installation
 
 ### Design Credits
 - Original ESP32-CAM enclosure concept: ESP32 community
@@ -195,6 +197,6 @@ You are free to share, adapt, and use commercially with proper attribution.
 
 ---
 
-*Last updated: December 2024*
+*Last updated: August 2025*
 *Design version: 1.0*
 *Compatible with: AI-Thinker ESP32-CAM v1.6+*
