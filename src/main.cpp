@@ -27,7 +27,9 @@
 #include "power/power_manager.h"
 #include "ai/wildlife_classifier.h"
 #include "data/data_collector.h"
+#include "data/storage_manager.h"
 #include "utils/logger.h"
+#include "utils/time_manager.h"
 
 // System components
 CameraManager cameraManager;
@@ -105,56 +107,41 @@ bool initializeSDCard() {
 }
 
 /**
- * @brief Initialize system time
+ * @brief Initialize time and scheduling
  */
-void initializeTime() {
-    // Configure NTP (if WiFi available) or use RTC
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo)) {
-        LOG_WARNING("Failed to obtain time, using default");
-        // Set a default time for file naming
-        time_t defaultTime = 1640995200; // Jan 1, 2022
-        struct timeval tv = { defaultTime, 0 };
-        settimeofday(&tv, NULL);
-    }
+void initializeTimeSystem() {
+    // Initialize time manager
+    TimeManager::initialize();
+    
+    // Add scheduled tasks
+    TimeManager::addScheduledTask(0, 0, 255, resetDailyCounters, "Daily Reset");
+    TimeManager::addScheduledTask(2, 0, 255, []() {
+        // Daily storage cleanup at 2 AM
+        StorageManager::performCleanup(false);
+    }, "Storage Cleanup");
+    
+    // Add weekly aggressive cleanup
+    TimeManager::addScheduledTask(3, 0, 0, []() {
+        // Sunday 3 AM - aggressive cleanup
+        StorageManager::performCleanup(true);
+    }, "Weekly Deep Cleanup");
 }
 
 /**
  * @brief Check if current time is within active hours
  */
 bool isWithinActiveHours() {
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    
-    int currentHour = timeinfo.tm_hour;
-    
-    if (ACTIVE_START_HOUR <= ACTIVE_END_HOUR) {
-        return (currentHour >= ACTIVE_START_HOUR && currentHour < ACTIVE_END_HOUR);
-    } else {
-        // Handles case where active period crosses midnight
-        return (currentHour >= ACTIVE_START_HOUR || currentHour < ACTIVE_END_HOUR);
-    }
+    return TimeManager::isWithinActiveHours();
 }
 
 /**
  * @brief Reset daily counters
  */
 void resetDailyCounts() {
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    
-    uint32_t currentDay = timeinfo.tm_yday;
-    uint32_t lastDay = lastDayReset / (24 * 3600);
-    
-    if (currentDay != lastDay) {
-        dailyTriggerCount = 0;
-        lastDayReset = now;
-        LOG_INFO("Daily counters reset");
-    }
+    TimeManager::resetDailyCounters();
+    dailyTriggerCount = 0;
+    lastDayReset = TimeManager::getCurrentTimestamp();
+    LOG_INFO("Daily counters reset");
 }
 
 /**
@@ -217,7 +204,7 @@ void handleMotionEvent() {
 }
 
 /**
- * @brief System status monitoring
+ * @brief System status monitoring with storage management
  */
 void performStatusCheck() {
     uint32_t now = millis();
@@ -231,20 +218,34 @@ void performStatusCheck() {
     // Update power manager
     powerManager.update();
     
+    // Process scheduled tasks
+    TimeManager::processScheduledTasks();
+    
+    // Check storage space
+    if (StorageManager::isWarningThresholdExceeded()) {
+        LOG_WARNING("Storage space warning - running cleanup");
+        StorageManager::performCleanup(false);
+    }
+    
     // Get system statistics
     PowerManager::PowerStats powerStats = powerManager.getStatistics();
     CameraManager::CameraStats cameraStats = cameraManager.getStatistics();
     HybridMotionDetector::HybridStats motionStats = motionDetector.getStatistics();
+    WildlifeClassifier::ClassifierStats aiStats = wildlifeClassifier.getStatistics();
+    DataCollector::CollectionStats dataStats = dataCollector.getStatistics();
+    StorageManager::StorageStats storageStats = StorageManager::getStatistics();
     
     // Update system uptime
-    systemStats.uptime = now - bootTime;
+    systemStats.uptime = TimeManager::getUptime();
     systemStats.averageBatteryLevel = (systemStats.averageBatteryLevel * 0.9f) + (powerStats.batteryPercentage * 0.1f);
     
-    // Log system status
+    // Log comprehensive system status
     String statusMsg = "Status - Battery: " + String(powerStats.batteryPercentage, 1) + "%, " +
                       "Images: " + String(systemStats.totalImages) + ", " +
                       "Motion Events: " + String(systemStats.motionEvents) + ", " +
-                      "Uptime: " + String(systemStats.uptime / 1000) + "s";
+                      "AI Detections: " + String(aiStats.successfulInferences) + ", " +
+                      "Storage: " + String(storageStats.usagePercentage, 1) + "%, " +
+                      "Uptime: " + String(systemStats.uptime) + "s";
     
     LOG_INFO(statusMsg);
     
@@ -322,8 +323,15 @@ void setup() {
     Logger::initialize(sdCardInitialized);
     LOG_INFO("=== System Boot Started ===");
     
-    // Initialize time
-    initializeTime();
+    // Initialize time and scheduling
+    initializeTimeSystem();
+    
+    // Initialize storage manager
+    if (!StorageManager::initialize()) {
+        LOG_WARNING("Storage manager initialization failed - continuing with basic functionality");
+    } else {
+        LOG_INFO("Storage manager initialized successfully");
+    }
     
     // Initialize power management
     if (!powerManager.initialize()) {
