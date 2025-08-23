@@ -77,14 +77,23 @@ Support: Minimize with design optimization
 Print Speed: 60mm/s (balance of speed/quality)
 ```
 
-### Estimated Print Times and Costs
-| Component | Print Time | Material Cost (PLA) | Power Cost |
-|-----------|------------|---------------------|------------|
-| Main Case | 4-6 hours | $2.50 | $0.50 |
-| Solar Mount | 2-3 hours | $1.25 | $0.25 |
-| Battery Compartment | 3-4 hours | $1.75 | $0.35 |
-| Lens Hood | 1-2 hours | $0.75 | $0.15 |
-| **Total** | **10-15 hours** | **$6.25** | **$1.25** |
+### Realistic Print Times and Costs
+| Component | Print Time | Material Cost (PLA) | Power Cost | Printer Wear | Failed Prints (15%) |
+|-----------|------------|---------------------|------------|--------------|---------------------|
+| Main Case | 4-6 hours | $2.50 | $0.50 | $0.40 | $0.53 |
+| Solar Mount | 2-3 hours | $1.25 | $0.25 | $0.20 | $0.26 |
+| Battery Compartment | 3-4 hours | $1.75 | $0.35 | $0.30 | $0.37 |
+| Lens Hood | 1-2 hours | $0.75 | $0.15 | $0.15 | $0.16 |
+| **Subtotal** | **10-15 hours** | **$6.25** | **$1.25** | **$1.05** | **$1.32** |
+
+### Additional Costs
+| Item | Cost | Notes |
+|------|------|-------|
+| Post-processing materials | $1.50 | Sandpaper, solvents, supports removal |
+| Quality control time | $2.00 | Testing, fitting, rework at $20/hour |
+| **Total per unit** | **$13.37** | **Realistic all-in cost** |
+
+> **Note:** Costs assume hobbyist 3D printer depreciation, 15% failure rate for complex prints, and basic post-processing. Professional printing services may cost 2-3x more but include quality guarantees.
 
 ## Assembly Without Specialized Tools
 
@@ -145,7 +154,7 @@ Print Speed: 60mm/s (balance of speed/quality)
 ### Budget Enclosure Performance
 | Feature | Budget Design | Premium Design | Cost Difference |
 |---------|---------------|----------------|-----------------|
-| Weather Protection | IP54 (6 months) | IP65 (2+ years) | +$15 materials |
+| Weather Protection | IP54 (6-12 months) | IP54+ (2+ years) | +$15 materials |
 | Temperature Range | -5°C to 40°C | -20°C to 60°C | +$25 materials |
 | UV Resistance | 6-12 months | 5+ years | +$30 materials |
 | Assembly Time | 30 minutes | 2+ hours | +$0 |
@@ -192,6 +201,8 @@ Print Speed: 60mm/s (balance of speed/quality)
    - Re-apply sealant at joints
    - Check for print layer separation
 
+> **Weatherproofing reference:** For detailed sealing techniques and troubleshooting, see `../common/README.md`.
+
 2. **UV degradation**
    - Re-apply UV protective coating
    - Consider material upgrade
@@ -234,6 +245,6 @@ All designs in this directory are released under:
 
 ---
 
-*Last updated: December 2024*
+*Last updated: August 2025*
 *Budget enclosure program version: 1.0*
 *Total project cost target: Under $15 per unit*
