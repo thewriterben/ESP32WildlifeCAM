@@ -22,28 +22,51 @@ def check_gpio_pin_conflicts():
     
     # Extract pin assignments (ignore commented lines)
     pin_assignments = {}
-    pin_pattern = r'^[^/]*#define\s+(\w+)\s+(\d+)\s*//.*pin'
+    # Specific patterns to match only actual GPIO pin assignments
+    pin_patterns = [
+        r'^[^/]*#define\s+(\w*_PIN)\s+(\d+)',                 # Pattern for *_PIN defines
+        r'^[^/]*#define\s+(\w*GPIO_NUM)\s+(\d+)',             # Pattern for *GPIO_NUM defines  
+        r'^[^/]*#define\s+(LORA_SCK|LORA_MISO|LORA_MOSI|LORA_CS|LORA_RST|LORA_DIO0)\s+(\d+)', # LoRa GPIO pins only
+        r'^[^/]*#define\s+(PIR_PIN)\s+(\d+)',                 # PIR sensor pin
+    ]
+    conflicts_found = False
     
     for line_num, line in enumerate(content.split('\n'), 1):
         # Skip commented lines
         if line.strip().startswith('//'):
             continue
             
-        match = re.search(pin_pattern, line, re.IGNORECASE)
-        if match:
-            define_name = match.group(1)
-            pin_number = int(match.group(2))
-            
-            if pin_number in pin_assignments:
-                print(f"CONFLICT: GPIO {pin_number} used for both {pin_assignments[pin_number]} and {define_name}")
-            else:
-                pin_assignments[pin_number] = define_name
+        for pattern in pin_patterns:
+            match = re.search(pattern, line, re.IGNORECASE)
+            if match:
+                define_name = match.group(1)
+                pin_number = int(match.group(2))
+                
+                # Skip negative pins (they indicate "not used")
+                if pin_number < 0:
+                    continue
+                    
+                # Only consider valid ESP32 GPIO pins (0-39)
+                if pin_number > 39:
+                    continue
+                
+                if pin_number in pin_assignments:
+                    print(f"CONFLICT: GPIO {pin_number} used for both {pin_assignments[pin_number]} and {define_name}")
+                    conflicts_found = True
+                else:
+                    pin_assignments[pin_number] = define_name
+                break  # Only match first pattern to avoid duplicates
     
     print(f"Found {len(pin_assignments)} GPIO pin assignments")
     for pin, name in sorted(pin_assignments.items()):
         print(f"  GPIO {pin:2d}: {name}")
     
-    return True
+    if conflicts_found:
+        print("❌ GPIO pin conflicts detected!")
+        return False
+    else:
+        print("✅ No GPIO pin conflicts found")
+        return True
 
 def check_include_guards():
     """Check for proper include guards in header files"""
