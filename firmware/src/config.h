@@ -450,14 +450,93 @@
 #define MULTIBOARD_NETWORK_SELECTOR_INTEGRATION true // Integrate with network selector
 
 // ===========================
+// PHASE 4: PRODUCTION DEPLOYMENT CONFIGURATION
+// ===========================
+
+// Production System Configuration
+#define PRODUCTION_MODE_ENABLED true     // Enable Phase 4 production features
+#define PRODUCTION_PROFILE_DEFAULT "research_deployment" // Default production profile
+
+// OTA Update Configuration
+#define OTA_ENABLED true                 // Enable over-the-air updates
+#define OTA_AUTO_UPDATE false            // Disable automatic updates for safety
+#define OTA_REQUIRE_MANUAL_APPROVAL true // Require manual approval for updates
+#define OTA_CHECK_INTERVAL_HOURS 24     // Check for updates every 24 hours
+#define OTA_BATTERY_THRESHOLD 3.2        // Minimum battery voltage for updates (V)
+#define OTA_UPDATE_SERVER_URL "https://updates.wildlifecam.org/firmware/"
+
+// Configuration Management
+#define CONFIG_REMOTE_SYNC_ENABLED false // Disable remote config sync by default
+#define CONFIG_AUTO_BACKUP_ENABLED true // Enable automatic configuration backup
+#define CONFIG_BACKUP_INTERVAL_HOURS 24 // Backup configuration every 24 hours
+#define CONFIG_VERSION_RETENTION 10     // Keep last 10 configuration versions
+
+// Environmental Adaptation
+#define ENV_ADAPTATION_ENABLED true     // Enable environmental adaptation
+#define ENV_ADAPTATION_INTERVAL 600     // Adaptation check interval (seconds)
+#define ENV_ADAPTATION_SENSITIVITY 0.7  // Adaptation sensitivity (0.0-1.0)
+#define ENV_SENSOR_UPDATE_INTERVAL 60   // Environmental sensor update interval (seconds)
+
+// Species Detection Configuration
+#define SPECIES_DETECTION_ENABLED true  // Enable advanced species detection
+#define SPECIES_CONFIDENCE_THRESHOLD 0.75 // Default confidence threshold
+#define SPECIES_CONSERVATION_THRESHOLD 0.5 // Lower threshold for conservation species
+#define SPECIES_INDIVIDUAL_TRACKING true // Enable individual animal tracking
+#define SPECIES_BEHAVIOR_ANALYSIS true  // Enable behavior pattern analysis
+
+// Cloud Integration Configuration
+#define CLOUD_SYNC_ENABLED false        // Disable cloud sync by default (enable in production)
+#define CLOUD_SYNC_MODE 2               // Smart sync mode (0=real-time, 1=batch, 2=smart)
+#define CLOUD_BATCH_INTERVAL 300        // Batch sync interval (seconds)
+#define CLOUD_COMPRESS_DATA true        // Enable data compression for cloud sync
+#define CLOUD_ENCRYPT_DATA true         // Enable data encryption for cloud sync
+#define CLOUD_MAX_RETRIES 3             // Maximum retry attempts for failed syncs
+
+// Data Protection Configuration
+#define DATA_ENCRYPTION_ENABLED true    // Enable data encryption
+#define DATA_ACCESS_CONTROL_ENABLED true // Enable access control
+#define DATA_AUDIT_LOGGING_ENABLED true // Enable audit logging
+#define DATA_LOCATION_PRIVACY true      // Enable location privacy protection
+#define DATA_ANONYMIZATION_LEVEL 0.8    // Data anonymization level (0.0-1.0)
+#define DATA_RETENTION_DAYS 365         // Data retention period (days)
+
+// Security Configuration
+#define SECURITY_HARDWARE_ENABLED true  // Enable hardware security features
+#define SECURITY_KEY_ROTATION_DAYS 90   // Rotate encryption keys every 90 days
+#define SECURITY_AUDIT_RETENTION_DAYS 730 // Keep audit logs for 2 years
+#define SECURITY_FAILED_LOGIN_THRESHOLD 5 // Failed login attempts before lockout
+#define SECURITY_SESSION_TIMEOUT_MINUTES 30 // Session timeout (minutes)
+
+// Performance Monitoring
+#define PERFORMANCE_MONITORING_ENABLED true // Enable performance monitoring
+#define PERFORMANCE_HEALTH_CHECK_INTERVAL 60 // Health check interval (seconds)
+#define PERFORMANCE_STATISTICS_INTERVAL 300 // Statistics update interval (seconds)
+#define PERFORMANCE_ALERT_THRESHOLD 0.6 // System health alert threshold
+#define PERFORMANCE_CRITICAL_THRESHOLD 0.3 // Critical health threshold
+
+// Conservation Features
+#define CONSERVATION_ALERTS_ENABLED true // Enable conservation alerts
+#define CONSERVATION_PRIORITY_SPECIES true // Prioritize endangered species
+#define CONSERVATION_ANTI_POACHING false // Disable anti-poaching mode by default
+#define CONSERVATION_RESEARCH_MODE true // Enable research data collection
+#define CONSERVATION_LOCATION_BLUR_KM 1.0 // Location blur radius for privacy (km)
+
+// Enterprise Features
+#define ENTERPRISE_API_ENABLED false    // Disable API server by default
+#define ENTERPRISE_MULTI_SITE false     // Disable multi-site management by default
+#define ENTERPRISE_ANALYTICS false      // Disable advanced analytics by default
+#define ENTERPRISE_THIRD_PARTY false    // Disable third-party integrations by default
+
+// ===========================
 // FIRMWARE INFORMATION
 // ===========================
 
-#define FIRMWARE_VERSION "1.1.0"         // Firmware version string (updated for multi-board support)
+#define FIRMWARE_VERSION "2.0.0"         // Firmware version string (updated for Phase 4)
 #define HARDWARE_VERSION "1.0"           // Hardware version string
 #define BUILD_DATE __DATE__               // Build date (automatically set)
 #define BUILD_TIME __TIME__               // Build time (automatically set)
 #define DEVICE_NAME "WildlifeCam"         // Device identification name
+#define WILDLIFE_CAM_VERSION FIRMWARE_VERSION // Alias for compatibility
 
 // ===========================
 // PIN DEFINITIONS BY CAMERA MODEL
