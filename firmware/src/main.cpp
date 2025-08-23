@@ -1,24 +1,26 @@
 /**
- * ESP32 Wildlife Camera - Main Application with AI/ML Integration
+ * ESP32 Wildlife Camera - Main Application with Phase 4 Production Deployment
  * 
  * A solar-powered wildlife trail camera with LoRa mesh networking,
  * intelligent motion detection, weather filtering, and comprehensive
  * AI-powered wildlife monitoring capabilities.
  * 
- * Features:
+ * Features (Phases 1-4):
  * - ESP32-S3 with camera module and AI acceleration
  * - Solar power management with AI optimization
- * - LoRa mesh networking
+ * - LoRa mesh networking and multi-board communication
  * - Weather-aware motion filtering
  * - Deep sleep power optimization
  * - AI-powered species classification and behavior analysis
  * - TensorFlow Lite Micro integration
  * - Edge Impulse platform support
- * - MicroPython AI scripting
- * - Intelligent triggering and power management
+ * - Production deployment and OTA updates (Phase 4)
+ * - Enterprise cloud integration and analytics (Phase 4)
+ * - Advanced security and privacy protection (Phase 4)
+ * - Real-world environmental adaptation (Phase 4)
  * 
  * Author: ESP32WildlifeCAM Project
- * Version: 2.0.0 (AI Enhanced)
+ * Version: 3.0.0 (Phase 4 Production Ready)
  */
 
 #include <Arduino.h>
@@ -55,13 +57,16 @@
 #include "ai/ai_common.h"
 #endif
 
+// Phase 4 Production Deployment Integration
+#include "production/production_system.h"
+
 /**
  * @class SystemManager
- * @brief Central coordinator for all wildlife camera subsystems with AI/ML integration
+ * @brief Central coordinator for all wildlife camera subsystems with Phase 4 production features
  * 
  * This class manages the initialization, coordination, and lifecycle
  * of all camera subsystems, providing a clean interface for the main loop.
- * Includes comprehensive AI/ML capabilities when enabled.
+ * Includes comprehensive AI/ML capabilities and Phase 4 production deployment features.
  */
 class SystemManager {
 public:
@@ -100,6 +105,15 @@ public:
     void saveAIAnalysisMetadata(const String& filename, const WildlifeAnalysisResult& analysis);
 #endif
 
+    // Phase 4 Production methods
+    bool isProductionSystemInitialized() const { return productionSystemInitialized; }
+    void handleProductionUpdate();
+    void performSystemHealthCheck();
+    void handleProductionEvent(const ProductionEvent& event);
+    void checkForOTAUpdates();
+    void syncWithCloud();
+    bool processWildlifeDetectionProduction(const uint8_t* imageData, uint16_t width, uint16_t height);
+
 private:
     // Subsystem instances
     CameraHandler cameraHandler;
@@ -132,6 +146,13 @@ private:
     unsigned long lastAIAnalysis;
     WildlifeAnalysisResult lastAnalysisResult;
 #endif
+
+    // Phase 4 Production state
+    bool productionSystemInitialized;
+    unsigned long lastProductionUpdate;
+    unsigned long lastHealthCheck;
+    unsigned long lastOTACheck;
+    SystemHealthMetrics lastHealthMetrics;
     
     // Private methods
     bool initializeFileSystem();
@@ -141,6 +162,7 @@ private:
     bool initializeWildlifeTelemetry();
     bool initializeImageMesh();
     bool initializeAudioSystem();
+    bool initializeProductionSystem();
     bool isWithinActiveHours();
     void resetDailyCounts();
     String createImageFilename();
@@ -221,6 +243,8 @@ SystemManager::SystemManager()
 #ifdef ESP32_AI_ENABLED
     , aiSystemInitialized(false), lastAIAnalysis(0)
 #endif
+    , productionSystemInitialized(false), lastProductionUpdate(0), 
+      lastHealthCheck(0), lastOTACheck(0)
 {
 }
 
@@ -345,6 +369,17 @@ bool SystemManager::init() {
     }
     DEBUG_TIMER_END("ai_init");
 #endif
+
+    // Initialize Phase 4 Production System
+    DEBUG_TIMER_START("production_init");
+    if (initializeProductionSystem()) {
+        productionSystemInitialized = true;
+        DEBUG_SYSTEM_INFO("Phase 4 Production System initialized successfully");
+    } else {
+        productionSystemInitialized = false;
+        DEBUG_SYSTEM_WARN("Warning: Production system initialization failed - running in basic mode");
+    }
+    DEBUG_TIMER_END("production_init");
     
     DEBUG_TIMER_PRINT();
     return true;
@@ -460,6 +495,11 @@ void SystemManager::update() {
         return;
     }
 #endif
+
+    // Update Phase 4 Production System
+    if (productionSystemInitialized) {
+        handleProductionUpdate();
+    }
     
     // Enter deep sleep if no activity and low power
     if (currentTime - lastMotionTime > DEEP_SLEEP_DURATION * 1000 && 
@@ -1020,6 +1060,193 @@ void SystemManager::saveAIAnalysisMetadata(const String& filename, const Wildlif
         DEBUG_PRINTF("AI metadata saved: %s\n", filename.c_str());
     } else {
         DEBUG_PRINTF("Error: Failed to save AI metadata: %s\n", filename.c_str());
+    }
+}
+#endif
+
+/**
+ * Initialize Phase 4 Production System
+ */
+bool SystemManager::initializeProductionSystem() {
+    DEBUG_SYSTEM_INFO("Initializing Phase 4 Production System...");
+    
+    // Configure production deployment based on deployment scenario
+    ProductionConfig config;
+    config.deploymentId = "ESP32CAM_" + String(ESP.getEfuseMac(), HEX);
+    config.siteId = "WILDLIFE_SITE_001"; // Could be configured via setup
+    config.networkId = "WILDLIFE_NETWORK";
+    config.scenario = SCENARIO_CONSERVATION; // Default to conservation mode
+    
+    // Enable all production features
+    config.enableOTA = true;
+    config.enableCloudSync = true;
+    config.enableAdvancedAI = true;
+    config.enableEnvironmentalAdaptation = true;
+    config.enableSecurity = true;
+    config.enableMultiSite = false; // Disable for single-node testing
+    
+    // Set production targets
+    config.targetUptime = 99.9;
+    config.maxResponseTime = 5000;
+    config.maxDetectionLatency = 2000;
+    config.minBatteryLife = 30.0;
+    
+    // Conservation-specific settings
+    config.conservationMode = true;
+    config.endangeredSpeciesAlert = true;
+    config.poachingDetection = true;
+    config.habitatMonitoring = true;
+    
+    // Initialize production system
+    if (!initializeProductionSystem(config)) {
+        DEBUG_SYSTEM_ERROR("Failed to initialize production system");
+        return false;
+    }
+    
+    // Start production operations
+    if (!startWildlifeProduction()) {
+        DEBUG_SYSTEM_ERROR("Failed to start production operations");
+        return false;
+    }
+    
+    lastProductionUpdate = millis();
+    lastHealthCheck = millis();
+    lastOTACheck = millis();
+    
+    DEBUG_SYSTEM_INFO("Phase 4 Production System initialized successfully");
+    return true;
+}
+
+/**
+ * Handle Phase 4 Production System Updates
+ */
+void SystemManager::handleProductionUpdate() {
+    unsigned long currentTime = millis();
+    
+    // Check for OTA updates every hour
+    if (currentTime - lastOTACheck > 3600000) { // 1 hour
+        checkForOTAUpdates();
+        lastOTACheck = currentTime;
+    }
+    
+    // Perform health check every 10 minutes
+    if (currentTime - lastHealthCheck > 600000) { // 10 minutes
+        performSystemHealthCheck();
+        lastHealthCheck = currentTime;
+    }
+    
+    // Sync with cloud every 5 minutes (if enabled)
+    if (currentTime - lastProductionUpdate > 300000) { // 5 minutes
+        syncWithCloud();
+        lastProductionUpdate = currentTime;
+    }
+    
+    // Process any production events
+    if (g_productionSystem && g_productionSystem->isOperational()) {
+        // Production system handles its own updates
+    }
+}
+
+/**
+ * Perform System Health Check
+ */
+void SystemManager::performSystemHealthCheck() {
+    if (!productionSystemInitialized || !g_productionSystem) {
+        return;
+    }
+    
+    SystemHealthMetrics health = getProductionHealth();
+    
+    // Log health status
+    DEBUG_SYSTEM_INFO("System Health: %.1f%% (Status: %s)", 
+                      health.overallHealth, 
+                      health.status == PROD_OPERATIONAL ? "Operational" : "Warning");
+    
+    // Check for critical issues
+    if (health.overallHealth < 80.0) {
+        DEBUG_SYSTEM_WARN("System health below threshold: %.1f%%", health.overallHealth);
+        
+        // Log specific component issues
+        if (!health.otaHealthy) DEBUG_SYSTEM_WARN("OTA system unhealthy");
+        if (!health.configHealthy) DEBUG_SYSTEM_WARN("Configuration system unhealthy");
+        if (!health.environmentalHealthy) DEBUG_SYSTEM_WARN("Environmental system unhealthy");
+        if (!health.detectionHealthy) DEBUG_SYSTEM_WARN("Detection system unhealthy");
+        if (!health.cloudHealthy) DEBUG_SYSTEM_WARN("Cloud system unhealthy");
+        if (!health.securityHealthy) DEBUG_SYSTEM_WARN("Security system unhealthy");
+    }
+    
+    lastHealthMetrics = health;
+}
+
+/**
+ * Check for OTA Updates
+ */
+void SystemManager::checkForOTAUpdates() {
+    if (!productionSystemInitialized) {
+        return;
+    }
+    
+    DEBUG_SYSTEM_INFO("Checking for OTA updates...");
+    
+    // Check if OTA updates are available
+    if (checkAndUpdateFirmware()) {
+        DEBUG_SYSTEM_INFO("OTA update initiated");
+    } else {
+        DEBUG_SYSTEM_DEBUG("No OTA updates available");
+    }
+}
+
+/**
+ * Sync with Cloud
+ */
+void SystemManager::syncWithCloud() {
+    if (!productionSystemInitialized) {
+        return;
+    }
+    
+    // Check cloud connectivity
+    if (isCloudConnected()) {
+        // Sync detection data, system status, etc.
+        if (syncAllData()) {
+            DEBUG_SYSTEM_DEBUG("Cloud sync completed successfully");
+        } else {
+            DEBUG_SYSTEM_WARN("Cloud sync failed");
+        }
+    } else {
+        DEBUG_SYSTEM_DEBUG("Cloud not connected - skipping sync");
+    }
+}
+
+/**
+ * Process Wildlife Detection with Production Pipeline
+ */
+bool SystemManager::processWildlifeDetectionProduction(const uint8_t* imageData, uint16_t width, uint16_t height) {
+    if (!productionSystemInitialized || !g_productionSystem) {
+        return false;
+    }
+    
+    // Use production system's enhanced detection pipeline
+    return g_productionSystem->processWildlifeDetection(imageData, width, height);
+}
+
+/**
+ * Handle Production Events
+ */
+void SystemManager::handleProductionEvent(const ProductionEvent& event) {
+    DEBUG_SYSTEM_INFO("Production Event [%s]: %s", 
+                      event.component.c_str(), event.message.c_str());
+    
+    if (event.critical) {
+        DEBUG_SYSTEM_ERROR("Critical production event: %s", event.message.c_str());
+        
+        // Handle critical events
+        if (event.component == "Security") {
+            // Handle security incidents
+            DEBUG_SYSTEM_WARN("Security incident detected");
+        } else if (event.component == "Conservation") {
+            // Handle conservation alerts
+            DEBUG_SYSTEM_INFO("Conservation alert: %s", event.details.c_str());
+        }
     }
 }
 #endif
