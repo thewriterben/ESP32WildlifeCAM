@@ -570,3 +570,16 @@ void AcousticDetection::updatePerformanceMetrics() {
 bool AcousticDetection::isOperational() const {
     return initialized && g_audioTaskRunning;
 }
+
+std::vector<AcousticDetectionResult> AcousticDetection::getCallHistory(uint32_t maxResults) const {
+    std::vector<AcousticDetectionResult> history;
+    
+    // Get most recent detections up to maxResults
+    size_t count = std::min(static_cast<size_t>(maxResults), detectionHistory.size());
+    if (count > 0) {
+        auto it = detectionHistory.end() - count;
+        history.assign(it, detectionHistory.end());
+    }
+    
+    return history;
+}

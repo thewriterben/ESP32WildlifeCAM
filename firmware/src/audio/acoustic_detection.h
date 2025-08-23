@@ -345,6 +345,11 @@ public:
      * Get detected call history
      */
     std::vector<AcousticDetectionResult> getCallHistory(uint32_t maxResults = 100) const;
+    
+    /**
+     * Get species name for display
+     */
+    const char* getSpeciesName(RaptorSpecies species) const;
 
 private:
     // Core system state

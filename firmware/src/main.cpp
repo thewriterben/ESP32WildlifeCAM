@@ -40,6 +40,7 @@
 #include "lora_mesh.h"
 #include "display/hmi_system.h"
 #include "hal/board_detector.h"
+#include "audio/acoustic_detection.h"
 
 // AI/ML Integration (conditionally compiled)
 #ifdef ESP32_AI_ENABLED
@@ -74,11 +75,13 @@ public:
     PowerManager& getPowerManager() { return powerManager; }
     WiFiManager& getWiFiManager() { return wifiManager; }
     HMISystem& getHMISystem() { return hmiSystem; }
+    AcousticDetection& getAudioSystem() { return audioSystem; }
     
     // Status methods
     bool isCameraInitialized() const { return cameraHandler.isInitialized(); }
     bool isSDCardInitialized() const { return sdCardInitialized; }
     bool isLoRaInitialized() const { return loraInitialized; }
+    bool isAudioInitialized() const { return audioInitialized; }
     int getDailyTriggerCount() const { return dailyTriggerCount; }
     unsigned long getBootTime() const { return bootTime; }
     
@@ -97,11 +100,13 @@ private:
     PowerManager powerManager;
     WiFiManager wifiManager;
     HMISystem hmiSystem;
+    AcousticDetection audioSystem;
     std::unique_ptr<CameraBoard> detectedBoard;
     
     // System state
     bool sdCardInitialized;
     bool loraInitialized;
+    bool audioInitialized;
     unsigned long lastMotionTime;
     unsigned long bootTime;
     int dailyTriggerCount;
@@ -118,6 +123,7 @@ private:
     bool initializeFileSystem();
     bool initializeSDCard();
     bool initializeLoRa();
+    bool initializeAudioSystem();
     bool isWithinActiveHours();
     void resetDailyCounts();
     String createImageFilename();
@@ -193,8 +199,8 @@ void loop() {
  * SystemManager Constructor
  */
 SystemManager::SystemManager() 
-    : sdCardInitialized(false), loraInitialized(false), lastMotionTime(0),
-      bootTime(0), dailyTriggerCount(0), lastStatusCheck(0)
+    : sdCardInitialized(false), loraInitialized(false), audioInitialized(false), 
+      lastMotionTime(0), bootTime(0), dailyTriggerCount(0), lastStatusCheck(0)
 #ifdef ESP32_AI_ENABLED
     , aiSystemInitialized(false), lastAIAnalysis(0)
 #endif
@@ -298,6 +304,18 @@ bool SystemManager::init() {
         }
     }
     
+    // Initialize audio monitoring system if enabled
+    if (AUDIO_MONITORING_ENABLED) {
+        DEBUG_TIMER_START("audio_init");
+        audioInitialized = initializeAudioSystem();
+        DEBUG_TIMER_END("audio_init");
+        if (audioInitialized) {
+            DEBUG_SYSTEM_INFO("Audio monitoring system initialized");
+        } else {
+            DEBUG_SYSTEM_WARN("Warning: Audio system initialization failed");
+        }
+    }
+    
 #ifdef ESP32_AI_ENABLED
     // Initialize AI system if enabled
     DEBUG_TIMER_START("ai_init");
@@ -370,6 +388,37 @@ void SystemManager::update() {
 #endif
         } else {
             DEBUG_MOTION_DEBUG("Motion filtered out (weather conditions)");
+        }
+    }
+    
+    // Check for audio triggers if audio monitoring is enabled
+    if (audioInitialized && audioSystem.isOperational()) {
+        // Audio processing is handled in background task
+        // Check for high-confidence wildlife detections
+        auto recentDetections = audioSystem.getCallHistory(5); // Get last 5 detections
+        for (const auto& detection : recentDetections) {
+            if (detection.raptorCallDetected && 
+                detection.confidence > WILDLIFE_DETECTION_THRESHOLD &&
+                AUDIO_TRIGGERED_CAPTURE) {
+                
+                const char* speciesName = "Unknown";
+                switch (detection.likelySpecies) {
+                    case RaptorSpecies::EAGLE: speciesName = "Eagle"; break;
+                    case RaptorSpecies::HAWK: speciesName = "Hawk"; break;
+                    case RaptorSpecies::FALCON: speciesName = "Falcon"; break;
+                    case RaptorSpecies::HARRIER: speciesName = "Harrier"; break;
+                    case RaptorSpecies::KITE: speciesName = "Kite"; break;
+                    case RaptorSpecies::BUZZARD: speciesName = "Buzzard"; break;
+                    default: speciesName = "Unknown Raptor"; break;
+                }
+                
+                DEBUG_SYSTEM_INFO("Audio triggered capture: %s (%.2f confidence)", 
+                                 speciesName, detection.confidence);
+                
+                // Trigger camera capture for audio detection
+                handleMotionDetection(); // Reuse motion detection handler
+                break; // Only trigger once per update cycle
+            }
         }
     }
     
@@ -535,6 +584,12 @@ void SystemManager::logSystemStatus() {
     }
     
     DEBUG_MOTION_INFO("Motion Filter: %s", motionStatus.initialized ? "Active" : "Inactive");
+    DEBUG_SYSTEM_INFO("Audio System: %s", audioInitialized ? "Active" : "Disabled");
+    if (audioInitialized && audioSystem.isOperational()) {
+        auto performance = audioSystem.getPerformanceStats();
+        DEBUG_SYSTEM_INFO("Audio: %d samples processed, %d calls detected", 
+                         performance.samplesProcessed, performance.callsDetected);
+    }
     DEBUG_MEMORY_INFO("Free heap: %d bytes", ESP.getFreeHeap());
     DEBUG_SYSTEM_INFO("====================");
     
@@ -556,6 +611,12 @@ void SystemManager::cleanup() {
     motionFilter.cleanup();
     powerManager.cleanup();
     wifiManager.cleanup();
+    
+    if (audioInitialized) {
+        DEBUG_SYSTEM_DEBUG("Cleaning up audio system");
+        // Audio system cleanup is handled in the destructor
+        audioInitialized = false;
+    }
     
     if (loraInitialized) {
         DEBUG_LORA_DEBUG("Cleaning up LoRa subsystem");
@@ -639,6 +700,32 @@ bool SystemManager::initializeSDCard() {
 bool SystemManager::initializeLoRa() {
     DEBUG_LORA_INFO("Initializing LoRa mesh networking...");
     return LoraMesh::init();
+}
+
+/**
+ * Initialize audio monitoring system
+ */
+bool SystemManager::initializeAudioSystem() {
+    DEBUG_SYSTEM_INFO("Initializing audio monitoring system...");
+    
+    // Configure audio system based on scenario
+    RaptorScenario scenario = RaptorScenario::GENERAL_MONITORING;
+    
+    // Initialize with default audio configuration
+    AudioConfig audioConfig;
+    audioConfig.sampleRate_Hz = AUDIO_DEFAULT_SAMPLE_RATE;
+    audioConfig.enableVAD = true;
+    audioConfig.vadThreshold = SOUND_DETECTION_THRESHOLD;
+    audioConfig.enableNoiseReduction = WIND_NOISE_FILTER_ENABLED;
+    
+    // Initialize the acoustic detection system
+    if (!audioSystem.init(scenario, audioConfig)) {
+        DEBUG_SYSTEM_ERROR("Failed to initialize acoustic detection system");
+        return false;
+    }
+    
+    DEBUG_SYSTEM_INFO("Audio monitoring system ready");
+    return true;
 }
 
 /**
