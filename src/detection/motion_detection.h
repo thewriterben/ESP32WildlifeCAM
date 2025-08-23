@@ -162,6 +162,22 @@ private:
      * @return true if allocation successful
      */
     bool allocateReferenceFrame(size_t size);
+
+    /**
+     * @brief Simplified motion analysis for performance
+     * @param frameData Frame data
+     * @param frameSize Frame size
+     * @return Motion result
+     */
+    MotionResult simplifiedMotionAnalysis(const uint8_t* frameData, size_t frameSize);
+
+    /**
+     * @brief Calculate data sum for motion comparison
+     * @param data Data buffer
+     * @param size Data size
+     * @return Sum of data values
+     */
+    uint32_t calculateDataSum(const uint8_t* data, size_t size);
 };
 
 #endif // MOTION_DETECTION_H
