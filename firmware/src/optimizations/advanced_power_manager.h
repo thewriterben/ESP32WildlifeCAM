@@ -7,6 +7,11 @@
 #include <esp_pm.h>
 #include <vector>
 
+// XPowersLib integration for advanced power management
+#ifdef XPOWERS_ENABLED
+#include "XPowersLib.h"
+#endif
+
 /**
  * Advanced Power Manager - Enhanced power optimization for ESP32WildlifeCAM
  * 
@@ -86,6 +91,43 @@ public:
     
     PowerMetrics getPowerMetrics() const;
     void resetMetrics();
+    
+#ifdef XPOWERS_ENABLED
+    // XPowersLib Advanced Power Management Integration
+    bool initializeXPowers();
+    void cleanupXPowers();
+    bool hasXPowersChip() const;
+    
+    // Advanced battery monitoring with XPowersLib
+    float getAdvancedBatteryVoltage();
+    float getAdvancedBatteryCurrent();
+    float getBatteryChargeCurrent();
+    float getBatteryDischargeCurrent();
+    float getBatteryTemperature();
+    uint8_t getBatteryCapacityPercent();
+    bool isBatteryCharging();
+    bool isBatteryConnected();
+    
+    // Advanced solar/charging monitoring
+    float getSolarVoltage();
+    float getSolarCurrent();
+    float getSolarPower();
+    bool isSolarCharging();
+    void optimizeSolarCharging();
+    
+    // Advanced power control with XPowersLib
+    void setChargingCurrent(uint16_t currentMA);
+    void enableCharging(bool enable);
+    void setChargingTerminationVoltage(float voltage);
+    void enableLowBatteryWarning(bool enable, float threshold);
+    void enableOverchargeProtection(bool enable);
+    
+    // XPowersLib specific features
+    void enableButtonWakeup(bool enable);
+    void setLowPowerMode(bool enable);
+    void enterShipMode(); // Ultra-low power mode
+    void resetPowerSettings();
+#endif
 
 private:
     // Power measurement and prediction
@@ -123,6 +165,19 @@ private:
     gpio_num_t pirWakeupPin;
     unsigned long lastPowerMeasurement;
     float lastMeasuredPower;
+    
+#ifdef XPOWERS_ENABLED
+    // XPowersLib state variables
+    XPowersPPM* xpowers;
+    bool xpowersInitialized;
+    uint8_t xpowersChipModel;
+    unsigned long lastXPowersUpdate;
+    
+    // XPowers constants
+    static const uint32_t XPOWERS_UPDATE_INTERVAL = 5000; // 5 seconds
+    static const uint16_t DEFAULT_CHARGE_CURRENT = 500; // 500mA
+    static const float CHARGE_TERMINATION_VOLTAGE = 4.2f; // 4.2V
+#endif
     
     // Constants
     static const uint32_t POWER_MEASUREMENT_INTERVAL = 10000; // 10 seconds
