@@ -3,9 +3,11 @@
  * 
  * Provides secure, reliable firmware updates for wildlife camera networks.
  * Supports staged rollouts, A/B testing, and automatic rollback capabilities.
+ * Enhanced with AsyncElegantOTA for web-based updates (Phase 1).
  * 
  * Features:
  * - Secure OTA updates with signature verification
+ * - Web-based update interface via AsyncElegantOTA
  * - Staged deployment across network nodes
  * - Automatic health monitoring and rollback
  * - Bandwidth-efficient delta updates
@@ -21,6 +23,12 @@
 #include <HTTPUpdate.h>
 #include <esp_ota_ops.h>
 #include <esp_app_desc.h>
+
+// AsyncElegantOTA integration for Phase 1 enhancement
+#ifdef OTA_ENABLED
+#include <AsyncElegantOTA.h>
+#include <ESPAsyncWebServer.h>
+#endif
 
 // OTA Update Status
 enum OTAStatus {
@@ -195,6 +203,25 @@ public:
     void setStatusCallback(OTAStatusCallback callback) { statusCallback_ = callback; }
     void setErrorCallback(OTAErrorCallback callback) { errorCallback_ = callback; }
 
+#ifdef OTA_ENABLED
+    // AsyncElegantOTA Web Interface Integration - Phase 1 Enhancement
+    bool initWebOTA(AsyncWebServer* server);
+    bool startWebOTA(uint16_t port = 80, const String& username = "admin", const String& password = "wildlife");
+    void stopWebOTA();
+    bool isWebOTARunning() const { return webOTARunning_; }
+    String getWebOTAURL() const;
+    
+    // Web interface configuration
+    void setWebOTACredentials(const String& username, const String& password);
+    void enableWebOTAAuth(bool enable) { webOTAAuthEnabled_ = enable; }
+    void setWebOTAPath(const String& path) { webOTAPath_ = path; }
+    
+    // Web OTA callbacks
+    void onWebOTAStart(std::function<void()> callback) { webOTAStartCallback_ = callback; }
+    void onWebOTAProgress(std::function<void(size_t current, size_t total)> callback) { webOTAProgressCallback_ = callback; }
+    void onWebOTAEnd(std::function<void(bool success)> callback) { webOTAEndCallback_ = callback; }
+#endif
+
 private:
     // Core components
     OTAConfig config_;
@@ -218,6 +245,22 @@ private:
     OTAProgressCallback progressCallback_;
     OTAStatusCallback statusCallback_;
     OTAErrorCallback errorCallback_;
+    
+#ifdef OTA_ENABLED
+    // AsyncElegantOTA Web Interface state
+    AsyncWebServer* webOTAServer_;
+    bool webOTARunning_;
+    bool webOTAAuthEnabled_;
+    String webOTAUsername_;
+    String webOTAPassword_;
+    String webOTAPath_;
+    uint16_t webOTAPort_;
+    
+    // Web OTA callbacks
+    std::function<void()> webOTAStartCallback_;
+    std::function<void(size_t, size_t)> webOTAProgressCallback_;
+    std::function<void(bool)> webOTAEndCallback_;
+#endif
     
     // Internal methods
     bool downloadUpdate(const UpdatePackage& package);

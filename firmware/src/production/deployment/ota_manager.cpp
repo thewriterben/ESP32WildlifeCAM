@@ -2,6 +2,7 @@
  * OTA Manager Implementation
  * 
  * Secure over-the-air update system for wildlife camera networks
+ * Enhanced with AsyncElegantOTA for web-based updates
  */
 
 #include "ota_manager.h"
@@ -11,6 +12,13 @@
 #include <esp_ota_ops.h>
 #include <mbedtls/sha256.h>
 
+// AsyncElegantOTA integration for Phase 1 enhancement
+#ifdef OTA_ENABLED
+#include <AsyncElegantOTA.h>
+#include <ESPAsyncWebServer.h>
+#include <WiFi.h>
+#endif
+
 // Global instance
 OTAManager* g_otaManager = nullptr;
 
@@ -18,7 +26,12 @@ OTAManager* g_otaManager = nullptr;
 OTAManager::OTAManager() 
     : status_(OTA_IDLE), initialized_(false), hasAvailableUpdate_(false),
       progress_(0.0), updateStartTime_(0), rollbackTimeout_(0),
-      progressCallback_(nullptr), statusCallback_(nullptr), errorCallback_(nullptr) {
+      progressCallback_(nullptr), statusCallback_(nullptr), errorCallback_(nullptr)
+#ifdef OTA_ENABLED
+    , webOTAServer_(nullptr), webOTARunning_(false), webOTAAuthEnabled_(true),
+      webOTAUsername_("admin"), webOTAPassword_("wildlife"), webOTAPath_("/update"), webOTAPort_(80)
+#endif
+{
 }
 
 // Destructor
@@ -341,6 +354,128 @@ bool checkAndUpdateFirmware() {
     }
     return false;
 }
+
+#ifdef OTA_ENABLED
+// AsyncElegantOTA Web Interface Implementation - Phase 1 Enhancement
+
+bool OTAManager::initWebOTA(AsyncWebServer* server) {
+    if (!server) {
+        DEBUG_PRINTLN("ERROR: Web server is null");
+        return false;
+    }
+    
+    webOTAServer_ = server;
+    
+    // Initialize AsyncElegantOTA with the provided server
+    AsyncElegantOTA.begin(webOTAServer_, webOTAUsername_.c_str(), webOTAPassword_.c_str(), webOTAPath_.c_str());
+    
+    // Set up callbacks
+    AsyncElegantOTA.onStart([this]() {
+        DEBUG_PRINTLN("Web OTA update started");
+        updateStatus(OTA_DOWNLOADING, "Web OTA update started");
+        if (webOTAStartCallback_) webOTAStartCallback_();
+    });
+    
+    AsyncElegantOTA.onProgress([this](size_t current, size_t total) {
+        float progressPercent = (float)current / total * 100.0;
+        progress_ = progressPercent / 100.0;
+        String message = "Web OTA Progress: " + String((int)progressPercent) + "%";
+        updateProgress(progress_, message);
+        if (webOTAProgressCallback_) webOTAProgressCallback_(current, total);
+    });
+    
+    AsyncElegantOTA.onEnd([this](bool success) {
+        if (success) {
+            DEBUG_PRINTLN("Web OTA update completed successfully");
+            updateStatus(OTA_COMPLETE, "Web OTA update completed successfully");
+        } else {
+            DEBUG_PRINTLN("Web OTA update failed");
+            updateStatus(OTA_FAILED, "Web OTA update failed");
+        }
+        if (webOTAEndCallback_) webOTAEndCallback_(success);
+    });
+    
+    webOTARunning_ = true;
+    DEBUG_PRINTF("AsyncElegantOTA initialized on path: %s\n", webOTAPath_.c_str());
+    return true;
+}
+
+bool OTAManager::startWebOTA(uint16_t port, const String& username, const String& password) {
+    if (webOTARunning_) {
+        DEBUG_PRINTLN("Web OTA already running");
+        return true;
+    }
+    
+    webOTAPort_ = port;
+    webOTAUsername_ = username;
+    webOTAPassword_ = password;
+    
+    // Create a new web server if one wasn't provided
+    if (!webOTAServer_) {
+        webOTAServer_ = new AsyncWebServer(port);
+    }
+    
+    // Initialize web OTA
+    if (!initWebOTA(webOTAServer_)) {
+        DEBUG_PRINTLN("ERROR: Failed to initialize web OTA");
+        return false;
+    }
+    
+    // Add a root page with OTA info
+    webOTAServer_->on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        String html = "<!DOCTYPE html><html><head><title>ESP32 Wildlife Camera - OTA Update</title></head>";
+        html += "<body><h1>ESP32 Wildlife Camera</h1>";
+        html += "<h2>Over-The-Air Update System</h2>";
+        html += "<p>Current Version: " + getCurrentVersion() + "</p>";
+        html += "<p>Status: " + getStatusMessage() + "</p>";
+        html += "<p>Free Space: " + String(getFreeSpace()) + " bytes</p>";
+        html += "<br><a href='" + webOTAPath_ + "'>Go to Update Page</a>";
+        html += "</body></html>";
+        request->send(200, "text/html", html);
+    });
+    
+    // Start the server
+    webOTAServer_->begin();
+    webOTARunning_ = true;
+    
+    DEBUG_PRINTF("Web OTA started on port %d\n", port);
+    DEBUG_PRINTF("OTA URL: http://%s:%d%s\n", WiFi.localIP().toString().c_str(), port, webOTAPath_.c_str());
+    
+    return true;
+}
+
+void OTAManager::stopWebOTA() {
+    if (!webOTARunning_) return;
+    
+    AsyncElegantOTA.end();
+    
+    if (webOTAServer_) {
+        webOTAServer_->end();
+        delete webOTAServer_;
+        webOTAServer_ = nullptr;
+    }
+    
+    webOTARunning_ = false;
+    DEBUG_PRINTLN("Web OTA stopped");
+}
+
+String OTAManager::getWebOTAURL() const {
+    if (!webOTARunning_) return "";
+    return "http://" + WiFi.localIP().toString() + ":" + String(webOTAPort_) + webOTAPath_;
+}
+
+void OTAManager::setWebOTACredentials(const String& username, const String& password) {
+    webOTAUsername_ = username;
+    webOTAPassword_ = password;
+    DEBUG_PRINTF("Web OTA credentials updated: %s\n", username.c_str());
+}
+
+void OTAManager::setWebOTAPath(const String& path) {
+    webOTAPath_ = path;
+    DEBUG_PRINTF("Web OTA path set to: %s\n", path.c_str());
+}
+
+#endif // OTA_ENABLED
 
 OTAStatus getOTAStatus() {
     return g_otaManager ? g_otaManager->getStatus() : OTA_IDLE;

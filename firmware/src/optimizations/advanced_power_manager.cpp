@@ -17,6 +17,21 @@ bool AdvancedPowerManager::init() {
     lastPowerMeasurement = 0;
     lastMeasuredPower = 0;
     
+#ifdef XPOWERS_ENABLED
+    // Initialize XPowersLib state variables
+    xpowers = nullptr;
+    xpowersInitialized = false;
+    xpowersChipModel = 0;
+    lastXPowersUpdate = 0;
+    
+    // Initialize XPowersLib if available
+    if (initializeXPowers()) {
+        DEBUG_PRINTLN("XPowersLib initialized successfully");
+    } else {
+        DEBUG_PRINTLN("Warning: XPowersLib not available, using basic power management");
+    }
+#endif
+    
     // Configure power management
     esp_pm_config_esp32_t pm_config;
     pm_config.max_freq_mhz = 240;
@@ -318,6 +333,216 @@ AdvancedPowerManager::PowerMetrics AdvancedPowerManager::getPowerMetrics() const
 void AdvancedPowerManager::resetMetrics() {
     metrics = PowerMetrics();
 }
+
+#ifdef XPOWERS_ENABLED
+// XPowersLib Implementation
+
+bool AdvancedPowerManager::initializeXPowers() {
+    DEBUG_PRINTLN("Initializing XPowersLib...");
+    
+    // Try to initialize XPowersLib on I2C
+    xpowers = new XPowersPPM();
+    
+    // Try common I2C addresses for power management chips
+    uint8_t addresses[] = {0x34, 0x35, 0x36}; // Common AXP chip addresses
+    
+    for (int i = 0; i < 3; i++) {
+        if (xpowers->init(Wire, addresses[i], 21, 22)) { // SDA=21, SCL=22 for ESP32
+            xpowersChipModel = xpowers->getChipModel();
+            xpowersInitialized = true;
+            
+            DEBUG_PRINTF("XPowersLib initialized successfully with chip model: 0x%02X at address 0x%02X\n", 
+                        xpowersChipModel, addresses[i]);
+            
+            // Configure initial settings
+            xpowers->enableCharging(true);
+            xpowers->setChargingTargetVoltage(CHARGE_TERMINATION_VOLTAGE);
+            xpowers->setChargerConstantCurr(DEFAULT_CHARGE_CURRENT);
+            
+            return true;
+        }
+    }
+    
+    // Cleanup if initialization failed
+    delete xpowers;
+    xpowers = nullptr;
+    xpowersInitialized = false;
+    
+    DEBUG_PRINTLN("Warning: No XPowers chip detected");
+    return false;
+}
+
+void AdvancedPowerManager::cleanupXPowers() {
+    if (xpowersInitialized && xpowers) {
+        delete xpowers;
+        xpowers = nullptr;
+        xpowersInitialized = false;
+        DEBUG_PRINTLN("XPowersLib cleaned up");
+    }
+}
+
+bool AdvancedPowerManager::hasXPowersChip() const {
+    return xpowersInitialized && xpowers != nullptr;
+}
+
+float AdvancedPowerManager::getAdvancedBatteryVoltage() {
+    if (!hasXPowersChip()) return 0.0f;
+    return xpowers->getBattVoltage() / 1000.0f; // Convert mV to V
+}
+
+float AdvancedPowerManager::getAdvancedBatteryCurrent() {
+    if (!hasXPowersChip()) return 0.0f;
+    return xpowers->getBattDischargeCurrent();
+}
+
+float AdvancedPowerManager::getBatteryChargeCurrent() {
+    if (!hasXPowersChip()) return 0.0f;
+    return xpowers->getBattChargeCurrent();
+}
+
+float AdvancedPowerManager::getBatteryDischargeCurrent() {
+    if (!hasXPowersChip()) return 0.0f;
+    return xpowers->getBattDischargeCurrent();
+}
+
+float AdvancedPowerManager::getBatteryTemperature() {
+    if (!hasXPowersChip()) return 25.0f; // Default temperature
+    return xpowers->getTemperature();
+}
+
+uint8_t AdvancedPowerManager::getBatteryCapacityPercent() {
+    if (!hasXPowersChip()) {
+        // Fallback to voltage-based estimation
+        float voltage = getAdvancedBatteryVoltage();
+        if (voltage > 4.0f) return 100;
+        if (voltage > 3.8f) return 75;
+        if (voltage > 3.6f) return 50;
+        if (voltage > 3.3f) return 25;
+        return 0;
+    }
+    return xpowers->getBattPercentage();
+}
+
+bool AdvancedPowerManager::isBatteryCharging() {
+    if (!hasXPowersChip()) return false;
+    return xpowers->isChargeing();
+}
+
+bool AdvancedPowerManager::isBatteryConnected() {
+    if (!hasXPowersChip()) return true; // Assume connected if no chip
+    return xpowers->isBatteryConnect();
+}
+
+float AdvancedPowerManager::getSolarVoltage() {
+    if (!hasXPowersChip()) return 0.0f;
+    return xpowers->getVbusVoltage() / 1000.0f; // VBUS is typically solar input
+}
+
+float AdvancedPowerManager::getSolarCurrent() {
+    if (!hasXPowersChip()) return 0.0f;
+    return xpowers->getVbusCurrent();
+}
+
+float AdvancedPowerManager::getSolarPower() {
+    return getSolarVoltage() * getSolarCurrent();
+}
+
+bool AdvancedPowerManager::isSolarCharging() {
+    if (!hasXPowersChip()) return false;
+    return xpowers->isVbusIn();
+}
+
+void AdvancedPowerManager::optimizeSolarCharging() {
+    if (!hasXPowersChip()) return;
+    
+    float solarVoltage = getSolarVoltage();
+    float solarCurrent = getSolarCurrent();
+    
+    // Optimize charging current based on solar conditions
+    if (solarVoltage > 5.5f && solarCurrent > 0.5f) {
+        // Good solar conditions - increase charging current
+        setChargingCurrent(800);
+    } else if (solarVoltage > 5.0f && solarCurrent > 0.3f) {
+        // Moderate solar conditions - normal charging
+        setChargingCurrent(DEFAULT_CHARGE_CURRENT);
+    } else {
+        // Poor solar conditions - reduce charging current
+        setChargingCurrent(300);
+    }
+}
+
+void AdvancedPowerManager::setChargingCurrent(uint16_t currentMA) {
+    if (!hasXPowersChip()) return;
+    xpowers->setChargerConstantCurr(currentMA);
+    DEBUG_PRINTF("Charging current set to %d mA\n", currentMA);
+}
+
+void AdvancedPowerManager::enableCharging(bool enable) {
+    if (!hasXPowersChip()) return;
+    xpowers->enableCharging(enable);
+    DEBUG_PRINTF("Charging %s\n", enable ? "enabled" : "disabled");
+}
+
+void AdvancedPowerManager::setChargingTerminationVoltage(float voltage) {
+    if (!hasXPowersChip()) return;
+    xpowers->setChargingTargetVoltage(voltage);
+    DEBUG_PRINTF("Charging termination voltage set to %.2f V\n", voltage);
+}
+
+void AdvancedPowerManager::enableLowBatteryWarning(bool enable, float threshold) {
+    if (!hasXPowersChip()) return;
+    if (enable) {
+        xpowers->setLowBatWarnThreshold(threshold);
+        xpowers->enableBattVoltageMeasure();
+    }
+    DEBUG_PRINTF("Low battery warning %s at %.2f V\n", enable ? "enabled" : "disabled", threshold);
+}
+
+void AdvancedPowerManager::enableOverchargeProtection(bool enable) {
+    if (!hasXPowersChip()) return;
+    xpowers->enableCharging(enable); // This typically includes overcharge protection
+    DEBUG_PRINTF("Overcharge protection %s\n", enable ? "enabled" : "disabled");
+}
+
+void AdvancedPowerManager::enableButtonWakeup(bool enable) {
+    if (!hasXPowersChip()) return;
+    xpowers->enableWakeup(); // Enable wakeup functionality
+    DEBUG_PRINTF("Button wakeup %s\n", enable ? "enabled" : "disabled");
+}
+
+void AdvancedPowerManager::setLowPowerMode(bool enable) {
+    if (!hasXPowersChip()) return;
+    if (enable) {
+        // Disable unnecessary functions for power saving
+        xpowers->enableCharging(false);
+        xpowers->disableAllIRQ();
+    } else {
+        // Re-enable normal operation
+        xpowers->enableCharging(true);
+    }
+    DEBUG_PRINTF("Low power mode %s\n", enable ? "enabled" : "disabled");
+}
+
+void AdvancedPowerManager::enterShipMode() {
+    if (!hasXPowersChip()) return;
+    DEBUG_PRINTLN("Entering ship mode (ultra-low power)...");
+    xpowers->shutdown();
+}
+
+void AdvancedPowerManager::resetPowerSettings() {
+    if (!hasXPowersChip()) return;
+    
+    DEBUG_PRINTLN("Resetting power settings to defaults...");
+    
+    // Reset to default settings
+    xpowers->enableCharging(true);
+    xpowers->setChargingTargetVoltage(CHARGE_TERMINATION_VOLTAGE);
+    xpowers->setChargerConstantCurr(DEFAULT_CHARGE_CURRENT);
+    
+    DEBUG_PRINTLN("Power settings reset complete");
+}
+
+#endif // XPOWERS_ENABLED
 
 // UltraLowPowerMotionDetector implementation
 UltraLowPowerMotionDetector::UltraLowPowerMotionDetector(gpio_num_t pin) 

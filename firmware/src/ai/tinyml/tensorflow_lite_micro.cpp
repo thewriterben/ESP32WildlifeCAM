@@ -8,6 +8,14 @@
 #include <esp_system.h>
 #include <esp_heap_caps.h>
 
+// TensorFlow Lite Micro includes (conditional compilation)
+#ifdef TFLITE_MICRO_ENABLED
+#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/micro/system_setup.h"
+#include "tensorflow/lite/schema/schema_generated.h"
+#endif
+
 // Static member initialization
 bool TensorFlowLiteMicro::initialized_ = false;
 size_t TensorFlowLiteMicro::globalArenaSize_ = 256 * 1024; // 256KB default
@@ -42,6 +50,12 @@ bool TensorFlowLiteMicro::init() {
     if (!configureCache()) {
         DEBUG_PRINTLN("Warning: Cache configuration failed");
     }
+    
+#ifdef TFLITE_MICRO_ENABLED
+    // Initialize TensorFlow Lite Micro system
+    tflite::InitializeTarget();
+    DEBUG_PRINTLN("TensorFlow Lite Micro target initialized");
+#endif
     
     initialized_ = true;
     
