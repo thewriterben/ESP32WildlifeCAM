@@ -38,6 +38,52 @@
 #define MOTION_CONFIRMATION_TIME 1000     // Time to confirm motion (ms)
 
 // ===========================
+// ADVANCED MOTION DETECTION CONFIGURATION
+// ===========================
+
+// Multi-Zone PIR Detection
+#define MULTI_ZONE_PIR_ENABLED true       // Enable multi-zone PIR system
+#define MAX_PIR_ZONES 4                   // Maximum number of PIR zones
+#define DEFAULT_PIR_ZONES 3               // Default number of zones to configure
+#define PIR_ZONE_SENSITIVITY 0.5f         // Default zone sensitivity
+#define PIR_ZONE_PRIORITY_STEP 64         // Priority step between zones
+
+// Advanced Frame Analysis
+#define ADVANCED_FRAME_ANALYSIS true      // Enable advanced frame analysis
+#define BACKGROUND_SUBTRACTION_ENABLED true // Enable background subtraction
+#define MOTION_VECTOR_ANALYSIS true       // Enable motion vector analysis
+#define OBJECT_SIZE_FILTERING true        // Enable object size filtering
+#define MIN_OBJECT_SIZE_PX 25             // Minimum object size in pixels
+#define MAX_OBJECT_SIZE_PX 5000           // Maximum object size in pixels
+
+// Background Model Settings
+#define BACKGROUND_LEARNING_RATE 0.1f     // Background adaptation rate
+#define BACKGROUND_UPDATE_THRESHOLD 0.3f  // Threshold for background updates
+#define BACKGROUND_UPDATE_INTERVAL 5000   // Minimum time between updates (ms)
+#define MAX_FRAMES_WITHOUT_BG_UPDATE 100  // Force update after this many frames
+
+// Machine Learning False Positive Reduction
+#define ML_FALSE_POSITIVE_FILTERING true  // Enable ML filtering
+#define ML_LEARNING_RATE 0.05f            // ML adaptation rate
+#define ML_CONFIDENCE_THRESHOLD 0.6f      // ML confidence threshold
+#define ML_TRAINING_PERIOD 7200000        // Training period (2 hours in ms)
+#define ML_PATTERN_MEMORY_SIZE 1000       // Number of patterns to remember
+
+// Analytics Features
+#define MOTION_ANALYTICS_ENABLED true     // Enable motion analytics
+#define MOTION_HEATMAP_ENABLED false      // Disable heatmap by default (memory intensive)
+#define DIRECTION_TRACKING_ENABLED true   // Enable direction tracking
+#define SPEED_ESTIMATION_ENABLED true     // Enable speed estimation
+#define DWELL_TIME_ANALYSIS_ENABLED true  // Enable dwell time calculation
+#define HEATMAP_UPDATE_INTERVAL 10000     // Heatmap update interval (ms)
+#define TRACKING_HISTORY_SIZE 100         // Number of tracking points to keep
+
+// Enhanced Detection Modes
+#define DEFAULT_ENHANCED_MODE 3           // 0=Legacy, 1=MultiZone, 2=Advanced, 3=Full, 4=Adaptive
+#define ADAPTIVE_MODE_ENABLED true        // Enable automatic mode selection
+#define PERFORMANCE_MONITORING true       // Monitor detection performance
+
+// ===========================
 // AI/ML CONFIGURATION
 // ===========================
 
