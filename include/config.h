@@ -214,8 +214,7 @@
 #define IR_LED_ENABLED true
 #define IR_CUT_FILTER_ENABLED true
 #define AUTO_NIGHT_MODE_ENABLED true
-#define IR_LED_PIN 4  // GPIO pin for IR LED control
-#define LIGHT_SENSOR_PIN 35  // GPIO pin for light sensor (ADC)
+// Pin definitions are in pins.h
 
 // ===========================
 // ADVANCED FEATURES
