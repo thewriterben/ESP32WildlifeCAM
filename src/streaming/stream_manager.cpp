@@ -504,10 +504,8 @@ void StreamManager::updateStreamProfile() {
     
     // Get current battery level from power manager
     int batteryPercentage = 50; // Default to medium if no power manager
-    if (powerManager_) {
-        // Get actual battery percentage from power manager
-        // This would need to be implemented in PowerManager
-        // batteryPercentage = powerManager_->getBatteryPercentage();
+    if (powerManager_ && powerManager_->isInitialized()) {
+        batteryPercentage = powerManager_->getBatteryPercentage();
     }
     
     // Update profile based on battery level
@@ -530,6 +528,9 @@ void StreamManager::updateStreamProfile() {
     if (batteryPercentage > 30 && config_.frameSize != STREAM_FRAMESIZE_HD) {
         state_.currentProfile.frameSize = config_.frameSize;
     }
+    
+    // Update frame interval based on current profile
+    state_.frameInterval = calculateFrameInterval(state_.currentProfile.maxFPS);
 }
 
 bool StreamManager::applyProfileSettings() {
@@ -553,6 +554,12 @@ bool StreamManager::applyProfileSettings() {
 }
 
 bool StreamManager::checkMotionTrigger() const {
+    if (!motionManager_) {
+        // No motion manager available, allow streaming if motion flag is set
+        return state_.motionTriggered;
+    }
+    
+    // Check if motion was detected recently
     if (!state_.motionTriggered) {
         return false;
     }
@@ -563,13 +570,22 @@ bool StreamManager::checkMotionTrigger() const {
 }
 
 bool StreamManager::checkPowerConditions() const {
-    if (!powerManager_) {
+    if (!powerManager_ || !powerManager_->isInitialized()) {
         return true; // Allow streaming if no power manager
     }
     
-    // Check if power manager indicates adequate power for streaming
-    // This would need to be implemented based on PowerManager interface
-    // For now, assume adequate power
+    // Check power state - don't stream in critical power state
+    PowerState powerState = powerManager_->getPowerState();
+    if (powerState == POWER_CRITICAL) {
+        return false;
+    }
+    
+    // Check if we should enter low power mode
+    if (powerManager_->shouldEnterLowPower() && state_.currentProfile.motionOnlyMode) {
+        // In low power mode, only allow streaming if motion was recently detected
+        return checkMotionTrigger();
+    }
+    
     return true;
 }
 
