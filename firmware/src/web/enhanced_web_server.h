@@ -25,6 +25,7 @@
 #include "../power_manager.h"
 #include "../../src/data/storage_manager.h"
 #include "../../src/ai/wildlife_classifier.h"
+#include "../../src/streaming/stream_manager.h"
 
 /**
  * WebSocket message types for real-time updates
@@ -36,7 +37,8 @@ enum class WSMessageType {
     STORAGE_UPDATE = 3,
     CAMERA_STATUS = 4,
     ERROR_ALERT = 5,
-    HEARTBEAT = 6
+    HEARTBEAT = 6,
+    STREAM_STATUS = 7
 };
 
 /**
@@ -117,6 +119,10 @@ public:
     AsyncWebServer* getServer() { return &server_; }
     AsyncWebSocket* getWebSocket() { return &webSocket_; }
     
+    // Stream manager integration
+    void setStreamManager(StreamManager* streamManager) { streamManager_ = streamManager; }
+    StreamManager* getStreamManager() { return streamManager_; }
+    
     // Real-time updates
     void broadcastSystemStatus();
     void broadcastWildlifeDetection(const String& species, float confidence, const String& imagePath);
@@ -124,6 +130,7 @@ public:
     void broadcastStorageUpdate();
     void broadcastCameraStatus();
     void broadcastErrorAlert(const String& error);
+    void broadcastStreamStatus(); // Added for streaming updates
     
     // Metrics and status
     void updateSystemMetrics();
@@ -154,6 +161,9 @@ private:
     EnhancedWebConfig config_;
     SystemMetrics metrics_;
     bool running_;
+    
+    // External components
+    StreamManager* streamManager_;
     
     // Timing
     unsigned long lastSystemUpdate_;
@@ -187,6 +197,10 @@ private:
     void handleAPIConfig(AsyncWebServerRequest* request);
     void handleAPIConfigUpdate(AsyncWebServerRequest* request);
     void handleAPIStream(AsyncWebServerRequest* request);
+    void handleAPIStreamStart(AsyncWebServerRequest* request);
+    void handleAPIStreamStop(AsyncWebServerRequest* request);
+    void handleAPIStreamStats(AsyncWebServerRequest* request);
+    void handleAPIStreamConfig(AsyncWebServerRequest* request);
     void handleAPIStorageStats(AsyncWebServerRequest* request);
     void handleAPIPowerStats(AsyncWebServerRequest* request);
     void handleAPIWildlifeLog(AsyncWebServerRequest* request);

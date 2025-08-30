@@ -23,7 +23,8 @@ EnhancedWebServer::EnhancedWebServer() :
     webSocket_("/ws"),
     running_(false),
     lastSystemUpdate_(0),
-    lastHeartbeat_(0) {
+    lastHeartbeat_(0),
+    streamManager_(nullptr) {
 }
 
 EnhancedWebServer::~EnhancedWebServer() {
@@ -199,6 +200,23 @@ void EnhancedWebServer::setupAPIEndpoints() {
     
     server_.on("/api/stream", HTTP_GET, [this](AsyncWebServerRequest* request) {
         this->handleAPIStream(request);
+    });
+    
+    // Stream control endpoints
+    server_.on("/api/stream/start", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        this->handleAPIStreamStart(request);
+    });
+    
+    server_.on("/api/stream/stop", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        this->handleAPIStreamStop(request);
+    });
+    
+    server_.on("/api/stream/stats", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleAPIStreamStats(request);
+    });
+    
+    server_.on("/api/stream/config", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        this->handleAPIStreamConfig(request);
     });
     
     // Configuration
@@ -512,6 +530,37 @@ void EnhancedWebServer::broadcastErrorAlert(const String& error) {
     logMessage("Error alert: " + error);
 }
 
+void EnhancedWebServer::broadcastStreamStatus() {
+    if (!streamManager_) {
+        return;
+    }
+    
+    DynamicJsonDocument streamData(512);
+    streamData["streaming"] = streamManager_->isStreaming();
+    streamData["clients"] = streamManager_->getClientCount();
+    
+    StreamState state = streamManager_->getStreamState();
+    streamData["state"]["motionTriggered"] = state.motionTriggered;
+    streamData["state"]["fps"] = state.currentProfile.maxFPS;
+    streamData["state"]["quality"] = streamQualityToString(state.currentProfile.quality);
+    streamData["state"]["frameSize"] = streamFrameSizeToString(state.currentProfile.frameSize);
+    streamData["state"]["motionOnly"] = state.currentProfile.motionOnlyMode;
+    
+    if (state.isStreaming) {
+        streamData["state"]["duration"] = (millis() - state.startTime) / 1000;
+        streamData["state"]["maxDuration"] = state.currentProfile.maxDurationSeconds;
+    }
+    
+    StreamStats stats = streamManager_->getStreamStats();
+    streamData["stats"]["totalFrames"] = stats.totalFramesSent;
+    streamData["stats"]["totalBytes"] = stats.totalBytesSent;
+    streamData["stats"]["averageFPS"] = stats.averageFPS;
+    streamData["stats"]["droppedFrames"] = stats.droppedFrames;
+    
+    // Note: Using the new STREAM_STATUS message type
+    sendWSMessage(WSMessageType::STREAM_STATUS, streamData);
+}
+
 uint32_t EnhancedWebServer::getConnectedClients() const {
     return webSocket_.count();
 }
@@ -612,7 +661,164 @@ void EnhancedWebServer::handleAPIConfigUpdate(AsyncWebServerRequest* request) {
 }
 
 void EnhancedWebServer::handleAPIStream(AsyncWebServerRequest* request) {
-    request->send(501, "application/json", "{\"error\":\"Camera streaming not yet implemented\"}");
+    if (!streamManager_) {
+        request->send(503, "application/json", "{\"error\":\"Stream manager not available\"}");
+        return;
+    }
+    
+    // This is the main MJPEG streaming endpoint
+    AsyncWebServerResponse *response = request->beginChunkedResponse(
+        MJPEG_CONTENT_TYPE, 
+        [this](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+            // This callback will be used to send MJPEG frames
+            // For now, return 0 to end the stream - actual implementation will be added
+            return 0;
+        }
+    );
+    
+    response->addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    response->addHeader("Pragma", "no-cache");
+    response->addHeader("Expires", "0");
+    
+    // Add client to stream manager
+    AsyncWebSocketClient* wsClient = nullptr; // We'll need to handle this differently for HTTP streaming
+    
+    request->send(response);
+}
+
+void EnhancedWebServer::handleAPIStreamStart(AsyncWebServerRequest* request) {
+    if (!streamManager_) {
+        request->send(503, "application/json", "{\"error\":\"Stream manager not available\"}");
+        return;
+    }
+    
+    StreamConfig config;
+    
+    // Parse optional configuration parameters from request
+    if (request->hasParam("fps")) {
+        int fps = request->getParam("fps")->value().toInt();
+        if (fps >= STREAM_MIN_FPS && fps <= STREAM_MAX_FPS) {
+            config.targetFPS = fps;
+        }
+    }
+    
+    if (request->hasParam("quality")) {
+        String qualityStr = request->getParam("quality")->value();
+        if (qualityStr == "low") config.quality = STREAM_QUALITY_LOW;
+        else if (qualityStr == "medium") config.quality = STREAM_QUALITY_MEDIUM;
+        else if (qualityStr == "high") config.quality = STREAM_QUALITY_HIGH;
+        else if (qualityStr == "auto") config.quality = STREAM_QUALITY_AUTO;
+    }
+    
+    if (request->hasParam("frameSize")) {
+        String frameSizeStr = request->getParam("frameSize")->value();
+        if (frameSizeStr == "qvga") config.frameSize = STREAM_FRAMESIZE_QVGA;
+        else if (frameSizeStr == "vga") config.frameSize = STREAM_FRAMESIZE_VGA;
+        else if (frameSizeStr == "svga") config.frameSize = STREAM_FRAMESIZE_SVGA;
+        else if (frameSizeStr == "hd") config.frameSize = STREAM_FRAMESIZE_HD;
+    }
+    
+    if (request->hasParam("motionOnly")) {
+        config.motionTriggerEnabled = request->getParam("motionOnly")->value() == "true";
+    }
+    
+    if (streamManager_->startStream(config)) {
+        DynamicJsonDocument responseDoc(256);
+        responseDoc["success"] = true;
+        responseDoc["message"] = "Stream started successfully";
+        responseDoc["status"] = streamManager_->getStatusJSON();
+        
+        String responseStr;
+        serializeJson(responseDoc, responseStr);
+        request->send(200, "application/json", responseStr);
+        
+        // Broadcast stream status update to WebSocket clients
+        broadcastStreamStatus();
+    } else {
+        request->send(400, "application/json", "{\"error\":\"Failed to start stream\"}");
+    }
+}
+
+void EnhancedWebServer::handleAPIStreamStop(AsyncWebServerRequest* request) {
+    if (!streamManager_) {
+        request->send(503, "application/json", "{\"error\":\"Stream manager not available\"}");
+        return;
+    }
+    
+    if (streamManager_->stopStream()) {
+        request->send(200, "application/json", "{\"success\":true,\"message\":\"Stream stopped successfully\"}");
+        
+        // Broadcast stream status update to WebSocket clients
+        broadcastStreamStatus();
+    } else {
+        request->send(400, "application/json", "{\"error\":\"Failed to stop stream\"}");
+    }
+}
+
+void EnhancedWebServer::handleAPIStreamStats(AsyncWebServerRequest* request) {
+    if (!streamManager_) {
+        request->send(503, "application/json", "{\"error\":\"Stream manager not available\"}");
+        return;
+    }
+    
+    DynamicJsonDocument doc(512);
+    doc["status"] = streamManager_->getStatusJSON();
+    doc["stats"] = streamManager_->getStatsJSON();
+    
+    String responseStr;
+    serializeJson(doc, responseStr);
+    request->send(200, "application/json", responseStr);
+}
+
+void EnhancedWebServer::handleAPIStreamConfig(AsyncWebServerRequest* request) {
+    if (!streamManager_) {
+        request->send(503, "application/json", "{\"error\":\"Stream manager not available\"}");
+        return;
+    }
+    
+    // Parse JSON body for configuration update
+    // Note: This is a simplified implementation - full body parsing would require additional handling
+    StreamConfig config = streamManager_->getStreamConfig();
+    
+    // Apply any query parameters as configuration updates
+    if (request->hasParam("fps")) {
+        int fps = request->getParam("fps")->value().toInt();
+        if (fps >= STREAM_MIN_FPS && fps <= STREAM_MAX_FPS) {
+            streamManager_->setFrameRate(fps);
+        }
+    }
+    
+    if (request->hasParam("quality")) {
+        String qualityStr = request->getParam("quality")->value();
+        StreamQuality quality = STREAM_QUALITY_AUTO;
+        if (qualityStr == "low") quality = STREAM_QUALITY_LOW;
+        else if (qualityStr == "medium") quality = STREAM_QUALITY_MEDIUM;
+        else if (qualityStr == "high") quality = STREAM_QUALITY_HIGH;
+        else if (qualityStr == "auto") quality = STREAM_QUALITY_AUTO;
+        
+        streamManager_->setQuality(quality);
+    }
+    
+    if (request->hasParam("frameSize")) {
+        String frameSizeStr = request->getParam("frameSize")->value();
+        StreamFrameSize frameSize = STREAM_FRAMESIZE_VGA;
+        if (frameSizeStr == "qvga") frameSize = STREAM_FRAMESIZE_QVGA;
+        else if (frameSizeStr == "vga") frameSize = STREAM_FRAMESIZE_VGA;
+        else if (frameSizeStr == "svga") frameSize = STREAM_FRAMESIZE_SVGA;
+        else if (frameSizeStr == "hd") frameSize = STREAM_FRAMESIZE_HD;
+        
+        streamManager_->setFrameSize(frameSize);
+    }
+    
+    if (request->hasParam("motionOnly")) {
+        bool motionOnly = request->getParam("motionOnly")->value() == "true";
+        streamManager_->setMotionOnlyMode(motionOnly);
+    }
+    
+    request->send(200, "application/json", "{\"success\":true,\"message\":\"Stream configuration updated\"}");
+    
+    // Broadcast configuration update
+    broadcastStreamStatus();
 }
 
 void EnhancedWebServer::handleAPIStorageStats(AsyncWebServerRequest* request) {
