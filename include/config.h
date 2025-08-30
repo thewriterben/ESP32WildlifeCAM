@@ -186,6 +186,38 @@
 #define LORA_FREQUENCY 915E6              // LoRa frequency (915 MHz)
 
 // ===========================
+// ADVANCED CAPTURE MODE CONFIGURATION
+// ===========================
+
+// Burst mode configuration
+#define BURST_MODE_ENABLED true
+#define BURST_DEFAULT_COUNT 3
+#define BURST_DEFAULT_INTERVAL_MS 1000
+#define BURST_MAX_COUNT 10
+#define BURST_MIN_INTERVAL_MS 100
+#define BURST_MAX_INTERVAL_MS 5000
+
+// Video recording configuration  
+#define VIDEO_MODE_ENABLED true
+#define VIDEO_DEFAULT_DURATION_S 10
+#define VIDEO_MAX_DURATION_S 60
+#define VIDEO_FRAME_RATE 10
+#define VIDEO_QUALITY 12
+
+// Time-lapse configuration
+#define TIMELAPSE_MODE_ENABLED true
+#define TIMELAPSE_MIN_INTERVAL_S 10
+#define TIMELAPSE_MAX_INTERVAL_H 24
+#define TIMELAPSE_DEFAULT_INTERVAL_S 60
+
+// Night vision configuration
+#define IR_LED_ENABLED true
+#define IR_CUT_FILTER_ENABLED true
+#define AUTO_NIGHT_MODE_ENABLED true
+#define IR_LED_PIN 4  // GPIO pin for IR LED control
+#define LIGHT_SENSOR_PIN 35  // GPIO pin for light sensor (ADC)
+
+// ===========================
 // ADVANCED FEATURES
 // ===========================
 
