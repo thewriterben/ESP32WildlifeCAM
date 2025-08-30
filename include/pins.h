@@ -69,6 +69,12 @@
 #define BME280_ADDRESS    0x76 // BME280 I2C address
 
 // ===========================
+// NIGHT VISION PINS
+// ===========================
+#define IR_LED_PIN        16  // IR LED control pin (spare GPIO)
+#define LIGHT_SENSOR_PIN  33  // Light sensor ADC pin (shared with battery monitoring)
+
+// ===========================
 // COMMUNICATION PINS (Optional)
 // ===========================
 #define UART_TX_PIN       1   // UART TX (USB serial)
