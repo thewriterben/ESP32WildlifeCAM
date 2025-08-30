@@ -16,6 +16,12 @@
 #include <Wire.h>
 #endif
 
+// Environmental integration
+extern AdvancedEnvironmentalData getLatestEnvironmentalData();
+extern bool shouldFilterMotionByEnvironment(const AdvancedEnvironmentalData& data);
+extern float getEnvironmentalMotionThreshold(const AdvancedEnvironmentalData& data);
+extern bool validateMotionWithEnvironment(bool motion_detected, uint16_t motion_confidence);
+
 // Static instance for interrupt handling
 MotionFilter* MotionFilter::instance = nullptr;
 
@@ -115,6 +121,15 @@ bool MotionFilter::isValidMotion() {
     // Update weather data
     updateWeatherData();
     
+    // Get environmental data for enhanced filtering
+    AdvancedEnvironmentalData envData = getLatestEnvironmentalData();
+    
+    // Check if motion should be filtered by environmental conditions
+    if (shouldFilterMotionByEnvironment(envData)) {
+        DEBUG_PRINTLN("Motion filtered: environmental conditions");
+        return false;
+    }
+    
     // Check weather conditions
     if (!isWeatherSuitable()) {
         DEBUG_PRINTLN("Motion filtered: unsuitable weather conditions");
@@ -127,14 +142,28 @@ bool MotionFilter::isValidMotion() {
         return false;
     }
     
-    // Consecutive motion validation (reduces false positives)
+    // Environmental motion threshold adjustment
+    float envThreshold = getEnvironmentalMotionThreshold(envData);
+    uint16_t adjustedThreshold = (uint16_t)(MOTION_CONSECUTIVE_THRESHOLD * envThreshold);
+    
+    // Consecutive motion validation with environmental adjustment
     consecutiveMotions++;
-    if (consecutiveMotions < MOTION_CONSECUTIVE_THRESHOLD) {
-        DEBUG_PRINTLN("Motion filtered: awaiting confirmation");
+    if (consecutiveMotions < adjustedThreshold) {
+        DEBUG_PRINTF("Motion filtered: awaiting confirmation (%d/%d)\n", 
+                    consecutiveMotions, adjustedThreshold);
+        return false;
+    }
+    
+    // Enhanced validation with environmental context
+    uint16_t motion_confidence = 75; // Default confidence level
+    if (!validateMotionWithEnvironment(true, motion_confidence)) {
+        DEBUG_PRINTLN("Motion filtered: environmental validation failed");
         return false;
     }
     
     consecutiveMotions = 0;  // Reset counter
+    DEBUG_PRINTF("Motion validated: environmental conditions favorable (wildlife activity: %d%%)\n", 
+                envData.wildlife_activity_index);
     return true;
 }
 

@@ -133,6 +133,25 @@ public:
      */
     int getImageCount() const { return imageCounter; }
 
+    /**
+     * @brief Capture image with environmental awareness
+     * @return Camera frame buffer pointer, or nullptr on failure
+     */
+    camera_fb_t* captureImageWithEnvironmentalAwareness();
+    
+    /**
+     * @brief Adjust camera settings based on environmental conditions
+     * @param env_data Environmental data for optimization
+     * @return true if settings were adjusted, false otherwise
+     */
+    bool adjustForEnvironmentalConditions();
+    
+    /**
+     * @brief Check if environmental conditions are suitable for photography
+     * @return true if conditions are good, false otherwise
+     */
+    bool areEnvironmentalConditionsSuitable();
+
 private:
     // Member variables
     camera_config_t camera_config;

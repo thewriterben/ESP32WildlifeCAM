@@ -44,12 +44,20 @@
 #include "hal/board_detector.h"
 #include "audio/acoustic_detection.h"
 
+// Environmental Sensors Integration
+#include "sensors/advanced_environmental_sensors.h"
+
 // Meshtastic Integration
 #include "meshtastic/mesh_config.h"
 #include "meshtastic/lora_driver.h"
 #include "meshtastic/mesh_interface.h"
 #include "meshtastic/wildlife_telemetry.h"
 #include "meshtastic/image_mesh.h"
+
+// Environmental Integration
+extern bool initializeEnvironmentalIntegration();
+extern void processEnvironmentalData();
+extern void performEnvironmentalDiagnostics();
 
 // AI/ML Integration (conditionally compiled)
 #ifdef ESP32_AI_ENABLED
@@ -285,6 +293,16 @@ bool SystemManager::init() {
     }
     DEBUG_TIMER_END("motion_init");
     
+    // Initialize environmental sensors system
+    DEBUG_TIMER_START("environmental_init");
+    if (initializeEnvironmentalIntegration()) {
+        DEBUG_SYSTEM_INFO("Environmental sensors system initialized successfully");
+    } else {
+        DEBUG_SYSTEM_WARN("Warning: Environmental sensors initialization failed");
+        // Not critical - system can continue with basic functionality
+    }
+    DEBUG_TIMER_END("environmental_init");
+    
     // Initialize camera
     DEBUG_TIMER_START("camera_init");
     if (!cameraHandler.init()) {
@@ -393,6 +411,9 @@ void SystemManager::update() {
     
     // Update power management
     powerManager.update();
+    
+    // Process environmental data
+    processEnvironmentalData();
     
     // Update HMI system (display, menus, input)
     if (hmiSystem.isInitialized()) {

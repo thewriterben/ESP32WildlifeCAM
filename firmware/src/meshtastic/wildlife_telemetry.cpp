@@ -9,9 +9,14 @@
 #include "wildlife_telemetry.h"
 #include "../debug_utils.h"
 #include "../config.h"
+#include "../sensors/advanced_environmental_sensors.h"
 #include <FS.h>
 #include <LittleFS.h>
 #include <esp_system.h>
+
+// External function from environmental integration
+extern AdvancedEnvironmentalData getLatestEnvironmentalData();
+extern bool areEnvironmentalSensorsHealthy();
 
 // ===========================
 // CONSTRUCTOR/DESTRUCTOR
@@ -607,15 +612,27 @@ bool WildlifeTelemetry::collectEnvironmentalData() {
     EnvironmentalData data;
     data.timestamp = getCurrentTimestamp();
     
-    // TODO: Read from actual sensors
-    // For now, use placeholder values
-    data.temperature = 25.0;        // Would read from BME280
-    data.humidity = 60.0;           // Would read from BME280
-    data.pressure = 1013.25;        // Would read from BME280
-    data.lightLevel = 512;          // Would read from light sensor
+    // Get real environmental data from advanced sensors
+    AdvancedEnvironmentalData advancedData = getLatestEnvironmentalData();
+    
+    // Map advanced environmental data to telemetry structure
+    data.temperature = advancedData.temperature;
+    data.humidity = advancedData.humidity;
+    data.pressure = advancedData.pressure;
+    data.lightLevel = (uint16_t)constrain(advancedData.visible_light, 0, 1023);
+    
+    // Wind data would come from dedicated wind sensors (not implemented yet)
     data.windSpeed = 0.0;           // Would read from wind sensor
     data.windDirection = 0;         // Would read from wind sensor
-    data.sensorValid = false;       // Set based on actual sensor status
+    
+    // Sensor validity based on actual sensor health
+    data.sensorValid = areEnvironmentalSensorsHealthy() && 
+                      (advancedData.timestamp > 0) &&
+                      (advancedData.bme280_valid);
+    
+    DEBUG_PRINTF("Environmental data collected: T=%.1f°C, H=%.1f%%, P=%.1fhPa, Light=%d, Valid=%s\n",
+                data.temperature, data.humidity, data.pressure, data.lightLevel,
+                data.sensorValid ? "YES" : "NO");
     
     return recordEnvironmentalData(data);
 }
