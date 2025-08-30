@@ -9,6 +9,10 @@
 #include "enhanced_web_server.h"
 #include <esp_log.h>
 
+// Mobile API integration
+#include "../../mobile_app/firmware/src/mobile/mobile_api.h"
+#include "../../mobile_app/firmware/src/mobile/mobile_websocket.h"
+
 static const char* TAG = "EnhancedWebServer";
 
 // Global instance
@@ -88,6 +92,95 @@ void EnhancedWebServer::setupAPIEndpoints() {
     
     server_.on("/api/metrics", HTTP_GET, [this](AsyncWebServerRequest* request) {
         this->handleAPISystemMetrics(request);
+    });
+    
+    // Mobile-optimized API endpoints
+    server_.on("/api/mobile/status", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileStatus(request);
+        } else {
+            this->handleAPIStatus(request);
+        }
+    });
+    
+    server_.on("/api/mobile/capture", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileCapture(request);
+        } else {
+            this->handleAPICapture(request);
+        }
+    });
+    
+    server_.on("/api/mobile/preview", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobilePreview(request);
+        } else {
+            request->send(501, "application/json", "{\"error\":\"Mobile preview not available\"}");
+        }
+    });
+    
+    server_.on("/api/mobile/settings", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileSettings(request);
+        } else {
+            this->handleAPIConfig(request);
+        }
+    });
+    
+    server_.on("/api/mobile/settings", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileSettings(request);
+        } else {
+            this->handleAPIConfigUpdate(request);
+        }
+    });
+    
+    server_.on("/api/mobile/notifications", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileNotifications(request);
+        } else {
+            request->send(200, "application/json", "{\"notifications_enabled\":true}");
+        }
+    });
+    
+    server_.on("/api/mobile/notifications", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileNotifications(request);
+        } else {
+            request->send(200, "application/json", "{\"success\":true}");
+        }
+    });
+    
+    server_.on("/api/mobile/images", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileImageList(request);
+        } else {
+            this->handleAPIImageList(request);
+        }
+    });
+    
+    server_.on("/api/mobile/thumbnail", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileThumbnail(request);
+        } else {
+            this->handleAPIImageThumbnail(request);
+        }
+    });
+    
+    server_.on("/api/mobile/burst", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileBurstMode(request);
+        } else {
+            request->send(501, "application/json", "{\"error\":\"Burst mode not available\"}");
+        }
+    });
+    
+    server_.on("/api/mobile/burst", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        if (g_mobileAPI) {
+            g_mobileAPI->handleMobileBurstMode(request);
+        } else {
+            request->send(501, "application/json", "{\"error\":\"Burst mode not available\"}");
+        }
     });
     
     // Image management
