@@ -17,11 +17,15 @@
 #include "power_ai_optimizer.h"
 #include "ai_benchmark_optimizer.h"
 #include "multimodal_ai_system.h"
+#include "predictive/predictive_analytics_engine.h"
 #include <memory>
 
 // Forward declarations
 class ModelCache;
 class ModelPredictor;
+
+// Forward declaration for predictive analytics
+struct PredictiveAnalysisResult;
 
 /**
  * Enhanced Wildlife Analysis Result
@@ -53,6 +57,25 @@ struct WildlifeAnalysisResult {
     std::vector<String> behaviorIndicators;
     String analysisNotes;
     
+    // Predictive Analytics Results
+    struct PredictiveData {
+        BehaviorType predictedNextBehavior;
+        float predictionConfidence;
+        uint32_t timeToNextBehavior_s;
+        bool behaviorAnomalyDetected;
+        float populationHealthScore;
+        bool migrationEventPredicted;
+        String conservationRecommendation;
+        float conservationPriority;
+        std::vector<uint32_t> optimalFeedingTimes;
+        
+        PredictiveData() : 
+            predictedNextBehavior(BehaviorType::UNKNOWN),
+            predictionConfidence(0.0f), timeToNextBehavior_s(0),
+            behaviorAnomalyDetected(false), populationHealthScore(0.0f),
+            migrationEventPredicted(false), conservationPriority(0.0f) {}
+    } predictiveData;
+    
     WildlifeAnalysisResult() : 
         motionDetected(false), overallConfidence(0.0f),
         threatDetected(false), humanPresenceDetected(false),
@@ -79,6 +102,14 @@ struct AIProcessingConfig {
     bool enableIntelligentCaching;
     bool enablePredictiveProcessing;
     bool enableEnvironmentalAdaptation;
+    
+    // Predictive Analytics Configuration
+    bool enablePredictiveAnalytics;
+    bool enableBehaviorPrediction;
+    bool enablePatternDetection;
+    bool enableAnomalyDetection;
+    bool enableConservationInsights;
+    
     float confidenceThreshold;
     uint32_t processingInterval;     // ms between AI analyses
     PowerAIMode powerMode;
@@ -95,6 +126,13 @@ struct AIProcessingConfig {
         enableMultiModalProcessing(true),
         enablePowerOptimization(true),
         enableIntelligentCaching(true),
+        enablePredictiveProcessing(true),
+        enableEnvironmentalAdaptation(true),
+        enablePredictiveAnalytics(true),
+        enableBehaviorPrediction(true),
+        enablePatternDetection(true),
+        enableAnomalyDetection(true),
+        enableConservationInsights(true),
         enablePredictiveProcessing(true),
         enableEnvironmentalAdaptation(true),
         confidenceThreshold(0.6f),
@@ -185,6 +223,17 @@ public:
     void enablePowerOptimization(bool enable = true);
     unsigned long getNextWakeTime();
     bool shouldEnterDeepSleep();
+    
+    // Predictive Analytics Interface
+    bool enablePredictiveAnalytics(bool enable = true);
+    PredictiveAnalysisResult generatePredictiveAnalysis(const BehaviorResult& behavior,
+                                                       const EnvironmentalData& environment);
+    PopulationHealthMetrics getPopulationHealth(uint32_t timeWindow_s = 86400);
+    std::vector<uint32_t> predictOptimalFeedingTimes(SpeciesType species, uint8_t daysAhead = 7);
+    PredictionResult predictMigrationPattern(SpeciesType species);
+    bool exportPredictionData(const char* filename, bool includeRawData = false);
+    AIMetrics getPredictionMetrics() const;
+    void resetPredictiveModels();
     void optimizeForBatteryLife();
     PowerAIMode getCurrentPowerMode() const;
     
@@ -247,6 +296,9 @@ private:
     std::unique_ptr<PowerAIOptimizer> powerOptimizer_;
     std::unique_ptr<AIBenchmarkOptimizer> benchmarkOptimizer_;
     std::unique_ptr<MultiModalAISystem> multiModalSystem_;
+    
+    // Predictive Analytics Engine
+    std::unique_ptr<PredictiveAnalyticsEngine> predictiveEngine_;
     
     // Configuration
     AIProcessingConfig config_;
