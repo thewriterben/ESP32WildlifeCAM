@@ -479,3 +479,112 @@ void CameraHandler::cleanup() {
         DEBUG_PRINTLN("Camera deinitialized");
     }
 }
+
+/**
+ * Capture image with environmental awareness
+ */
+camera_fb_t* CameraHandler::captureImageWithEnvironmentalAwareness() {
+    if (!initialized) {
+        DEBUG_PRINTLN("Camera not initialized");
+        return nullptr;
+    }
+    
+    // Check environmental conditions first
+    if (!areEnvironmentalConditionsSuitable()) {
+        DEBUG_PRINTLN("Environmental conditions not suitable for photography");
+        return nullptr;
+    }
+    
+    // Adjust camera settings based on environmental conditions
+    adjustForEnvironmentalConditions();
+    
+    // Capture the image
+    return captureImage();
+}
+
+/**
+ * Adjust camera settings based on environmental conditions
+ */
+bool CameraHandler::adjustForEnvironmentalConditions() {
+    // This requires environmental integration
+    #ifdef __has_include
+    #if __has_include("../sensors/environmental_integration.cpp")
+    extern AdvancedEnvironmentalData getLatestEnvironmentalData();
+    
+    AdvancedEnvironmentalData env_data = getLatestEnvironmentalData();
+    
+    sensor_t* sensor = esp_camera_sensor_get();
+    if (!sensor) {
+        return false;
+    }
+    
+    // Adjust exposure based on light conditions
+    if (env_data.visible_light < 50.0) {
+        // Low light - increase exposure
+        sensor->set_aec_value(sensor, 600);
+        sensor->set_gain_ctrl(sensor, 1);
+        DEBUG_PRINTLN("Adjusted for low light conditions");
+    } else if (env_data.visible_light > 1000.0) {
+        // Bright light - reduce exposure
+        sensor->set_aec_value(sensor, 200);
+        sensor->set_gain_ctrl(sensor, 0);
+        DEBUG_PRINTLN("Adjusted for bright light conditions");
+    }
+    
+    // Adjust for humidity (condensation protection)
+    if (env_data.humidity > 90.0) {
+        // High humidity - use faster settings to minimize condensation exposure
+        sensor->set_aec_value(sensor, 300);
+        DEBUG_PRINTLN("Adjusted for high humidity");
+    }
+    
+    return true;
+    #endif
+    #endif
+    
+    return false;
+}
+
+/**
+ * Check if environmental conditions are suitable for photography
+ */
+bool CameraHandler::areEnvironmentalConditionsSuitable() {
+    // This requires environmental integration
+    #ifdef __has_include
+    #if __has_include("../sensors/environmental_integration.cpp")
+    extern bool environmentallyAwareCameraCapture();
+    extern AdvancedEnvironmentalData getLatestEnvironmentalData();
+    
+    AdvancedEnvironmentalData env_data = getLatestEnvironmentalData();
+    
+    // Check photography conditions score
+    if (env_data.photography_conditions < 40) {
+        DEBUG_PRINTF("Photography conditions too poor: %d%%\n", env_data.photography_conditions);
+        return false;
+    }
+    
+    // Check for condensation risk
+    if (env_data.humidity > 95.0) {
+        DEBUG_PRINTLN("High condensation risk - postponing capture");
+        return false;
+    }
+    
+    // Check for extreme temperatures
+    if (env_data.temperature < -10.0 || env_data.temperature > 50.0) {
+        DEBUG_PRINTLN("Extreme temperature - postponing capture");
+        return false;
+    }
+    
+    // Check for sufficient light
+    if (env_data.visible_light < 5.0) {
+        DEBUG_PRINTLN("Insufficient light for photography");
+        return false;
+    }
+    
+    return true;
+    #endif
+    #endif
+    
+    // Fallback - always allow capture if environmental system not available
+    return true;
+}
