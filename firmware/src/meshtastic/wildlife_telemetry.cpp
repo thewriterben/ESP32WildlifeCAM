@@ -616,22 +616,56 @@ bool WildlifeTelemetry::collectEnvironmentalData() {
     AdvancedEnvironmentalData advancedData = getLatestEnvironmentalData();
     
     // Map advanced environmental data to telemetry structure
+    // Basic environmental (BME280)
     data.temperature = advancedData.temperature;
     data.humidity = advancedData.humidity;
     data.pressure = advancedData.pressure;
-    data.lightLevel = (uint16_t)constrain(advancedData.visible_light, 0, 1023);
+    data.lightLevel = (uint16_t)constrain(advancedData.visible_light, 0, 1023); // Backward compatibility
     
     // Wind data would come from dedicated wind sensors (not implemented yet)
     data.windSpeed = 0.0;           // Would read from wind sensor
     data.windDirection = 0;         // Would read from wind sensor
+    
+    // Advanced temperature monitoring (DS18B20)
+    data.ground_temperature = advancedData.ground_temperature;
+    data.enclosure_temperature = advancedData.enclosure_temperature;
+    data.battery_temperature = advancedData.battery_temperature;
+    
+    // Advanced light monitoring (TSL2591)
+    data.visible_light = advancedData.visible_light;
+    data.infrared_light = advancedData.infrared_light;
+    data.full_spectrum_light = advancedData.full_spectrum_light;
+    
+    // Air quality (SGP30)
+    data.tvoc_ppb = advancedData.tvoc_ppb;
+    data.eco2_ppm = advancedData.eco2_ppm;
+    
+    // Power monitoring (MAX17048)
+    data.battery_voltage = advancedData.battery_voltage;
+    data.battery_percentage = advancedData.battery_percentage;
+    data.solar_voltage = advancedData.solar_voltage;
+    
+    // Derived environmental calculations
+    data.dew_point = advancedData.dew_point;
+    data.heat_index = advancedData.heat_index;
+    data.vapor_pressure = advancedData.vapor_pressure;
+    
+    // Wildlife/photography indices
+    data.wildlife_activity_index = advancedData.wildlife_activity_index;
+    data.photography_conditions = advancedData.photography_conditions;
+    data.comfort_index = advancedData.comfort_index;
+    
+    // Diagnostics
+    data.sensor_errors = advancedData.sensor_errors;
     
     // Sensor validity based on actual sensor health
     data.sensorValid = areEnvironmentalSensorsHealthy() && 
                       (advancedData.timestamp > 0) &&
                       (advancedData.bme280_valid);
     
-    DEBUG_PRINTF("Environmental data collected: T=%.1f°C, H=%.1f%%, P=%.1fhPa, Light=%d, Valid=%s\n",
-                data.temperature, data.humidity, data.pressure, data.lightLevel,
+    DEBUG_PRINTF("Environmental data collected: T=%.1f°C, H=%.1f%%, P=%.1fhPa, Light=%.1flux, Activity=%d%%, Photo=%d%%, Valid=%s\n",
+                data.temperature, data.humidity, data.pressure, data.visible_light,
+                data.wildlife_activity_index, data.photography_conditions,
                 data.sensorValid ? "YES" : "NO");
     
     return recordEnvironmentalData(data);
@@ -719,16 +753,50 @@ std::vector<uint8_t> WildlifeTelemetry::serializeMotionEvent(const MotionEvent& 
 }
 
 std::vector<uint8_t> WildlifeTelemetry::serializeEnvironmentalData(const EnvironmentalData& data) {
-    DynamicJsonDocument doc(512);
+    DynamicJsonDocument doc(1024); // Increased size for additional fields
     doc["type"] = "environmental";
     doc["timestamp"] = data.timestamp;
+    
+    // Basic environmental (BME280)
     doc["temperature"] = data.temperature;
     doc["humidity"] = data.humidity;
     doc["pressure"] = data.pressure;
-    doc["lightLevel"] = data.lightLevel;
+    doc["lightLevel"] = data.lightLevel; // Backward compatibility
     doc["windSpeed"] = data.windSpeed;
     doc["windDirection"] = data.windDirection;
     doc["sensorValid"] = data.sensorValid;
+    
+    // Advanced temperature monitoring
+    doc["groundTemp"] = data.ground_temperature;
+    doc["enclosureTemp"] = data.enclosure_temperature;
+    doc["batteryTemp"] = data.battery_temperature;
+    
+    // Advanced light monitoring
+    doc["visibleLight"] = data.visible_light;
+    doc["infraredLight"] = data.infrared_light;
+    doc["fullSpectrumLight"] = data.full_spectrum_light;
+    
+    // Air quality
+    doc["tvocPpb"] = data.tvoc_ppb;
+    doc["eco2Ppm"] = data.eco2_ppm;
+    
+    // Power monitoring
+    doc["batteryVoltage"] = data.battery_voltage;
+    doc["batteryPercentage"] = data.battery_percentage;
+    doc["solarVoltage"] = data.solar_voltage;
+    
+    // Derived calculations
+    doc["dewPoint"] = data.dew_point;
+    doc["heatIndex"] = data.heat_index;
+    doc["vaporPressure"] = data.vapor_pressure;
+    
+    // Wildlife/photography indices
+    doc["wildlifeActivity"] = data.wildlife_activity_index;
+    doc["photoConditions"] = data.photography_conditions;
+    doc["comfortIndex"] = data.comfort_index;
+    
+    // Diagnostics
+    doc["sensorErrors"] = data.sensor_errors;
     
     String jsonString;
     serializeJson(doc, jsonString);
@@ -979,6 +1047,19 @@ float WildlifeTelemetry::getAverageBatteryLevel() const {
     return sum / powerHistory_.size();
 }
 
+float WildlifeTelemetry::getAverageTemperature() const {
+    if (environmentalData_.empty()) {
+        return 0.0;
+    }
+    
+    float sum = 0.0;
+    for (const auto& data : environmentalData_) {
+        sum += data.temperature;
+    }
+    
+    return sum / environmentalData_.size();
+}
+
 String WildlifeTelemetry::getLastSpeciesDetected() const {
     if (wildlifeDetections_.empty()) {
         return "None";
@@ -1175,9 +1256,30 @@ bool isValidMotionEvent(const MotionEvent& event) {
 
 bool isValidEnvironmentalData(const EnvironmentalData& data) {
     return data.timestamp > 0 &&
+           // Basic environmental validation
            data.temperature >= -50.0 && data.temperature <= 85.0 &&
            data.humidity >= 0.0 && data.humidity <= 100.0 &&
-           data.pressure >= 800.0 && data.pressure <= 1200.0;
+           data.pressure >= 800.0 && data.pressure <= 1200.0 &&
+           data.lightLevel <= 1023 &&
+           // Advanced temperature validation
+           data.ground_temperature >= -50.0 && data.ground_temperature <= 85.0 &&
+           data.enclosure_temperature >= -50.0 && data.enclosure_temperature <= 85.0 &&
+           data.battery_temperature >= -50.0 && data.battery_temperature <= 85.0 &&
+           // Light validation (reasonable lux values)
+           data.visible_light >= 0.0 && data.visible_light <= 100000.0 &&
+           data.infrared_light >= 0.0 && data.infrared_light <= 100000.0 &&
+           data.full_spectrum_light >= 0.0 && data.full_spectrum_light <= 100000.0 &&
+           // Air quality validation
+           data.tvoc_ppb <= 60000 && // SGP30 max range
+           data.eco2_ppm >= 400 && data.eco2_ppm <= 60000 && // SGP30 range
+           // Battery validation
+           data.battery_voltage >= 0.0 && data.battery_voltage <= 5.0 &&
+           data.battery_percentage <= 100 &&
+           data.solar_voltage >= 0.0 && data.solar_voltage <= 25.0 &&
+           // Index validation (0-100%)
+           data.wildlife_activity_index <= 100 &&
+           data.photography_conditions <= 100 &&
+           data.comfort_index <= 100;
 }
 
 bool isValidPowerStatus(const PowerStatus& status) {

@@ -40,13 +40,47 @@ struct MotionEvent {
 // Environmental sensor data
 struct EnvironmentalData {
     unsigned long timestamp;
+    
+    // Basic environmental (BME280)
     float temperature;          // Temperature in Celsius
     float humidity;             // Relative humidity percentage
     float pressure;             // Atmospheric pressure in hPa
-    uint16_t lightLevel;        // Light level (0-1023)
+    uint16_t lightLevel;        // Light level (0-1023) - basic compatibility
     float windSpeed;            // Wind speed in m/s
     uint16_t windDirection;     // Wind direction in degrees
     bool sensorValid;           // Sensor readings validity
+    
+    // Advanced temperature monitoring (DS18B20)
+    float ground_temperature;   // Ground temperature
+    float enclosure_temperature; // Enclosure temperature
+    float battery_temperature;  // Battery temperature
+    
+    // Advanced light monitoring (TSL2591)
+    float visible_light;        // Visible light in lux
+    float infrared_light;       // IR component
+    float full_spectrum_light;  // Full spectrum
+    
+    // Air quality (SGP30)
+    uint16_t tvoc_ppb;         // Total VOC in ppb
+    uint16_t eco2_ppm;         // Equivalent CO2 in ppm
+    
+    // Power monitoring (MAX17048)
+    float battery_voltage;      // Battery voltage
+    float battery_percentage;   // Battery percentage
+    float solar_voltage;        // Solar panel voltage
+    
+    // Derived environmental calculations
+    float dew_point;           // Dew point temperature
+    float heat_index;          // Heat index
+    float vapor_pressure;      // Vapor pressure
+    
+    // Wildlife/photography indices (0-100%)
+    uint8_t wildlife_activity_index;    // Wildlife activity prediction
+    uint8_t photography_conditions;     // Photography conditions assessment
+    uint8_t comfort_index;             // Overall environmental comfort
+    
+    // Diagnostics
+    uint32_t sensor_errors;    // Sensor error flags
 };
 
 // Power system status
