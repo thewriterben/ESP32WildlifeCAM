@@ -17,6 +17,17 @@ ESP32WildlifeCAM is an open-source wildlife monitoring system that uses ESP32 mi
 - 🔐 Blockchain-verified image authenticity
 - 📡 Remote monitoring and OTA updates
 
+## 📋 Planning & Development
+
+**🔗 UNIFIED DEVELOPMENT PLAN**: All planning documents have been consolidated into [`UNIFIED_DEVELOPMENT_PLAN.md`](UNIFIED_DEVELOPMENT_PLAN.md)
+
+- **58+ TODOs integrated** from scattered codebase comments
+- **Step-by-step implementation guide** with clear priorities  
+- **Offline development optimized** for firewall constraints
+- **Critical path identified**: Camera driver implementation (Step 1.4)
+
+See [`PLANNING_CONSOLIDATION_README.md`](PLANNING_CONSOLIDATION_README.md) for details on what changed.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
