@@ -7,6 +7,7 @@
  */
 
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 #include "config.h"
 #include "hardware/board_detector.h"
 #include "core/system_manager.h"
@@ -38,9 +39,17 @@ void setup() {
     if (!g_system->initialize()) {
         Logger::error("Failed to initialize system!");
         Logger::error("Entering safe mode...");
-        // TODO: Implement safe mode
+        
+        // Basic safe mode: flash LED and wait
+        pinMode(LED_BUILTIN, OUTPUT);
         while (1) {
-            delay(1000);
+            digitalWrite(LED_BUILTIN, HIGH);
+            delay(200);
+            digitalWrite(LED_BUILTIN, LOW);
+            delay(200);
+            
+            // Reset watchdog if available
+            esp_task_wdt_reset();
         }
     }
     
