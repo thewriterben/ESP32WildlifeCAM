@@ -47,8 +47,22 @@ bool detectAICapabilities() {
         case BOARD_XIAO_ESP32S3_SENSE:
             Serial.println("AI capabilities detected: AI-capable board type");
             return true;
+        case BOARD_AI_THINKER_ESP32_CAM:
+            // AI-Thinker ESP32-CAM can support basic AI with PSRAM
+            if (BoardDetector::hasPSRAM()) {
+                Serial.println("AI capabilities detected: AI-Thinker with PSRAM for AI workloads");
+                return true;
+            }
+            Serial.println("AI capabilities: Limited on AI-Thinker without PSRAM");
+            return false;
         default:
             break;
+    }
+    
+    // Additional check for ESP32 variants with sufficient resources
+    if (ESP.getChipCores() >= 2 && ESP.getFlashChipSize() >= 4 * 1024 * 1024) {
+        Serial.println("AI capabilities detected: Multi-core ESP32 with sufficient flash");
+        return true;
     }
     
     Serial.println("No AI capabilities detected");
