@@ -384,16 +384,28 @@ main() {
     cd "$PROJECT_ROOT"
     
     # Essential checks (always run)
-    check_result $(check_gpio_conflicts) "GPIO conflict check" false
-    check_result $(check_configuration_consistency) "Configuration consistency" false
+    check_gpio_conflicts
+    check_result $? "GPIO conflict check" false
+    
+    check_configuration_consistency
+    check_result $? "Configuration consistency" false
     
     if [[ "$QUICK_MODE" != "true" ]]; then
         # Comprehensive checks
-        check_result $(check_code_formatting) "Code formatting" true
-        check_result $(check_memory_management) "Memory management patterns" false
-        check_result $(check_power_impact) "Power consumption impact" false
-        check_result $(check_documentation) "Documentation consistency" false
-        check_result $(check_build_compatibility) "Build compatibility" false
+        check_code_formatting
+        check_result $? "Code formatting" true
+        
+        check_memory_management
+        check_result $? "Memory management patterns" false
+        
+        check_power_impact
+        check_result $? "Power consumption impact" false
+        
+        check_documentation
+        check_result $? "Documentation consistency" false
+        
+        check_build_compatibility
+        check_result $? "Build compatibility" false
     fi
     
     # Show results
