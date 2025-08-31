@@ -9,7 +9,7 @@ echo "=================================================="
 
 # Run the validation script (works completely offline)
 echo "=== Running Offline Validation ==="
-if python3 validate_fixes.py; then
+if python3 ../validate_fixes.py; then
     echo "✅ Validation checks passed!"
 else
     echo "❌ Validation checks failed!"
