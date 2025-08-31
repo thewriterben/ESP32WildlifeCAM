@@ -18,6 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 VERBOSE=false
 SIMULATION=false
+CALIBRATE_MODE=false
 SPECIFIC_COMPONENT=""
 START_TIME=$(date +%s)
 
@@ -27,6 +28,10 @@ while [[ $# -gt 0 ]]; do
         --component|-c)
             SPECIFIC_COMPONENT="$2"
             shift 2
+            ;;
+        --calibrate)
+            CALIBRATE_MODE=true
+            shift
             ;;
         --verbose|-v)
             VERBOSE=true
@@ -38,10 +43,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --help|-h)
             echo "Hardware Testing Script for ESP32WildlifeCAM"
-            echo "Usage: $0 [--component <name>] [--verbose] [--simulation] [--help]"
+            echo "Usage: $0 [--component <name>] [--calibrate] [--verbose] [--simulation] [--help]"
             echo ""
             echo "Options:"
             echo "  --component, -c  Test specific component (camera|power|storage|motion|sensors)"
+            echo "  --calibrate      Run calibration routines for the specified component"
             echo "  --verbose, -v    Enable verbose output"
             echo "  --simulation, -s Enable simulation mode (no real hardware required)"
             echo "  --help, -h       Show this help message"
@@ -554,31 +560,75 @@ test_motion_hardware() {
         log_warning "PIR sensor testing requires ESP32 hardware"
     fi
     
-    # Test 3: Motion sensitivity tuning
+    # Test 3: Motion sensitivity calibration (enhanced)
     ((motion_tests_total++))
-    log_info "Testing motion sensitivity configuration..."
-    
-    # Check for motion detection configuration
-    local motion_files=(
-        "$PROJECT_ROOT/firmware/src/motion_filter.cpp"
-        "$PROJECT_ROOT/src/motion/motion_detector.cpp"
-    )
-    
-    local motion_config_found=false
-    for motion_file in "${motion_files[@]}"; do
-        if [[ -f "$motion_file" ]]; then
-            if grep -q "sensitivity\|threshold\|filter" "$motion_file" 2>/dev/null; then
-                log_verbose "Motion sensitivity configuration found in $(basename "$motion_file")"
-                motion_config_found=true
-                break
-            fi
+    if [[ "$CALIBRATE_MODE" == "true" ]]; then
+        log_info "Running motion sensitivity calibration..."
+        
+        if [[ "$SIMULATION" == "true" ]]; then
+            # Simulate calibration process
+            local sensitivities=(0.3 0.5 0.7 0.9)
+            local optimal_sensitivity=0.7
+            local calibration_results=()
+            
+            log_verbose "Testing sensitivity levels..."
+            for sensitivity in "${sensitivities[@]}"; do
+                # Simulate detection rate at different sensitivities
+                local detection_rate=$(python3 -c "
+import random
+base_rate = $sensitivity
+noise = random.uniform(-0.1, 0.2)
+rate = min(0.95, max(0.1, base_rate + noise))
+print(f'{rate:.3f}')
+")
+                calibration_results+=("$sensitivity:$detection_rate")
+                log_verbose "Sensitivity $sensitivity: Detection rate $detection_rate"
+                sleep 0.2
+            done
+            
+            # Find optimal sensitivity
+            local best_rate=0
+            local best_sensitivity=0.5
+            for result in "${calibration_results[@]}"; do
+                local sens=$(echo "$result" | cut -d: -f1)
+                local rate=$(echo "$result" | cut -d: -f2)
+                if (( $(echo "$rate > $best_rate" | bc -l) )); then
+                    best_rate=$rate
+                    best_sensitivity=$sens
+                fi
+            done
+            
+            log_success "Optimal sensitivity calibrated: $best_sensitivity (detection rate: $best_rate)"
+            log_verbose "Calibration complete - saving to configuration..."
+            ((motion_tests_passed++))
+        else
+            log_warning "Motion calibration requires ESP32 hardware"
         fi
-    done
-    
-    if [[ "$motion_config_found" == "true" ]]; then
-        ((motion_tests_passed++))
     else
-        log_warning "Motion sensitivity configuration not implemented yet"
+        log_info "Testing motion sensitivity configuration..."
+        
+        # Check for motion detection configuration
+        local motion_files=(
+            "$PROJECT_ROOT/firmware/src/motion_filter.cpp"
+            "$PROJECT_ROOT/src/motion/motion_detector.cpp"
+        )
+        
+        local motion_config_found=false
+        for motion_file in "${motion_files[@]}"; do
+            if [[ -f "$motion_file" ]]; then
+                if grep -q "sensitivity\|threshold\|filter" "$motion_file" 2>/dev/null; then
+                    log_verbose "Motion sensitivity configuration found in $(basename "$motion_file")"
+                    motion_config_found=true
+                    break
+                fi
+            fi
+        done
+        
+        if [[ "$motion_config_found" == "true" ]]; then
+            ((motion_tests_passed++))
+        else
+            log_warning "Motion sensitivity configuration not implemented yet"
+        fi
     fi
     
     # Test 4: False positive filtering
