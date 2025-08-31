@@ -13,6 +13,7 @@
 #include <vector>
 #include "message_protocol.h"
 #include "discovery_protocol.h"
+#include "../camera_handler.h"
 
 // Node states
 enum NodeState {
@@ -189,6 +190,9 @@ private:
     BoardCapabilities capabilities_;
     DiscoveryProtocol* discoveryProtocol_;
     bool initialized_;
+    
+    // Camera handler for image capture tasks
+    CameraHandler cameraHandler_;
     
     // Network state
     int coordinatorNode_;

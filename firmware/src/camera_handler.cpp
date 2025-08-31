@@ -17,10 +17,13 @@
 
 // Constructor
 CameraHandler::CameraHandler() 
-    : initialized(false), imageCounter(0) {
+    : initialized(false), imageCounter(0), frame_queue(nullptr) {
     // Initialize camera_config to default values
     memset(&camera_config, 0, sizeof(camera_config_t));
     applyConfigurationSettings();
+    
+    // Create frame queue for buffer management
+    frame_queue = xQueueCreate(3, sizeof(camera_fb_t*));
 }
 
 // Destructor
@@ -478,6 +481,12 @@ void CameraHandler::cleanup() {
         imageCounter = 0;
         DEBUG_PRINTLN("Camera deinitialized");
     }
+    
+    // Clean up frame queue
+    if (frame_queue != nullptr) {
+        vQueueDelete(frame_queue);
+        frame_queue = nullptr;
+    }
 }
 
 /**
@@ -500,6 +509,179 @@ camera_fb_t* CameraHandler::captureImageWithEnvironmentalAwareness() {
     
     // Capture the image
     return captureImage();
+}
+
+/**
+ * Initialize camera with user-provided configuration
+ */
+esp_err_t CameraHandler::initialize(const CameraConfig& user_config) {
+    DEBUG_PRINTLN("Initializing camera with user configuration...");
+    
+    if (initialized) {
+        return ESP_OK;  // Already initialized
+    }
+    
+    // Create board instance using detection
+    board = BoardDetector::createBoard();
+    if (!board) {
+        DEBUG_PRINTLN("Failed to create board instance");
+        return ESP_FAIL;
+    }
+    
+    // Initialize the specific board
+    if (!board->init()) {
+        DEBUG_PRINTLN("Board initialization failed");
+        return ESP_FAIL;
+    }
+    
+    // Apply user configuration
+    camera_config.frame_size = user_config.max_framesize;
+    camera_config.pixel_format = user_config.pixel_format;
+    camera_config.jpeg_quality = user_config.jpeg_quality;
+    camera_config.fb_count = user_config.fb_count;
+    camera_config.xclk_freq_hz = user_config.xclk_freq_hz;
+    
+    return initializeCamera() ? ESP_OK : ESP_FAIL;
+}
+
+/**
+ * Validate pin assignment for conflict-free operation
+ */
+bool CameraHandler::validatePinAssignment() {
+    if (!board) {
+        DEBUG_PRINTLN("Board not initialized");
+        return false;
+    }
+    
+    GPIOMap gpio_map = board->getGPIOMap();
+    
+    // Use BoardDetector validation functionality
+    return BoardDetector::validateGPIOConfiguration(gpio_map);
+}
+
+/**
+ * Initialize camera with conflict checking
+ */
+esp_err_t CameraHandler::initializeWithConflictCheck() {
+    DEBUG_PRINTLN("Initializing camera with conflict checking...");
+    
+    if (initialized) {
+        return ESP_OK;  // Already initialized
+    }
+    
+    // Create board instance using detection
+    board = BoardDetector::createBoard();
+    if (!board) {
+        DEBUG_PRINTLN("Failed to create board instance");
+        return ESP_FAIL;
+    }
+    
+    // Validate pin assignments before proceeding
+    if (!validatePinAssignment()) {
+        DEBUG_PRINTLN("Pin validation failed - conflicts detected");
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // Initialize the specific board
+    if (!board->init()) {
+        DEBUG_PRINTLN("Board initialization failed");
+        return ESP_FAIL;
+    }
+    
+    return initializeCamera() ? ESP_OK : ESP_FAIL;
+}
+
+/**
+ * Capture frame with timeout
+ */
+esp_err_t CameraHandler::captureFrame(uint32_t timeout_ms) {
+    if (!initialized) {
+        DEBUG_PRINTLN("Error: Camera not initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    DEBUG_PRINTF("Capturing frame with %lu ms timeout...\n", timeout_ms);
+    
+    // Flash the LED briefly to indicate capture
+    flashLED();
+    
+    // Capture image with timeout handling
+    uint32_t start_time = millis();
+    camera_fb_t* fb = esp_camera_fb_get();
+    uint32_t elapsed = millis() - start_time;
+    
+    if (!fb) {
+        DEBUG_PRINTLN("Error: Camera capture failed");
+        return ESP_FAIL;
+    }
+    
+    if (elapsed > timeout_ms) {
+        DEBUG_PRINTF("Warning: Capture took %lu ms (timeout was %lu ms)\n", elapsed, timeout_ms);
+        esp_camera_fb_return(fb);
+        return ESP_ERR_TIMEOUT;
+    }
+    
+    // Add frame buffer to queue if space available
+    if (frame_queue != nullptr) {
+        if (xQueueSend(frame_queue, &fb, 0) != pdTRUE) {
+            DEBUG_PRINTLN("Frame queue full - returning buffer immediately");
+            esp_camera_fb_return(fb);
+            return ESP_ERR_NO_MEM;
+        }
+    } else {
+        // No queue, return buffer immediately
+        esp_camera_fb_return(fb);
+    }
+    
+    DEBUG_PRINTF("Frame captured: %dx%d, %d bytes, format: %d\n", 
+                 fb->width, fb->height, fb->len, fb->format);
+    
+    imageCounter++;
+    return ESP_OK;
+}
+
+/**
+ * Get frame buffer from internal queue
+ */
+camera_fb_t* CameraHandler::getFrameBuffer() {
+    if (frame_queue == nullptr) {
+        DEBUG_PRINTLN("Frame queue not initialized");
+        return nullptr;
+    }
+    
+    camera_fb_t* fb = nullptr;
+    if (xQueueReceive(frame_queue, &fb, 0) == pdTRUE) {
+        return fb;
+    }
+    
+    return nullptr;
+}
+
+/**
+ * Return frame buffer to system
+ */
+void CameraHandler::returnFrameBuffer(camera_fb_t* fb) {
+    if (fb != nullptr) {
+        esp_camera_fb_return(fb);
+    }
+}
+
+/**
+ * Deinitialize camera and clean up resources
+ */
+esp_err_t CameraHandler::deinitialize() {
+    DEBUG_PRINTLN("Deinitializing camera...");
+    
+    // Clean up any pending frame buffers in queue
+    if (frame_queue != nullptr) {
+        camera_fb_t* fb;
+        while (xQueueReceive(frame_queue, &fb, 0) == pdTRUE) {
+            esp_camera_fb_return(fb);
+        }
+    }
+    
+    cleanup();
+    return ESP_OK;
 }
 
 /**
