@@ -6,7 +6,8 @@
  */
 
 #include "system_manager.h"
-#include "../utils/logger.h"
+#include "src/data/storage_manager.h"
+#include "logger.h"
 
 SystemManager::SystemManager(BoardDetector::BoardType board) 
     : m_boardType(board), m_initialized(false), m_lastUpdate(0) {
@@ -62,7 +63,12 @@ bool SystemManager::initializePeripherals() {
     Logger::info("Initializing peripherals...");
     
     // TODO: Initialize camera
-    // TODO: Initialize SD card
+    // Initialize SD card storage
+    if (StorageManager::initialize()) {
+        Logger::info("SD card initialized successfully");
+    } else {
+        Logger::warn("SD card initialization failed");
+    }
     // TODO: Initialize sensors
     // TODO: Initialize power management
     

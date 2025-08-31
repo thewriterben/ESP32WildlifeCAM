@@ -10,6 +10,7 @@
 #include "../debug_utils.h"
 #include "../config.h"
 #include "../sensors/advanced_environmental_sensors.h"
+#include "../../src/data/storage_manager.h"
 #include <FS.h>
 #include <LittleFS.h>
 #include <esp_system.h>
@@ -723,7 +724,7 @@ bool WildlifeTelemetry::collectDeviceHealth() {
     health.loraSignal = 80;         // TODO: Get from LoRa driver
     health.resetReason = ESP.getResetReason();
     health.errorCount = 0;          // TODO: Implement error tracking
-    health.sdCardStatus = true;     // TODO: Check SD card status
+    health.sdCardStatus = StorageManager::initialize(); // Check SD card status
     health.cameraStatus = true;     // TODO: Check camera status
     
     return recordDeviceHealth(health);

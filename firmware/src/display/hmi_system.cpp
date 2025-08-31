@@ -5,6 +5,7 @@
 
 #include "hmi_system.h"
 #include "../debug_config.h"
+#include "../../src/data/storage_manager.h"
 #include <esp_heap_caps.h>
 #include <WiFi.h>
 
@@ -316,7 +317,7 @@ void HMISystem::updateSystemStatus() {
     system_status.camera_ready = current_board && current_board->isSupported();
     system_status.display_ready = hasDisplay();
     system_status.wifi_connected = WiFi.status() == WL_CONNECTED;
-    system_status.sd_card_present = false; // TODO: Check SD card status
+    system_status.sd_card_present = StorageManager::initialize(); // Check SD card status
     system_status.battery_percentage = SolarManager::getBatteryPercentage();
     system_status.battery_voltage = SolarManager::getBatteryVoltage();
     system_status.charging = SolarManager::isCharging();

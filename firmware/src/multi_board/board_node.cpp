@@ -528,10 +528,68 @@ bool BoardNode::executeImageCaptureTask(const NodeTask& task) {
 }
 
 bool BoardNode::executeMotionDetectionTask(const NodeTask& task) {
-    // TODO: Implement motion detection
-    Serial.println("Executing motion detection task");
-    delay(500); // Simulate detection time
-    return true;
+    Serial.println("Executing motion detection task using MotionDetectionManager");
+    
+    // Initialize camera manager for motion detection if not already done
+    if (!cameraManager_.isReady()) {
+        Serial.println("Initializing camera manager for motion detection...");
+        if (!cameraManager_.initialize()) {
+            Serial.println("Camera manager initialization failed");
+            return false;
+        }
+    }
+    
+    // Initialize motion detection manager if not already done
+    static bool motionInitialized = false;
+    if (!motionInitialized) {
+        Serial.println("Initializing motion detection manager...");
+        if (!motionManager_.initialize(&cameraManager_, MotionDetectionManager::DetectionSystem::ENHANCED_HYBRID)) {
+            Serial.println("Motion detection manager initialization failed");
+            return false;
+        }
+        
+        // Configure enhanced features including PIR sensor on GPIO 1
+        if (!motionManager_.configureEnhancedFeatures(true, true, true)) {
+            Serial.println("Enhanced motion detection features configuration failed");
+            return false;
+        }
+        
+        motionInitialized = true;
+        Serial.println("Motion detection system initialized successfully");
+    }
+    
+    // Perform motion detection
+    auto motionResult = motionManager_.detectMotion();
+    
+    if (motionResult.motionDetected) {
+        Serial.printf("Motion detected! Confidence: %.2f\n", motionResult.confidenceScore);
+        
+        // If motion detected, trigger image capture and storage
+        if (motionResult.hasEnhancedData) {
+            Serial.printf("Enhanced data: Zones=%d, Speed=%.1f, Direction=%.1f°, ML=%.2f\n",
+                         motionResult.activeZoneCount,
+                         motionResult.motionSpeed,
+                         motionResult.motionDirection * 180 / PI,
+                         motionResult.mlConfidence);
+        }
+        
+        // Capture image when motion is detected
+        String motionFolder = "/wildlife_motion";
+        auto captureResult = cameraManager_.captureImage(motionFolder);
+        
+        if (captureResult.success) {
+            Serial.printf("Motion-triggered image captured: %s (%.2f KB)\n", 
+                         captureResult.filename.c_str(), 
+                         captureResult.imageSize / 1024.0);
+            return true;
+        } else {
+            Serial.println("Motion-triggered image capture failed");
+            return false;
+        }
+    } else {
+        Serial.println("No motion detected");
+        return true; // Not detecting motion is still a successful task execution
+    }
 }
 
 bool BoardNode::executeDataTransmissionTask(const NodeTask& task) {
