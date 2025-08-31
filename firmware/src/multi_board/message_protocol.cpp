@@ -16,6 +16,42 @@ static BoardType g_boardType = BOARD_UNKNOWN;
 static SensorType g_sensorType = SENSOR_UNKNOWN;
 static bool g_initialized = false;
 
+/**
+ * Detect AI capabilities based on hardware features
+ */
+bool detectAICapabilities() {
+    // Check for ESP32-S3 which has AI acceleration features
+    const char* chip_model = BoardDetector::getChipModel();
+    if (strstr(chip_model, "ESP32-S3") != nullptr) {
+        Serial.println("AI capabilities detected: ESP32-S3 with AI acceleration");
+        return true;
+    }
+    
+    // Check for PSRAM which is often required for AI workloads
+    if (BoardDetector::hasPSRAM()) {
+        size_t psram_size = ESP.getPsramSize();
+        if (psram_size >= 2 * 1024 * 1024) { // At least 2MB PSRAM
+            Serial.printf("AI capabilities detected: Sufficient PSRAM (%d bytes) for AI processing\n", psram_size);
+            return true;
+        }
+    }
+    
+    // Check for specific board types that are AI-capable
+    BoardType board_type = BoardDetector::detectBoardType();
+    switch (board_type) {
+        case BOARD_ESP32_S3_CAM:
+        case BOARD_ESP32_S3_EYE:
+        case BOARD_XIAO_ESP32S3_SENSE:
+            Serial.println("AI capabilities detected: AI-capable board type");
+            return true;
+        default:
+            break;
+    }
+    
+    Serial.println("No AI capabilities detected");
+    return false;
+}
+
 bool init(int nodeId, BoardType boardType, SensorType sensorType) {
     g_nodeId = nodeId;
     g_boardType = boardType;
@@ -222,7 +258,10 @@ BoardCapabilities getCurrentCapabilities() {
     
     // Detect hardware capabilities
     caps.hasPSRAM = BoardDetector::hasPSRAM();
-    caps.hasAI = false; // TODO: Detect AI capabilities
+    
+    // Detect AI capabilities based on hardware features
+    caps.hasAI = detectAICapabilities();
+    
     caps.hasSD = true;  // TODO: Detect SD card
     caps.hasCellular = false; // TODO: Detect cellular modem
     caps.hasSatellite = false; // TODO: Detect satellite modem

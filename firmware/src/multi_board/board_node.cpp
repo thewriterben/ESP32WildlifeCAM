@@ -476,10 +476,55 @@ void BoardNode::handleCoordinatorHeartbeat(const MultiboardMessage& msg) {
 }
 
 bool BoardNode::executeImageCaptureTask(const NodeTask& task) {
-    // TODO: Implement image capture using CameraHandler
-    Serial.println("Executing image capture task");
-    delay(1000); // Simulate capture time
-    return true;
+    Serial.println("Executing image capture task using CameraHandler");
+    
+    // Initialize camera if not already done
+    if (!cameraHandler_.isInitialized()) {
+        Serial.println("Initializing camera for image capture task...");
+        if (!cameraHandler_.init()) {
+            Serial.println("Camera initialization failed");
+            return false;
+        }
+    }
+    
+    // Extract parameters from task
+    uint32_t timeout_ms = 5000; // Default 5 second timeout
+    if (task.parameters.containsKey("timeout_ms")) {
+        timeout_ms = task.parameters["timeout_ms"];
+    }
+    
+    String save_folder = "/wildlife_images";
+    if (task.parameters.containsKey("folder")) {
+        save_folder = task.parameters["folder"].as<String>();
+    }
+    
+    // Capture frame with timeout
+    esp_err_t result = cameraHandler_.captureFrame(timeout_ms);
+    if (result != ESP_OK) {
+        Serial.printf("Frame capture failed with error: 0x%x\n", result);
+        return false;
+    }
+    
+    // Get the captured frame
+    camera_fb_t* fb = cameraHandler_.getFrameBuffer();
+    if (!fb) {
+        Serial.println("Failed to get frame buffer");
+        return false;
+    }
+    
+    // Save the image
+    String filename = cameraHandler_.saveImage(fb, save_folder.c_str());
+    
+    // Return frame buffer to system
+    cameraHandler_.returnFrameBuffer(fb);
+    
+    if (filename.length() > 0) {
+        Serial.printf("Image capture successful: %s\n", filename.c_str());
+        return true;
+    } else {
+        Serial.println("Image save failed");
+        return false;
+    }
 }
 
 bool BoardNode::executeMotionDetectionTask(const NodeTask& task) {

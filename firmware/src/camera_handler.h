@@ -5,6 +5,8 @@
 #include <esp_camera.h>
 #include "hal/camera_board.h"
 #include <memory>
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 
 // Lighting condition enumeration
 enum LightingCondition {
@@ -60,6 +62,25 @@ public:
     bool init(BoardType boardType);
     
     /**
+     * @brief Initialize camera with user-provided configuration
+     * @param user_config Camera configuration to apply
+     * @return ESP_OK on success, error code otherwise
+     */
+    esp_err_t initialize(const CameraConfig& user_config);
+    
+    /**
+     * @brief Validate pin assignment for conflict-free operation
+     * @return true if pin assignments are valid, false otherwise
+     */
+    bool validatePinAssignment();
+    
+    /**
+     * @brief Initialize camera with conflict checking
+     * @return ESP_OK on success, error code otherwise
+     */
+    esp_err_t initializeWithConflictCheck();
+    
+    /**
      * @brief Get the current camera board instance
      * @return Pointer to camera board, or nullptr if not initialized
      */
@@ -70,6 +91,31 @@ public:
      * @return Camera frame buffer pointer, or nullptr on failure
      */
     camera_fb_t* captureImage();
+    
+    /**
+     * @brief Capture frame with timeout
+     * @param timeout_ms Timeout in milliseconds for frame capture
+     * @return ESP_OK on success, error code otherwise
+     */
+    esp_err_t captureFrame(uint32_t timeout_ms);
+    
+    /**
+     * @brief Get frame buffer from internal queue
+     * @return Camera frame buffer pointer, or nullptr if none available
+     */
+    camera_fb_t* getFrameBuffer();
+    
+    /**
+     * @brief Return frame buffer to system
+     * @param fb Frame buffer to return
+     */
+    void returnFrameBuffer(camera_fb_t* fb);
+    
+    /**
+     * @brief Deinitialize camera and clean up resources
+     * @return ESP_OK on success, error code otherwise
+     */
+    esp_err_t deinitialize();
     
     /**
      * @brief Save image to SD card with timestamp and metadata
@@ -158,6 +204,7 @@ private:
     bool initialized;
     int imageCounter;
     std::unique_ptr<CameraBoard> board;
+    QueueHandle_t frame_queue;  // Frame queue for buffer management
     
     // Private methods
     bool initializeCamera();
