@@ -1,28 +1,28 @@
 {
   "motion_detection": {
-    "pir_sensitivity": 0.7,
+    "pir_sensitivity": 0.75,
     "frame_analysis_threshold": 0.6,
     "ml_confidence_threshold": 0.8,
     "multi_zone_enabled": true,
     "zones": {
       "1": {
         "pin": 16,
-        "sensitivity": 0.7,
+        "sensitivity": 0.75,
         "priority": 0
       },
       "2": {
         "pin": 17,
-        "sensitivity": 0.7,
+        "sensitivity": 0.75,
         "priority": 128
       },
       "3": {
         "pin": 1,
-        "sensitivity": 0.49999999999999994,
+        "sensitivity": 0.75,
         "priority": 255
       }
     }
   },
-  "wildlife_profile": "deer",
+  "wildlife_profile": "general",
   "environmental": {
     "wind_compensation": true,
     "temperature_adjustment": true,
