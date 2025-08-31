@@ -659,7 +659,7 @@ void TemporalSequenceAnalyzer::identifyMigrationPatterns(SeasonalAnalysis& analy
     for (int month = 0; month < 12; month++) {
         // Check for significant changes in activity that might indicate migration
         int nextMonth = (month + 1) % 12;
-        float activityChange = abs(analysis.monthlyActivity[nextMonth] - analysis.monthlyActivity[month]);
+        float activityChange = fabs(analysis.monthlyActivity[nextMonth] - analysis.monthlyActivity[month]);
         
         if (activityChange > 0.5f) { // Significant change threshold
             SeasonalAnalysis::MigrationPattern pattern;
@@ -734,7 +734,7 @@ void TemporalSequenceAnalyzer::analyzeTrends(TemporalAnalysisResult& result) {
     float change = recentActivity - earlyActivity;
     result.trends.activityIncreasing = change > 0.1f;
     result.trends.activityDecreasing = change < -0.1f;
-    result.trends.trendStrength = abs(change);
+    result.trends.trendStrength = fabs(change);
 }
 
 uint32_t TemporalSequenceAnalyzer::calculateDataQuality() {
