@@ -94,6 +94,13 @@ private:
     static BoardType detectByChipModel();
     static BoardType detectByPSRAM();
     static BoardType detectByGPIO();
+    static BoardType detectByI2CScan();
+    
+    // Hardware validation functions
+    static bool testGPIOPin(int pin);
+    static bool scanI2CBus(int sda, int scl);
+    static std::vector<uint8_t> scanI2CDevices(int sda, int scl);
+    static bool validateCameraPins(const PinConfig& config);
 };
 
 #endif // BOARD_DETECTOR_H

@@ -8,6 +8,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// Include pin definitions
+#include "include/pins.h"
+
 // Version information
 #define VERSION "0.1.0"
 #define VERSION_MAJOR 0
