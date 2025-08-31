@@ -654,7 +654,37 @@ void BoardNode::performStandaloneTasks() {
     
     if (now - lastStandaloneTask > 300000) { // Every 5 minutes
         Serial.println("Performing standalone monitoring task");
-        // TODO: Implement standalone image capture and basic analysis
+        
+        // Initialize camera if not already done
+        if (!cameraHandler_.isInitialized()) {
+            Serial.println("Initializing camera for standalone task...");
+            if (!cameraHandler_.init()) {
+                Serial.println("Standalone camera initialization failed");
+                lastStandaloneTask = now;
+                return;
+            }
+        }
+        
+        // Capture standalone monitoring image
+        esp_err_t result = cameraHandler_.captureFrame(5000); // 5 second timeout
+        if (result == ESP_OK) {
+            camera_fb_t* fb = cameraHandler_.getFrameBuffer();
+            if (fb) {
+                String filename = cameraHandler_.saveImage(fb, "/standalone_monitoring");
+                cameraHandler_.returnFrameBuffer(fb);
+                
+                if (filename.length() > 0) {
+                    Serial.printf("Standalone image captured: %s\n", filename.c_str());
+                } else {
+                    Serial.println("Standalone image save failed");
+                }
+            } else {
+                Serial.println("Standalone frame buffer retrieval failed");
+            }
+        } else {
+            Serial.printf("Standalone image capture failed: 0x%x\n", result);
+        }
+        
         lastStandaloneTask = now;
     }
 }

@@ -14,6 +14,7 @@
 #include "../../firmware/src/hal/board_detector.h"
 #include "../../firmware/src/hal/camera_board.h"
 #include <esp_system.h>
+#include <memory>
 
 // Constructor
 CameraHandler::CameraHandler() : 
@@ -305,7 +306,7 @@ esp_err_t CameraHandler::setupPins() {
         return ESP_FAIL;
     }
     
-    board_instance = board.get();
+    // Store board reference for later use (note: unique_ptr manages the lifetime)
     
     // Get GPIO mapping
     GPIOMap gpio_map = board->getGPIOMap();
