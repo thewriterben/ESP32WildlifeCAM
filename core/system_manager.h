@@ -11,6 +11,7 @@
 #include <Arduino.h>
 #include <vector>
 #include "../hardware/board_detector.h"
+#include "../firmware/include/power/power_manager.h"
 
 /**
  * @brief Main system manager class that coordinates all subsystems
@@ -84,6 +85,16 @@ private:
     void setError(const char* error);
     bool validateHardwareConfiguration();
     void printSystemInfo();
+    void performSystemHealthChecks();
+    void updateSystemTelemetry();
+    void checkPowerConditions();
+    
+    // FreeRTOS task functions
+    static void systemMonitorTask(void* parameter);
+    static void powerManagementTask(void* parameter);
+    static void sensorMonitorTask(void* parameter);
+    static void motionDetectionTask(void* parameter);
+    static void networkCommTask(void* parameter);
 };
 
 #endif // SYSTEM_MANAGER_H
