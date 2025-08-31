@@ -1,19 +1,22 @@
 /**
  * @file logger.cpp
- * @brief Logger implementation
+ * @brief Logger implementation with SD card and LittleFS support
  * @author thewriterben
  * @date 2025-08-31
  */
 
 #include "logger.h"
-#include <SD.h>
+#include <SD_MMC.h>
+#include <LittleFS.h>
 #include <time.h>
 
 // Static member initialization
 Logger::LogLevel Logger::s_currentLevel = Logger::LEVEL_INFO;
 bool Logger::s_serialEnabled = true;
 bool Logger::s_fileEnabled = false;
-String Logger::s_logFilePath = "/sdcard/WILDLIFE/LOGS/system.log";
+String Logger::s_logFilePath = "/wildlife/logs/system.log";
+bool Logger::s_sdCardAvailable = false;
+bool Logger::s_littleFSAvailable = false;
 
 void Logger::setLevel(LogLevel level) {
     s_currentLevel = level;
@@ -25,6 +28,46 @@ void Logger::enableSerial(bool enable) {
 
 void Logger::enableFile(bool enable) {
     s_fileEnabled = enable;
+    if (enable && !s_sdCardAvailable && !s_littleFSAvailable) {
+        initializeStorage();
+    }
+}
+
+bool Logger::initializeStorage() {
+    // Try SD card first
+    if (SD_MMC.begin()) {
+        uint8_t cardType = SD_MMC.cardType();
+        if (cardType != CARD_NONE) {
+            s_sdCardAvailable = true;
+            
+            // Create log directory
+            SD_MMC.mkdir("/wildlife");
+            SD_MMC.mkdir("/wildlife/logs");
+            
+            return true;
+        } else {
+            SD_MMC.end();
+        }
+    }
+    
+    // Fallback to LittleFS
+    if (!LittleFS.begin()) {
+        // Try formatting
+        if (LittleFS.format()) {
+            if (LittleFS.begin()) {
+                s_littleFSAvailable = true;
+                return true;
+            }
+        }
+        return false;
+    } else {
+        s_littleFSAvailable = true;
+        return true;
+    }
+}
+
+bool Logger::isStorageAvailable() {
+    return s_sdCardAvailable || s_littleFSAvailable;
 }
 
 void Logger::setLogFile(const char* path) {
@@ -90,13 +133,49 @@ void Logger::log(LogLevel level, const char* format, va_list args) {
     }
     
     // Output to file
-    if (s_fileEnabled && SD.begin()) {
-        File logFile = SD.open(s_logFilePath.c_str(), FILE_APPEND);
+    if (s_fileEnabled) {
+        writeToFile(logLine);
+    }
+}
+
+bool Logger::writeToFile(const String& logLine) {
+    if (!s_fileEnabled) {
+        return false;
+    }
+    
+    // Try SD card first
+    if (s_sdCardAvailable) {
+        File logFile = SD_MMC.open(s_logFilePath.c_str(), FILE_APPEND);
         if (logFile) {
             logFile.println(logLine);
             logFile.close();
+            return true;
+        } else {
+            // SD card failed, try to reinitialize
+            s_sdCardAvailable = false;
+            if (!s_littleFSAvailable) {
+                initializeStorage();
+            }
         }
     }
+    
+    // Try LittleFS as fallback
+    if (s_littleFSAvailable) {
+        File logFile = LittleFS.open(s_logFilePath.c_str(), "a");
+        if (logFile) {
+            logFile.println(logLine);
+            logFile.close();
+            return true;
+        } else {
+            // LittleFS failed
+            s_littleFSAvailable = false;
+        }
+    }
+    
+    // If we get here, both storage methods failed
+    // Try to reinitialize storage
+    initializeStorage();
+    return false;
 }
 
 const char* Logger::getLevelString(LogLevel level) {

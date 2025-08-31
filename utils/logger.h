@@ -26,6 +26,10 @@ public:
     static void enableFile(bool enable);
     static void setLogFile(const char* path);
     
+    // Storage initialization
+    static bool initializeStorage();
+    static bool isStorageAvailable();
+    
     static void debug(const char* format, ...);
     static void info(const char* format, ...);
     static void warning(const char* format, ...);
@@ -39,10 +43,13 @@ private:
     static bool s_serialEnabled;
     static bool s_fileEnabled;
     static String s_logFilePath;
+    static bool s_sdCardAvailable;
+    static bool s_littleFSAvailable;
     
     static void log(LogLevel level, const char* format, va_list args);
     static const char* getLevelString(LogLevel level);
     static String getTimestamp();
+    static bool writeToFile(const String& logLine);
 };
 
 #endif // LOGGER_H
