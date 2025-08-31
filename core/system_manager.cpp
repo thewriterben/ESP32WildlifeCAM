@@ -300,7 +300,7 @@ bool SystemManager::initializePowerManagement() {
     Logger::info("Initializing power management...");
     
     // Initialize the power management system
-    if (!initializePowerManagement()) {
+    if (!::initializePowerManagement()) {
         Logger::error("Failed to initialize power management system");
         return false;
     }
