@@ -1,9 +1,19 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef CONFIG_UNIFIED_H
+#define CONFIG_UNIFIED_H
 
 // ===========================
-// ESP32 WILDLIFE CAMERA CONFIGURATION
+// ESP32 WILDLIFE CAMERA UNIFIED CONFIGURATION
 // Centralized configuration for all subsystems
+// 
+// This file consolidates configuration from multiple sources:
+// - firmware/src/config.h (main configuration)
+// - wifi_config.h (WiFi settings)  
+// - firmware/src/debug_config.h (debug settings)
+// - src/streaming/stream_config.h (streaming settings)
+// - include/blockchain/blockchain_config.h (blockchain settings)
+// - firmware/src/i2c/i2c_config.h (I2C settings)
+// - firmware/src/enclosure_config.h (enclosure settings)
+// - firmware/src/meshtastic/mesh_config.h (LoRa/mesh settings)
 // ===========================
 
 // ===========================
@@ -49,14 +59,38 @@
 // MOTION DETECTION CONFIGURATION
 // ===========================
 
-// PIR Sensor Settings
-#define PIR_PIN 1                        // PIR sensor GPIO pin (CORRECTED from GPIO 13 per AUDIT_REPORT.md)
+// PIR Sensor Settings - CORRECTED PIN ASSIGNMENT (was GPIO 13, now GPIO 1 per AUDIT_REPORT.md)
+// Pin assignments are now in pins.h
 #define PIR_DEBOUNCE_TIME 2000           // ms - prevent multiple triggers
 #define PIR_TRIGGER_MODE RISING          // Interrupt trigger mode
 #define MOTION_DETECTION_ENABLED true    // Enable/disable motion detection
 #define MOTION_SENSITIVITY 50            // 0-100, higher = more sensitive
 #define MOTION_TIMEOUT 30000             // ms - motion detection timeout
 #define MOTION_CONSECUTIVE_THRESHOLD 3   // Number of consecutive motions to confirm
+
+// Advanced Motion Detection
+#define MULTI_ZONE_PIR_ENABLED true       // Enable multi-zone PIR system
+#define MAX_PIR_ZONES 4                   // Maximum number of PIR zones
+#define DEFAULT_PIR_ZONES 3               // Default number of zones to configure
+#define PIR_ZONE_SENSITIVITY 0.5f         // Default zone sensitivity
+#define PIR_ZONE_PRIORITY_STEP 64         // Priority step between zones
+
+// Frame Difference Settings
+#define MOTION_THRESHOLD 10               // Motion detection threshold
+#define MOTION_DETECTION_BLOCKS 20        // Number of blocks to analyze
+#define MOTION_MIN_AREA 100               // Minimum motion area
+#define ADVANCED_FRAME_ANALYSIS true      // Enable advanced frame analysis
+#define BACKGROUND_SUBTRACTION_ENABLED true // Enable background subtraction
+#define MOTION_VECTOR_ANALYSIS true       // Enable motion vector analysis
+#define OBJECT_SIZE_FILTERING true        // Enable object size filtering
+#define MIN_OBJECT_SIZE_PX 25             // Minimum object size in pixels
+#define MAX_OBJECT_SIZE_PX 5000           // Maximum object size in pixels
+
+// Background Model Settings
+#define BACKGROUND_LEARNING_RATE 0.1f     // Background adaptation rate
+#define BACKGROUND_UPDATE_THRESHOLD 0.3f  // Threshold for background updates
+#define BACKGROUND_UPDATE_INTERVAL 5000   // Minimum time between updates (ms)
+#define MAX_FRAMES_WITHOUT_BG_UPDATE 100  // Force update after this many frames
 
 // Weather Filtering Settings
 #define WEATHER_FILTERING_ENABLED true   // Enable weather-based motion filtering
@@ -65,6 +99,24 @@
 #define TEMP_COMP_ENABLED true           // Temperature compensation for PIR
 #define TEMP_STABILITY_THRESHOLD 2.0     // °C - temperature change threshold
 #define WEATHER_READING_INTERVAL 60000   // ms - how often to read weather sensors
+
+// Hybrid Motion Detection
+#define HYBRID_MOTION_ENABLED true        // Enable PIR + frame difference
+#define MOTION_CONFIRMATION_TIME 1000     // Time to confirm motion (ms)
+
+// Enhanced Detection Modes
+#define DEFAULT_ENHANCED_MODE 3           // 0=Legacy, 1=MultiZone, 2=Advanced, 3=Full, 4=Adaptive
+#define ADAPTIVE_MODE_ENABLED true        // Enable automatic mode selection
+#define PERFORMANCE_MONITORING true       // Monitor detection performance
+
+// Analytics Features
+#define MOTION_ANALYTICS_ENABLED true     // Enable motion analytics
+#define MOTION_HEATMAP_ENABLED false      // Disable heatmap by default (memory intensive)
+#define DIRECTION_TRACKING_ENABLED true   // Enable direction tracking
+#define SPEED_ESTIMATION_ENABLED true     // Enable speed estimation
+#define DWELL_TIME_ANALYSIS_ENABLED true  // Enable dwell time calculation
+#define HEATMAP_UPDATE_INTERVAL 10000     // Heatmap update interval (ms)
+#define TRACKING_HISTORY_SIZE 100         // Number of tracking points to keep
 
 // ===========================
 // POWER MANAGEMENT CONFIGURATION
@@ -75,8 +127,6 @@
 // These pins cannot be used for ADC voltage monitoring simultaneously
 #define SOLAR_VOLTAGE_MONITORING_ENABLED false  // Disabled due to GPIO 34 conflict with Y8_GPIO_NUM
 #define BATTERY_VOLTAGE_MONITORING_ENABLED false // Disabled due to GPIO 35 conflict with Y9_GPIO_NUM
-// #define SOLAR_VOLTAGE_PIN 34          // CONFLICTS with Y8_GPIO_NUM
-// #define BATTERY_VOLTAGE_PIN 35        // CONFLICTS with Y9_GPIO_NUM
 #define ADC_RESOLUTION 12                // ADC resolution in bits (12-bit = 0-4095)
 #define ADC_REFERENCE_VOLTAGE 3.3        // ADC reference voltage
 #define VOLTAGE_DIVIDER_RATIO 2.0        // Voltage divider ratio for scaling
@@ -102,9 +152,41 @@
 #define DEEP_SLEEP_DURATION 300          // seconds - sleep between checks
 #define LOW_POWER_CPU_FREQ 80            // MHz - reduced CPU frequency for power saving
 
-// Power Indicator LED - Alternative pin to avoid SD card conflict
-#define CHARGING_LED_PIN 16              // Charging indicator LED pin (GPIO 16 available on ESP32-CAM)
-#define CHARGING_LED_ENABLED true        // Enabled when LoRa disabled
+// Power Modes
+#define POWER_SAVE_MODE_ENABLED true      // Enable power saving
+#define ADAPTIVE_DUTY_CYCLE true          // Enable adaptive duty cycling
+#define MAX_CPU_FREQ_MHZ 240              // Maximum CPU frequency
+#define MIN_CPU_FREQ_MHZ 80               // Minimum CPU frequency for power saving
+#define BALANCED_CPU_FREQ_MHZ 160         // Balanced performance frequency
+
+// ===========================
+// AI/ML CONFIGURATION
+// ===========================
+
+// TensorFlow Lite Settings
+#define TFLITE_ARENA_SIZE (512 * 1024)    // 512KB tensor arena
+#define MODEL_INPUT_SIZE 224               // Model input dimensions
+#define INFERENCE_TIMEOUT_MS 5000          // Maximum inference time
+
+// Species Classification
+#define SPECIES_CONFIDENCE_THRESHOLD 0.7f  // Minimum confidence for species
+#define MAX_SPECIES_COUNT 50               // Maximum supported species
+
+// Behavior Analysis
+#define BEHAVIOR_CONFIDENCE_THRESHOLD 0.6f // Minimum confidence for behavior
+#define BEHAVIOR_HISTORY_SIZE 10           // Number of frames for temporal analysis
+
+// Model Management
+#define ADAPTIVE_MODEL_SELECTION true     // Enable adaptive model selection
+#define MODEL_CALIBRATION_ENABLED true    // Enable runtime calibration
+#define MODEL_CACHE_SIZE 3                 // Number of models to cache
+
+// Machine Learning False Positive Reduction
+#define ML_FALSE_POSITIVE_FILTERING true  // Enable ML filtering
+#define ML_LEARNING_RATE 0.05f            // ML adaptation rate
+#define ML_CONFIDENCE_THRESHOLD 0.6f      // ML confidence threshold
+#define ML_TRAINING_PERIOD 7200000        // Training period (2 hours in ms)
+#define ML_PATTERN_MEMORY_SIZE 1000       // Number of patterns to remember
 
 // ===========================
 // LORA MESH NETWORK CONFIGURATION
@@ -124,7 +206,7 @@
 // With LoRa disabled, SD card storage and charging LED are enabled as alternatives.
 #define LORA_ENABLED false               // Disabled due to fundamental GPIO conflicts with camera
 
-// LoRa Radio Configuration
+// LoRa Radio Configuration (for future expansion with compatible boards)
 #define LORA_FREQUENCY 915E6             // Frequency: 433E6, 868E6, 915E6 Hz
 #define LORA_TX_POWER 20                 // TX Power: 5-20 dBm
 #define LORA_SPREADING_FACTOR 7          // Spreading Factor: 6-12
@@ -133,14 +215,6 @@
 #define LORA_PREAMBLE_LENGTH 8           // Preamble Length: 6-65535
 #define LORA_SYNC_WORD 0x12              // Network sync word (network ID)
 #define LORA_CRC_ENABLED true            // Enable CRC checking
-
-// LoRa GPIO Pin Configuration (DISABLED - pins available for other uses)
-// #define LORA_SCK 18                   // SPI clock pin - CONFLICTS with Y3_GPIO_NUM
-// #define LORA_MISO 19                  // SPI MISO pin - CONFLICTS with Y4_GPIO_NUM
-// #define LORA_MOSI 23                  // SPI MOSI pin - CONFLICTS with HREF_GPIO_NUM
-// #define LORA_CS 5                     // Chip select pin - CONFLICTS with Y2_GPIO_NUM
-// #define LORA_RST 14                   // Reset pin - now available for SD_CLK_PIN
-// #define LORA_DIO0 26                  // DIO0 interrupt pin - CONFLICTS with SIOD_GPIO_NUM
 
 // Mesh Network Configuration
 #define NODE_ID 1                        // Unique node identifier (1-255)
@@ -161,11 +235,42 @@
 // ===========================
 
 #define WIFI_ENABLED false               // Enable/disable WiFi functionality
-#define WIFI_SSID ""                     // WiFi network name
-#define WIFI_PASSWORD ""                 // WiFi network password
 #define WIFI_TIMEOUT 10000               // ms - WiFi connection timeout
 #define WIFI_RETRY_COUNT 3               // WiFi connection retry attempts
 #define WIFI_SLEEP_MODE WIFI_PS_MIN_MODEM // WiFi power save mode
+
+// WiFi Credentials (see wifi_config.h for security notes)
+#define WIFI_SSID ""                     // WiFi network name (configure in wifi_config.h)
+#define WIFI_PASSWORD ""                 // WiFi network password (configure in wifi_config.h)
+
+// Web Server Configuration
+#define WEB_SERVER_PORT 80
+#define WEB_USERNAME "admin"
+#define WEB_PASSWORD "wildlife2024"
+
+// ===========================
+// STREAMING CONFIGURATION
+// ===========================
+
+// Live Streaming Settings
+#define MJPEG_BOUNDARY "wildlifecam_stream"
+#define MJPEG_CONTENT_TYPE "multipart/x-mixed-replace; boundary=" MJPEG_BOUNDARY
+#define MJPEG_FRAME_HEADER "\r\n--" MJPEG_BOUNDARY "\r\nContent-Type: image/jpeg\r\nContent-Length: "
+
+// Streaming Performance Limits
+#define STREAM_MAX_CLIENTS 3              // Maximum concurrent viewers
+#define STREAM_MAX_FPS 10                 // Maximum frames per second
+#define STREAM_MIN_FPS 1                  // Minimum frames per second
+#define STREAM_DEFAULT_FPS 5              // Default frame rate
+#define STREAM_FRAME_TIMEOUT 10000        // Frame timeout in milliseconds
+#define STREAM_CLIENT_BUFFER_SIZE 32768   // Client buffer size (32KB)
+#define STREAM_MAX_FRAME_SIZE 65536       // Maximum frame size (64KB)
+
+// Motion Detection Integration for Streaming
+#define STREAM_MOTION_TRIGGER_ENABLED true
+#define STREAM_MOTION_AUTO_START_DELAY 1000    // ms - delay before starting stream after motion
+#define STREAM_MOTION_AUTO_STOP_DELAY 30000    // ms - delay before stopping stream after no motion
+#define STREAM_MOTION_MINIMUM_CONFIDENCE 50    // Minimum motion confidence to trigger stream
 
 // ===========================
 // FILE SYSTEM CONFIGURATION
@@ -174,10 +279,7 @@
 // SD Card Configuration - ENABLED when LoRa is disabled
 #define SD_CARD_ENABLED true             // SD card enabled when LoRa disabled
 #if SD_CARD_ENABLED
-#define SD_CS_PIN 12                     // SD card chip select pin
-#define SD_MOSI_PIN 15                   // SD card MOSI pin
-#define SD_CLK_PIN 14                    // SD card clock pin (available when LORA_RST disabled)
-#define SD_MISO_PIN 2                    // SD card MISO pin (available when charging LED disabled)
+// SD card pins are defined in pins.h
 #define SD_SPI_FREQ 40000000            // SD card SPI frequency (40MHz)
 #endif
 
@@ -185,9 +287,85 @@
 #define IMAGE_FOLDER "/images"           // Folder for captured images
 #define LOG_FOLDER "/logs"               // Folder for system logs
 #define CONFIG_FOLDER "/config"          // Folder for configuration files
+#define DATA_FOLDER "/data"              // Data storage folder
 #define MAX_FILES_PER_DAY 100            // Maximum images per day
+#define MAX_DAILY_TRIGGERS 100           // Maximum triggers per day
 #define MAX_FILE_SIZE 1048576            // Maximum file size (1MB)
 #define FILENAME_TIMESTAMP_FORMAT "%Y%m%d_%H%M%S" // Timestamp format for filenames
+
+// Data Management
+#define IMAGE_COMPRESSION_ENABLED true    // Enable image compression
+#define METADATA_ENABLED true             // Save metadata with images
+#define SPECIES_FOLDERS_ENABLED true      // Organize by species
+#define TIME_BASED_FOLDERS true           // Organize by time
+#define AUTO_DELETE_OLD_DATA true         // Delete old data when storage full
+
+// ===========================
+// I2C CONFIGURATION
+// ===========================
+
+// I2C Bus Configuration
+#define I2C_MASTER_FREQ_HZ 400000       // I2C master clock frequency
+#define I2C_MASTER_TX_BUF_LEN 512       // I2C master TX buffer length
+#define I2C_MASTER_RX_BUF_LEN 512       // I2C master RX buffer length
+#define I2C_MASTER_TIMEOUT_MS 1000      // I2C master timeout in ms
+
+// ESP-IDF I2C System Configuration
+#define ESP_IDF_I2C_ENABLED true         // Enable ESP-IDF native I2C system
+#define I2C_MASTER_ENABLED true          // Enable I2C master mode
+#define I2C_SLAVE_ENABLED true           // Enable I2C slave mode for multi-board communication
+#define I2C_AUTO_PIN_ASSIGNMENT true     // Automatically resolve pin conflicts per board
+
+// I2C Device Addresses
+#define BME280_I2C_ADDR_PRIMARY 0x76     // BME280 primary I2C address
+#define BME280_I2C_ADDR_SECONDARY 0x77   // BME280 secondary I2C address
+#define SSD1306_I2C_ADDR 0x3C            // SSD1306 OLED I2C address
+#define RTC_DS3231_I2C_ADDR 0x68         // DS3231 RTC I2C address
+
+// ===========================
+// ENVIRONMENTAL SENSORS CONFIGURATION
+// ===========================
+
+// BME280 Weather Sensor - NOW ENABLED with ESP-IDF I2C system
+#define BME280_ENABLED true              // ENABLED with smart pin assignment
+#define BME280_READING_INTERVAL 30000    // ms - sensor reading interval
+
+// Additional Environmental Sensors - DISABLED due to camera pin conflicts
+#define LIGHT_SENSOR_ENABLED false       // Disabled due to GPIO 36 conflict with Y6_GPIO_NUM
+#define WIND_SENSOR_ENABLED false        // Disabled due to GPIO 39 conflict with Y7_GPIO_NUM
+
+// Vibration Sensor - DISABLED due to LoRa CS pin conflict
+#define VIBRATION_ENABLED false          // Disabled due to pin conflicts with LoRa
+
+// IR LED Night Vision - DISABLED due to LoRa DIO0 pin conflict  
+#define IR_LED_ENABLED false             // Disabled due to pin conflicts with LoRa
+
+// Satellite Communication - DISABLED due to multiple pin conflicts
+#define SATELLITE_ENABLED false          // Disabled due to extensive pin conflicts
+
+// ===========================
+// BLOCKCHAIN CONFIGURATION
+// ===========================
+
+// Blockchain Core Configuration
+#define BLOCKCHAIN_MAX_BLOCKS_IN_MEMORY 5      // Maximum blocks kept in RAM
+#define BLOCKCHAIN_MAX_TRANSACTIONS_PER_BLOCK 10   // Maximum transactions per block
+#define BLOCKCHAIN_MAX_BLOCK_SIZE 8192    // Maximum block size in bytes
+#define BLOCKCHAIN_DEFAULT_BLOCK_INTERVAL 300    // Default block creation interval (seconds)
+#define BLOCKCHAIN_HASH_SIZE 32          // SHA-256 hash size in bytes
+
+// Blockchain Storage Configuration
+#define BLOCKCHAIN_STORAGE_DIR "/blockchain"  // Storage directory on SD card
+#define BLOCKCHAIN_BLOCK_FILE_PREFIX "block_" // Block file prefix
+#define BLOCKCHAIN_CHAIN_FILE "chain.json"   // Main chain file
+#define BLOCKCHAIN_CONFIG_FILE "config.json" // Configuration file
+
+// Blockchain Performance Configuration
+#define BLOCKCHAIN_ASYNC_OPERATIONS true    // Enable async blockchain ops
+#define BLOCKCHAIN_SELECTIVE_HASHING true   // Enable selective hashing
+#define BLOCKCHAIN_POWER_SAVE_MODE true     // Enable power saving optimizations
+#define BLOCKCHAIN_AUTO_VERIFY true         // Auto-verify blockchain integrity
+#define BLOCKCHAIN_VERIFY_INTERVAL 3600     // Verification interval (seconds)
 
 // ===========================
 // TIME MANAGEMENT CONFIGURATION
@@ -204,42 +382,6 @@
 #define RTC_ENABLED true                 // NOW ENABLED with smart I2C pin assignment
 #define RTC_TYPE_DS3231 true             // Use DS3231 RTC (more accurate)
 #define RTC_TYPE_PCF8563 false           // Alternative RTC option
-
-// ===========================
-// ENVIRONMENTAL SENSORS CONFIGURATION
-// ===========================
-
-// ===========================
-// ESP-IDF I2C SYSTEM CONFIGURATION
-// ===========================
-
-// ESP-IDF I2C System - Replaces Arduino Wire library with intelligent pin management
-#define ESP_IDF_I2C_ENABLED true         // Enable ESP-IDF native I2C system
-#define I2C_MASTER_ENABLED true          // Enable I2C master mode
-#define I2C_SLAVE_ENABLED true           // Enable I2C slave mode for multi-board communication
-#define I2C_AUTO_PIN_ASSIGNMENT true     // Automatically resolve pin conflicts per board
-
-// BME280 Weather Sensor - NOW ENABLED with ESP-IDF I2C system
-#define BME280_ENABLED true              // ENABLED with smart pin assignment
-#define BME280_READING_INTERVAL 30000    // ms - sensor reading interval
-
-// Additional Environmental Sensors - DISABLED due to camera pin conflicts
-#define LIGHT_SENSOR_ENABLED false       // Disabled due to GPIO 36 conflict with Y6_GPIO_NUM
-#define WIND_SENSOR_ENABLED false        // Disabled due to GPIO 39 conflict with Y7_GPIO_NUM
-// #define LIGHT_SENSOR_PIN 36           // CONFLICTS with Y6_GPIO_NUM
-// #define WIND_SENSOR_PIN 39            // CONFLICTS with Y7_GPIO_NUM
-
-// Vibration Sensor - DISABLED due to LoRa CS pin conflict
-#define VIBRATION_ENABLED false          // Disabled due to pin conflicts with LoRa
-// #define VIBRATION_SENSOR_PIN 5        // Would conflict with LORA_CS pin
-
-// IR LED Night Vision - DISABLED due to LoRa DIO0 pin conflict  
-#define IR_LED_ENABLED false             // Disabled due to pin conflicts with LoRa
-// #define IR_LED_PIN 26                 // Would conflict with LORA_DIO0 pin
-
-// Satellite Communication - DISABLED due to multiple pin conflicts
-#define SATELLITE_ENABLED false          // Disabled due to extensive pin conflicts
-// Satellite communication would require multiple pins that conflict with camera and LoRa
 
 // ===========================
 // TRIGGER AND TIMING CONFIGURATION
@@ -274,6 +416,93 @@
 #define NOISE_REDUCTION_ENABLED true     // Enable noise reduction
 #define LENS_CORRECTION_ENABLED true     // Enable lens distortion correction
 
+// Advanced Capture Modes
+#define BURST_MODE_ENABLED true
+#define BURST_DEFAULT_COUNT 3
+#define BURST_DEFAULT_INTERVAL_MS 1000
+#define BURST_MAX_COUNT 10
+#define BURST_MIN_INTERVAL_MS 100
+#define BURST_MAX_INTERVAL_MS 5000
+
+#define VIDEO_MODE_ENABLED true
+#define VIDEO_DEFAULT_DURATION_S 10
+#define VIDEO_MAX_DURATION_S 60
+#define VIDEO_FRAME_RATE 10
+#define VIDEO_QUALITY 12
+
+#define TIMELAPSE_MODE_ENABLED true
+#define TIMELAPSE_MIN_INTERVAL_S 10
+#define TIMELAPSE_MAX_INTERVAL_H 24
+#define TIMELAPSE_DEFAULT_INTERVAL_S 60
+
+// ===========================
+// AUDIO MONITORING CONFIGURATION
+// ===========================
+
+// Audio System Enable/Disable
+#define AUDIO_MONITORING_ENABLED true    // Enable comprehensive audio monitoring
+#define AUDIO_TRIGGERED_CAPTURE true     // Enable sound-triggered camera activation
+#define AUDIO_RECORDING_ENABLED true     // Enable audio file recording
+#define AUDIO_WILDLIFE_DETECTION true    // Enable wildlife sound classification
+
+// Hardware Configuration
+#define I2S_MICROPHONE_ENABLED true      // Enable I2S digital microphone support
+#define ANALOG_MICROPHONE_ENABLED false  // Enable analog microphone support (ADC-based)
+
+// I2S Microphone Configuration (INMP441 and similar)
+// Note: I2S pins reuse SD card pins when SD is disabled for LoRa
+// CONDITIONAL PIN ASSIGNMENT: Only define I2S pins when SD card is disabled
+#if !SD_CARD_ENABLED
+// I2S pins would be defined here when SD card is disabled
+#else
+// When SD card is enabled, I2S digital microphone is disabled to avoid conflicts
+#undef I2S_MICROPHONE_ENABLED
+#define I2S_MICROPHONE_ENABLED false
+#endif
+
+#define I2S_SAMPLE_RATE 16000             // Default sample rate (Hz)
+#define I2S_BITS_PER_SAMPLE 16            // Bits per audio sample
+#define I2S_CHANNELS 1                    // Number of audio channels (mono)
+
+// Audio Processing Configuration
+#define AUDIO_BUFFER_SIZE_MS 100          // Audio buffer size in milliseconds
+#define AUDIO_PROCESSING_INTERVAL 50      // Audio processing interval in milliseconds
+#define SOUND_DETECTION_THRESHOLD 0.1     // Sound detection threshold (0.0-1.0)
+#define WILDLIFE_DETECTION_THRESHOLD 0.7  // Wildlife sound confidence threshold
+
+// ===========================
+// HMI (HUMAN MACHINE INTERFACE) CONFIGURATION
+// ===========================
+
+// HMI System Configuration
+#define HMI_ENABLED true                 // Enable HMI system (display and user interface)
+#define HMI_AUTO_BRIGHTNESS true         // Enable automatic brightness adjustment
+#define HMI_DEFAULT_BRIGHTNESS 200       // Default display brightness (0-255)
+#define HMI_AUTO_OFF_TIMEOUT 30000       // Auto-off timeout in milliseconds (30 seconds)
+#define HMI_UPDATE_INTERVAL 1000         // Display update interval in milliseconds
+
+// Display Configuration
+#define DISPLAY_AUTO_DETECT true         // Auto-detect display type based on board
+#define DISPLAY_I2C_SPEED 400000         // I2C speed for OLED displays
+#define DISPLAY_SPI_SPEED 27000000       // SPI speed for TFT displays
+
+// ===========================
+// MULTI-BOARD COMMUNICATION CONFIGURATION
+// ===========================
+
+// Multi-Board System Configuration
+#define MULTIBOARD_ENABLED true          // Enable multi-board coordination system
+#define MULTIBOARD_NODE_ID 1             // Default node ID (should be unique per device)
+#define MULTIBOARD_DISCOVERY_TIMEOUT 120000 // ms - Discovery timeout (2 minutes)
+#define MULTIBOARD_HEARTBEAT_INTERVAL 60000 // ms - Heartbeat interval (1 minute)
+#define MULTIBOARD_TASK_TIMEOUT 300000   // ms - Task execution timeout (5 minutes)
+
+// Multi-Board Features
+#define MULTIBOARD_AUTO_ROLE_SELECTION true // Enable automatic role selection based on capabilities
+#define MULTIBOARD_STANDALONE_FALLBACK true // Enable standalone mode when coordinator unavailable
+#define MULTIBOARD_TASK_EXECUTION true   // Enable task execution on nodes
+#define MULTIBOARD_LOAD_BALANCING true   // Enable intelligent task distribution
+
 // ===========================
 // DEBUG AND LOGGING CONFIGURATION
 // ===========================
@@ -290,12 +519,6 @@
 #define DEBUG_MEMORY_TRACKING true       // Enable memory usage tracking
 #define DEBUG_PERFORMANCE_TIMING true    // Enable performance timing features
 
-// Debug Mode Presets (uncomment one)
-// #define DEBUG_DEVELOPMENT_MODE        // Verbose debugging for development
-// #define DEBUG_PRODUCTION_MODE         // Minimal debugging for production
-// #define DEBUG_PERFORMANCE_MODE        // Focus on performance metrics
-// Default: Field deployment mode (balanced)
-
 // Logging Levels
 #define LOG_LEVEL_ERROR 0                // Error messages only
 #define LOG_LEVEL_WARN 1                 // Warning and error messages
@@ -310,169 +533,6 @@
 #define LOG_ROTATION_ENABLED false       // Enable log file rotation
 
 // ===========================
-// AUDIO MONITORING CONFIGURATION
-// ===========================
-
-// Audio System Enable/Disable
-#define AUDIO_MONITORING_ENABLED true    // Enable comprehensive audio monitoring
-#define AUDIO_TRIGGERED_CAPTURE true     // Enable sound-triggered camera activation
-#define AUDIO_RECORDING_ENABLED true     // Enable audio file recording
-#define AUDIO_WILDLIFE_DETECTION true    // Enable wildlife sound classification
-
-// Hardware Configuration
-#define I2S_MICROPHONE_ENABLED true      // Enable I2S digital microphone support
-#define ANALOG_MICROPHONE_ENABLED false  // Enable analog microphone support (ADC-based)
-#define MICROPHONE_AMPLIFIER_ENABLED false // Enable external microphone amplifier
-
-// I2S Microphone Configuration (INMP441 and similar)
-// Note: I2S pins reuse SD card pins when SD is disabled for LoRa
-// CONDITIONAL PIN ASSIGNMENT: Only define I2S pins when SD card is disabled
-#if !SD_CARD_ENABLED
-#define I2S_WS_PIN 15                     // I2S Word Select (LR Clock) pin - SD_MOSI_PIN when SD disabled
-#define I2S_SCK_PIN 14                    // I2S Serial Clock pin - SD_CLK_PIN when SD disabled  
-#define I2S_SD_PIN 2                      // I2S Serial Data pin - SD_MISO_PIN when SD disabled
-#else
-// When SD card is enabled, I2S digital microphone is disabled to avoid conflicts
-#undef I2S_MICROPHONE_ENABLED
-#define I2S_MICROPHONE_ENABLED false
-#endif
-#define I2S_PORT I2S_NUM_0                // I2S port number
-#define I2S_SAMPLE_RATE 16000             // Default sample rate (Hz)
-#define I2S_BITS_PER_SAMPLE 16            // Bits per audio sample
-#define I2S_CHANNELS 1                    // Number of audio channels (mono)
-
-// Analog Microphone Configuration (when enabled)
-// Note: Analog microphone reuses camera Y6 pin when camera is in digital-only mode
-// CONDITIONAL PIN ASSIGNMENT: Only define analog mic pin when camera Y6 is not needed
-#if !defined(CAMERA_MODEL_AI_THINKER) || ANALOG_MICROPHONE_ENABLED == false
-// Analog microphone disabled on AI-Thinker ESP32-CAM due to camera Y6 pin conflict
-#undef ANALOG_MICROPHONE_ENABLED
-#define ANALOG_MICROPHONE_ENABLED false
-#else
-#define ANALOG_MIC_PIN 36                 // ADC pin for analog microphone - Y6_GPIO_NUM when camera disabled
-#endif
-#define ANALOG_MIC_GAIN 1.0               // Analog microphone gain multiplier
-#define ANALOG_MIC_BIAS_VOLTAGE 1.65      // Bias voltage for electret microphones
-#define ADC_SAMPLE_RATE 8000              // ADC sampling rate for analog microphone
-
-// Audio Processing Configuration
-#define AUDIO_BUFFER_SIZE_MS 100          // Audio buffer size in milliseconds
-#define AUDIO_PROCESSING_INTERVAL 50      // Audio processing interval in milliseconds
-#define AUDIO_FFT_SIZE 512                // FFT size for frequency analysis
-#define AUDIO_WINDOW_OVERLAP 0.5          // Window overlap for spectral analysis
-
-// Sound Detection Thresholds
-#define SOUND_DETECTION_THRESHOLD 0.1     // Sound detection threshold (0.0-1.0)
-#define WILDLIFE_DETECTION_THRESHOLD 0.7  // Wildlife sound confidence threshold
-#define NOISE_GATE_THRESHOLD 0.05         // Noise gate threshold to filter quiet sounds
-#define SOUND_TRIGGER_DURATION_MS 500     // Minimum sound duration to trigger camera (ms)
-
-// Audio Quality and Compression
-#define AUDIO_SAMPLE_RATES {8000, 16000, 44100} // Supported sample rates
-#define AUDIO_DEFAULT_SAMPLE_RATE 16000   // Default sample rate for recording
-#define AUDIO_COMPRESSION_ENABLED true    // Enable audio compression for storage
-#define AUDIO_COMPRESSION_QUALITY 4       // Compression quality (1-10, higher=better)
-
-// Recording Configuration
-#define AUDIO_MAX_RECORDING_DURATION 300  // Maximum recording duration in seconds
-#define AUDIO_PRE_TRIGGER_DURATION 2      // Pre-trigger audio buffer duration in seconds
-#define AUDIO_POST_TRIGGER_DURATION 5     // Post-trigger recording duration in seconds
-#define AUDIO_FILE_FORMAT_WAV true        // Enable WAV file format
-#define AUDIO_FILE_ROTATION_SIZE_MB 10    // Audio file rotation size in MB
-
-// Frequency Analysis Configuration
-#define WILDLIFE_FREQ_MIN 100             // Minimum frequency for wildlife detection (Hz)
-#define WILDLIFE_FREQ_MAX 8000            // Maximum frequency for wildlife detection (Hz)
-#define RAPTOR_FREQ_MIN 200               // Minimum frequency for raptor calls (Hz)
-#define RAPTOR_FREQ_MAX 4000              // Maximum frequency for raptor calls (Hz)
-#define BIRD_FREQ_MIN 500                 // Minimum frequency for general bird calls (Hz)
-#define BIRD_FREQ_MAX 6000                // Maximum frequency for general bird calls (Hz)
-
-// Environmental Sound Filtering
-#define WIND_NOISE_FILTER_ENABLED true    // Enable wind noise filtering
-#define RAIN_NOISE_FILTER_ENABLED true    // Enable rain noise filtering
-#define HUMAN_VOICE_FILTER_ENABLED true   // Enable human voice filtering
-#define VEHICLE_NOISE_FILTER_ENABLED true // Enable vehicle noise filtering
-
-// Power Management for Audio
-#define AUDIO_LOW_POWER_MODE true         // Enable low power audio monitoring
-#define AUDIO_DEEP_SLEEP_DURATION 30      // Audio system sleep duration in seconds
-#define AUDIO_CONTINUOUS_MONITORING false // Enable 24/7 audio monitoring (high power)
-#define AUDIO_SCHEDULED_MONITORING true   // Enable scheduled audio monitoring
-#define AUDIO_ACTIVE_HOURS_START 5        // Start hour for audio monitoring
-#define AUDIO_ACTIVE_HOURS_END 22         // End hour for audio monitoring
-
-// Data Storage and Logging
-#define AUDIO_EVENT_LOGGING true          // Enable audio event logging
-#define AUDIO_METADATA_LOGGING true       // Enable detailed audio metadata logging
-#define AUDIO_SPECTROGRAM_STORAGE false   // Enable spectrogram image storage (high storage)
-#define AUDIO_RAW_DATA_STORAGE false      // Enable raw audio data storage (very high storage)
-
-// Performance and Memory Configuration
-#define AUDIO_TASK_PRIORITY 2             // Audio processing task priority
-#define AUDIO_TASK_STACK_SIZE 8192        // Audio task stack size
-#define AUDIO_DMA_BUFFER_COUNT 4          // Number of DMA buffers for I2S
-#define AUDIO_DMA_BUFFER_SIZE 1024        // Size of each DMA buffer
-
-// Pin Conflict Resolution Notes:
-// - I2S pins use SD card pins when SD is disabled for LoRa
-// - Analog microphone uses camera Y6 pin when analog mode is selected
-// - Audio system automatically switches between I2S and analog based on configuration
-// - LoRa mesh networking takes priority over audio when both enabled
-
-// ===========================
-// HMI (HUMAN MACHINE INTERFACE) CONFIGURATION
-// ===========================
-
-// HMI System Configuration
-#define HMI_ENABLED true                 // Enable HMI system (display and user interface)
-#define HMI_AUTO_BRIGHTNESS true         // Enable automatic brightness adjustment
-#define HMI_DEFAULT_BRIGHTNESS 200       // Default display brightness (0-255)
-#define HMI_AUTO_OFF_TIMEOUT 30000       // Auto-off timeout in milliseconds (30 seconds)
-#define HMI_UPDATE_INTERVAL 1000         // Display update interval in milliseconds
-#define HMI_LOW_POWER_MODE true          // Enable low power mode for display
-
-// Display Configuration
-#define DISPLAY_AUTO_DETECT true         // Auto-detect display type based on board
-#define DISPLAY_FORCE_TYPE 0             // Force specific display type (0=auto, 1=SSD1306, 2=ST7789)
-#define DISPLAY_I2C_SPEED 400000         // I2C speed for OLED displays
-#define DISPLAY_SPI_SPEED 27000000       // SPI speed for TFT displays
-
-// Menu System Configuration
-#define HMI_MENU_TIMEOUT 30000           // Menu timeout in milliseconds
-#define HMI_STATUS_DISPLAY_TIME 5000     // Status display time in milliseconds
-#define HMI_ERROR_DISPLAY_TIME 10000     // Error display time in milliseconds
-
-// Button Input Configuration (if hardware buttons are available)
-#define HMI_BUTTON_DEBOUNCE_MS 50        // Button debounce time
-#define HMI_BUTTON_LONG_PRESS_MS 1000    // Long press detection time
-
-// ===========================
-// MULTI-BOARD COMMUNICATION CONFIGURATION
-// ===========================
-
-// Multi-Board System Configuration
-#define MULTIBOARD_ENABLED true          // Enable multi-board coordination system
-#define MULTIBOARD_NODE_ID 1             // Default node ID (should be unique per device)
-#define MULTIBOARD_PREFERRED_ROLE ROLE_NODE // Default preferred role
-#define MULTIBOARD_DISCOVERY_TIMEOUT 120000 // ms - Discovery timeout (2 minutes)
-#define MULTIBOARD_ROLE_CHANGE_TIMEOUT 60000 // ms - Role change timeout (1 minute)
-#define MULTIBOARD_HEARTBEAT_INTERVAL 60000 // ms - Heartbeat interval (1 minute)
-#define MULTIBOARD_TASK_TIMEOUT 300000   // ms - Task execution timeout (5 minutes)
-#define MULTIBOARD_COORDINATOR_TIMEOUT 600000 // ms - Coordinator availability timeout (10 minutes)
-
-// Multi-Board Features
-#define MULTIBOARD_AUTO_ROLE_SELECTION true // Enable automatic role selection based on capabilities
-#define MULTIBOARD_STANDALONE_FALLBACK true // Enable standalone mode when coordinator unavailable
-#define MULTIBOARD_TASK_EXECUTION true   // Enable task execution on nodes
-#define MULTIBOARD_LOAD_BALANCING true   // Enable intelligent task distribution
-#define MULTIBOARD_TOPOLOGY_MAPPING true // Enable network topology mapping
-
-// Integration Settings
-#define MULTIBOARD_LORA_INTEGRATION true // Integrate with existing LoRa mesh system
-#define MULTIBOARD_NETWORK_SELECTOR_INTEGRATION true // Integrate with network selector
-
-// ===========================
 // FIRMWARE INFORMATION
 // ===========================
 
@@ -481,36 +541,6 @@
 #define BUILD_DATE __DATE__               // Build date (automatically set)
 #define BUILD_TIME __TIME__               // Build time (automatically set)
 #define DEVICE_NAME "WildlifeCam"         // Device identification name
-
-// ===========================
-// PIN DEFINITIONS BY CAMERA MODEL
-// ===========================
-
-// AI-Thinker ESP32-CAM Pin Definitions
-#if defined(CAMERA_MODEL_AI_THINKER)
-#define PWDN_GPIO_NUM     32             // Power down pin
-#define RESET_GPIO_NUM    -1             // Reset pin (not connected)
-#define XCLK_GPIO_NUM      0             // External clock pin
-#define SIOD_GPIO_NUM     26             // I2C data pin for camera - CONFLICTS with LORA_DIO0
-#define SIOC_GPIO_NUM     27             // I2C clock pin for camera
-
-// Camera Data Pins
-#define Y9_GPIO_NUM       35             // Camera data bit 9
-#define Y8_GPIO_NUM       34             // Camera data bit 8
-#define Y7_GPIO_NUM       39             // Camera data bit 7
-#define Y6_GPIO_NUM       36             // Camera data bit 6
-#define Y5_GPIO_NUM       21             // Camera data bit 5 - CONFLICTS with RTC_SDA/BME280_SDA
-#define Y4_GPIO_NUM       19             // Camera data bit 4 - CONFLICTS with LORA_MISO
-#define Y3_GPIO_NUM       18             // Camera data bit 3 - CONFLICTS with LORA_SCK
-#define Y2_GPIO_NUM        5             // Camera data bit 2 - CONFLICTS with LORA_CS
-#define VSYNC_GPIO_NUM    25             // Vertical sync pin
-#define HREF_GPIO_NUM     23             // Horizontal reference pin - CONFLICTS with LORA_MOSI
-#define PCLK_GPIO_NUM     22             // Pixel clock pin - CONFLICTS with RTC_SCL/BME280_SCL
-
-#define CAMERA_LED_PIN     4             // Built-in camera LED pin
-#endif
-
-// TODO: Add pin definitions for other camera models as needed
 
 // ===========================
 // UTILITY MACROS AND FUNCTIONS
@@ -539,4 +569,4 @@
 #define VALIDATE_RANGE(value, min, max) ((value) >= (min) && (value) <= (max))
 #define CLAMP(value, min, max) ((value) < (min) ? (min) : ((value) > (max) ? (max) : (value)))
 
-#endif // CONFIG_H
+#endif // CONFIG_UNIFIED_H

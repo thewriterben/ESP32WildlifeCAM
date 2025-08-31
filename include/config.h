@@ -2,53 +2,85 @@
 #define CONFIG_H
 
 // ===========================
-// ESP32 WILDLIFE CAMERA CONFIGURATION
-// Complete AI-powered wildlife monitoring system
+// ESP32 WILDLIFE CAMERA UNIFIED CONFIGURATION
+// Centralized configuration for all subsystems
+// 
+// This file consolidates configuration from multiple sources:
+// - firmware/src/config.h (main configuration)
+// - wifi_config.h (WiFi settings)  
+// - firmware/src/debug_config.h (debug settings)
+// - src/streaming/stream_config.h (streaming settings)
+// - include/blockchain/blockchain_config.h (blockchain settings)
+// - firmware/src/i2c/i2c_config.h (I2C settings)
+// - firmware/src/enclosure_config.h (enclosure settings)
+// - firmware/src/meshtastic/mesh_config.h (LoRa/mesh settings)
 // ===========================
 
+// Forward compatibility - include pins.h for pin definitions
+#include "pins.h"
+
 // ===========================
-// HARDWARE CONFIGURATION
+// CAMERA CONFIGURATION
 // ===========================
 
-// Camera Board Selection
+// Camera Board Selection (choose one)
 #define CAMERA_MODEL_AI_THINKER  // AI-Thinker ESP32-CAM
+// #define CAMERA_MODEL_WROVER_KIT
+// #define CAMERA_MODEL_ESP_EYE
+// #define CAMERA_MODEL_M5STACK_PSRAM
+// #define CAMERA_MODEL_M5STACK_V2_PSRAM
+// #define CAMERA_MODEL_M5STACK_WIDE
+// #define CAMERA_MODEL_M5STACK_ESP32CAM
+// #define CAMERA_MODEL_TTGO_T_JOURNAL
 
-// Camera Settings
-#define CAMERA_FRAME_SIZE FRAMESIZE_UXGA  // 1600x1200 for high detail
+// Camera Capture Settings
+#define CAMERA_FRAME_SIZE FRAMESIZE_UXGA  // Image resolution: 1600x1200
 #define CAMERA_JPEG_QUALITY 12            // JPEG quality: 10-63 (lower = higher quality)
-#define CAMERA_FB_COUNT 2                 // Frame buffer count
-#define CAMERA_PIXEL_FORMAT PIXFORMAT_JPEG
+#define CAMERA_FB_COUNT 2                 // Frame buffer count for smooth capture
+#define CAMERA_PIXEL_FORMAT PIXFORMAT_JPEG // Image format
+#define CAMERA_GRAB_MODE CAMERA_GRAB_LATEST // Frame grab mode
+
+// Camera Sensor Configuration
+#define CAMERA_BRIGHTNESS_DEFAULT 0       // Brightness: -2 to 2
+#define CAMERA_CONTRAST_DEFAULT 0         // Contrast: -2 to 2  
+#define CAMERA_SATURATION_DEFAULT 0       // Saturation: -2 to 2
+#define CAMERA_SHARPNESS_DEFAULT 0        // Sharpness: -2 to 2
+#define CAMERA_DENOISE_DEFAULT 0          // Denoise: 0 = disable, 1 = enable
+#define CAMERA_AEC_VALUE_DEFAULT 300      // Auto exposure control value
+#define CAMERA_AGC_GAIN_DEFAULT 0         // Auto gain control value
+#define CAMERA_AWB_GAIN_DEFAULT 1         // Auto white balance gain
+#define CAMERA_WB_MODE_DEFAULT 0          // White balance mode
+#define CAMERA_AE_LEVEL_DEFAULT 0         // Auto exposure level
+#define CAMERA_GAIN_CEILING_DEFAULT GAINCEILING_2X // Maximum sensor gain
+
+// Camera Feature Enables
+#define AUTO_EXPOSURE_ENABLED true        // Enable automatic exposure control
+#define AUTO_WHITE_BALANCE_ENABLED true   // Enable automatic white balance
+#define LENS_CORRECTION_ENABLED true      // Enable lens distortion correction
 
 // ===========================
 // MOTION DETECTION CONFIGURATION
 // ===========================
 
-// PIR Sensor Settings
-#define PIR_SENSITIVITY_HIGH true         // High sensitivity for wildlife
-#define PIR_DEBOUNCE_TIME 2000            // 2 second debounce
-#define PIR_TRIGGER_MODE RISING           // Trigger on rising edge
+// PIR Sensor Settings - CORRECTED PIN ASSIGNMENT (was GPIO 13, now GPIO 1 per AUDIT_REPORT.md)
+#define PIR_DEBOUNCE_TIME 2000           // ms - prevent multiple triggers
+#define PIR_TRIGGER_MODE RISING          // Interrupt trigger mode
+#define MOTION_DETECTION_ENABLED true    // Enable/disable motion detection
+#define MOTION_SENSITIVITY 50            // 0-100, higher = more sensitive
+#define MOTION_TIMEOUT 30000             // ms - motion detection timeout
+#define MOTION_CONSECUTIVE_THRESHOLD 3   // Number of consecutive motions to confirm
 
-// Frame Difference Settings
-#define MOTION_THRESHOLD 10               // Motion detection threshold
-#define MOTION_DETECTION_BLOCKS 20        // Number of blocks to analyze
-#define MOTION_MIN_AREA 100               // Minimum motion area
-
-// Hybrid Motion Detection
-#define HYBRID_MOTION_ENABLED true        // Enable PIR + frame difference
-#define MOTION_CONFIRMATION_TIME 1000     // Time to confirm motion (ms)
-
-// ===========================
-// ADVANCED MOTION DETECTION CONFIGURATION
-// ===========================
-
-// Multi-Zone PIR Detection
+// Advanced Motion Detection
 #define MULTI_ZONE_PIR_ENABLED true       // Enable multi-zone PIR system
 #define MAX_PIR_ZONES 4                   // Maximum number of PIR zones
 #define DEFAULT_PIR_ZONES 3               // Default number of zones to configure
 #define PIR_ZONE_SENSITIVITY 0.5f         // Default zone sensitivity
 #define PIR_ZONE_PRIORITY_STEP 64         // Priority step between zones
 
-// Advanced Frame Analysis
+// Frame Difference Settings
+#define MOTION_THRESHOLD 10               // Motion detection threshold
+#define MOTION_DETECTION_BLOCKS 20        // Number of blocks to analyze
+#define MOTION_MIN_AREA 100               // Minimum motion area
 #define ADVANCED_FRAME_ANALYSIS true      // Enable advanced frame analysis
 #define BACKGROUND_SUBTRACTION_ENABLED true // Enable background subtraction
 #define MOTION_VECTOR_ANALYSIS true       // Enable motion vector analysis
@@ -56,32 +88,63 @@
 #define MIN_OBJECT_SIZE_PX 25             // Minimum object size in pixels
 #define MAX_OBJECT_SIZE_PX 5000           // Maximum object size in pixels
 
-// Background Model Settings
-#define BACKGROUND_LEARNING_RATE 0.1f     // Background adaptation rate
-#define BACKGROUND_UPDATE_THRESHOLD 0.3f  // Threshold for background updates
-#define BACKGROUND_UPDATE_INTERVAL 5000   // Minimum time between updates (ms)
-#define MAX_FRAMES_WITHOUT_BG_UPDATE 100  // Force update after this many frames
+// Weather Filtering Settings
+#define WEATHER_FILTERING_ENABLED true   // Enable weather-based motion filtering
+#define WIND_THRESHOLD 15.0              // km/h - ignore motion above this wind speed
+#define RAIN_THRESHOLD 0.5               // mm/h - ignore motion during rain
+#define TEMP_COMP_ENABLED true           // Temperature compensation for PIR
+#define TEMP_STABILITY_THRESHOLD 2.0     // °C - temperature change threshold
+#define WEATHER_READING_INTERVAL 60000   // ms - how often to read weather sensors
 
-// Machine Learning False Positive Reduction
-#define ML_FALSE_POSITIVE_FILTERING true  // Enable ML filtering
-#define ML_LEARNING_RATE 0.05f            // ML adaptation rate
-#define ML_CONFIDENCE_THRESHOLD 0.6f      // ML confidence threshold
-#define ML_TRAINING_PERIOD 7200000        // Training period (2 hours in ms)
-#define ML_PATTERN_MEMORY_SIZE 1000       // Number of patterns to remember
-
-// Analytics Features
-#define MOTION_ANALYTICS_ENABLED true     // Enable motion analytics
-#define MOTION_HEATMAP_ENABLED false      // Disable heatmap by default (memory intensive)
-#define DIRECTION_TRACKING_ENABLED true   // Enable direction tracking
-#define SPEED_ESTIMATION_ENABLED true     // Enable speed estimation
-#define DWELL_TIME_ANALYSIS_ENABLED true  // Enable dwell time calculation
-#define HEATMAP_UPDATE_INTERVAL 10000     // Heatmap update interval (ms)
-#define TRACKING_HISTORY_SIZE 100         // Number of tracking points to keep
+// Hybrid Motion Detection
+#define HYBRID_MOTION_ENABLED true        // Enable PIR + frame difference
+#define MOTION_CONFIRMATION_TIME 1000     // Time to confirm motion (ms)
 
 // Enhanced Detection Modes
 #define DEFAULT_ENHANCED_MODE 3           // 0=Legacy, 1=MultiZone, 2=Advanced, 3=Full, 4=Adaptive
 #define ADAPTIVE_MODE_ENABLED true        // Enable automatic mode selection
 #define PERFORMANCE_MONITORING true       // Monitor detection performance
+
+// ===========================
+// POWER MANAGEMENT CONFIGURATION
+// ===========================
+
+// ADC and Voltage Monitoring - DISABLED due to camera pin conflicts
+// Note: ESP32-CAM camera uses GPIO 34, 35, 36, 39 for camera data lines
+// These pins cannot be used for ADC voltage monitoring simultaneously
+#define SOLAR_VOLTAGE_MONITORING_ENABLED false  // Disabled due to GPIO 34 conflict with Y8_GPIO_NUM
+#define BATTERY_VOLTAGE_MONITORING_ENABLED false // Disabled due to GPIO 35 conflict with Y9_GPIO_NUM
+#define ADC_RESOLUTION 12                // ADC resolution in bits (12-bit = 0-4095)
+#define ADC_REFERENCE_VOLTAGE 3.3        // ADC reference voltage
+#define VOLTAGE_DIVIDER_RATIO 2.0        // Voltage divider ratio for scaling
+#define VOLTAGE_READINGS_COUNT 10        // Number of readings to average
+#define VOLTAGE_READING_DELAY 10         // ms - delay between voltage readings
+
+// Battery Thresholds (in volts)
+#define BATTERY_FULL_VOLTAGE 4.2         // Maximum battery voltage
+#define BATTERY_NORMAL_VOLTAGE 3.8       // Normal operation threshold
+#define BATTERY_GOOD_VOLTAGE 3.4         // Good battery level
+#define BATTERY_LOW_THRESHOLD 3.0        // Low battery warning threshold
+#define BATTERY_CRITICAL_THRESHOLD 2.8   // Critical battery level
+#define BATTERY_SHUTDOWN_VOLTAGE 2.5     // Emergency shutdown voltage
+
+// Solar Charging Configuration  
+#define SOLAR_VOLTAGE_THRESHOLD 3.2      // V - minimum solar voltage for charging
+#define SOLAR_CHARGING_VOLTAGE_MIN 4.0   // V - minimum solar voltage to start charging
+#define SOLAR_OPTIMAL_VOLTAGE 5.0        // V - optimal solar voltage
+
+// Power Management Timings
+#define VOLTAGE_CHECK_INTERVAL 5000      // ms - how often to check voltages
+#define POWER_LOG_INTERVAL 60000         // ms - how often to log power status
+#define DEEP_SLEEP_DURATION 300          // seconds - sleep between checks
+#define LOW_POWER_CPU_FREQ 80            // MHz - reduced CPU frequency for power saving
+
+// Power Modes
+#define POWER_SAVE_MODE_ENABLED true      // Enable power saving
+#define ADAPTIVE_DUTY_CYCLE true          // Enable adaptive duty cycling
+#define MAX_CPU_FREQ_MHZ 240              // Maximum CPU frequency
+#define MIN_CPU_FREQ_MHZ 80               // Minimum CPU frequency for power saving
+#define BALANCED_CPU_FREQ_MHZ 160         // Balanced performance frequency
 
 // ===========================
 // AI/ML CONFIGURATION
@@ -98,6 +161,19 @@
 
 // Behavior Analysis
 #define BEHAVIOR_CONFIDENCE_THRESHOLD 0.6f // Minimum confidence for behavior
+#define BEHAVIOR_HISTORY_SIZE 10           // Number of frames for temporal analysis
+
+// Model Management
+#define ADAPTIVE_MODEL_SELECTION true     // Enable adaptive model selection
+#define MODEL_CALIBRATION_ENABLED true    // Enable runtime calibration
+#define MODEL_CACHE_SIZE 3                 // Number of models to cache
+
+// Machine Learning False Positive Reduction
+#define ML_FALSE_POSITIVE_FILTERING true  // Enable ML filtering
+#define ML_LEARNING_RATE 0.05f            // ML adaptation rate
+#define ML_CONFIDENCE_THRESHOLD 0.6f      // ML confidence threshold
+#define ML_TRAINING_PERIOD 7200000        // Training period (2 hours in ms)
+#define ML_PATTERN_MEMORY_SIZE 1000       // Number of patterns to remember
 #define BEHAVIOR_HISTORY_SIZE 10           // Number of frames for temporal analysis
 
 // Model Management

@@ -30,17 +30,19 @@
 // ===========================
 // MOTION DETECTION PINS
 // ===========================
-#define PIR_PIN           13  // PIR motion sensor pin
-#define PIR_POWER_PIN     12  // PIR sensor power control
+// PIR_PIN corrected from GPIO 13 to GPIO 1 per AUDIT_REPORT.md
+#define PIR_PIN           1   // PIR motion sensor pin (CORRECTED from GPIO 13)
+// PIR_POWER_PIN moved to avoid conflict with SD_CS_PIN
+#define PIR_POWER_PIN     17  // PIR sensor power control (moved from GPIO 12 to avoid SD conflict)
 
 // ===========================
 // POWER MANAGEMENT PINS
 // ===========================
 #define BATTERY_VOLTAGE_PIN    33  // Battery voltage monitoring (ADC1_CH5)
-#define SOLAR_VOLTAGE_PIN      32  // Solar panel voltage monitoring
-#define CHARGING_CONTROL_PIN   14  // Charging control pin
-#define POWER_LED_PIN          2   // Power status LED (built-in)
-#define CHARGING_LED_PIN       15  // Charging status LED
+#define SOLAR_VOLTAGE_PIN      32  // Solar panel voltage monitoring (shared with camera PWDN)
+#define CHARGING_CONTROL_PIN   14  // Charging control pin (shared with SD_CLK - use conditionally)
+#define POWER_LED_PIN          2   // Power status LED (shared with SD_D0 - use conditionally)
+#define CHARGING_LED_PIN       15  // Charging status LED (shared with SD_CMD - use conditionally)
 
 // ===========================
 // STORAGE PINS
@@ -71,7 +73,7 @@
 // ===========================
 // NIGHT VISION PINS
 // ===========================
-#define IR_LED_PIN        16  // IR LED control pin (spare GPIO)
+#define IR_LED_PIN        16  // IR LED control pin (shared with LORA_CS when LoRa disabled)
 #define LIGHT_SENSOR_PIN  33  // Light sensor ADC pin (shared with battery monitoring)
 
 // ===========================
@@ -95,42 +97,57 @@
 #define SPARE_GPIO_2      17  // Spare GPIO for expansion
 
 // ===========================
-// PIN USAGE NOTES
+// PIN USAGE NOTES AND SHARING STRATEGY
 // ===========================
 /*
-ESP32-CAM Pin Usage Summary:
+ESP32-CAM Pin Usage Summary and Conflict Resolution:
+
+CAMERA PINS (Fixed by hardware, highest priority):
 - GPIO 0: Camera XCLK (can be used for boot mode selection)
-- GPIO 1: UART TX (USB serial)
-- GPIO 2: Built-in LED / SD D0
-- GPIO 3: UART RX (USB serial)
-- GPIO 4: Built-in Flash LED / SD D1
-- GPIO 5: Camera Y2
-- GPIO 12: SD D2 / PIR Power (careful with boot strapping)
-- GPIO 13: PIR Sensor / SD D3
-- GPIO 14: Charging Control / SD CLK
-- GPIO 15: Charging LED / SD CMD
-- GPIO 16: Available for expansion
-- GPIO 17: Available for expansion
-- GPIO 18: Camera Y3
-- GPIO 19: Camera Y4
-- GPIO 21: Camera Y5
-- GPIO 22: Camera PCLK
-- GPIO 23: Camera HREF
-- GPIO 25: Camera VSYNC
+- GPIO 5: Camera Y2 (data bit 2)
+- GPIO 18: Camera Y3 (data bit 3) 
+- GPIO 19: Camera Y4 (data bit 4)
+- GPIO 21: Camera Y5 (data bit 5)
+- GPIO 22: Camera PCLK (pixel clock)
+- GPIO 23: Camera HREF (horizontal reference)
+- GPIO 25: Camera VSYNC (vertical sync)
 - GPIO 26: Camera SIOD (I2C SDA)
 - GPIO 27: Camera SIOC (I2C SCL)
-- GPIO 32: Camera PWDN / Solar Voltage
-- GPIO 33: Battery Voltage (ADC only)
-- GPIO 34: Camera Y8 (Input only)
-- GPIO 35: Camera Y9 (Input only)
-- GPIO 36: Camera Y6 (Input only)
-- GPIO 39: Camera Y7 (Input only)
+- GPIO 32: Camera PWDN (power down)
+- GPIO 34: Camera Y8 (data bit 8, input-only)
+- GPIO 35: Camera Y9 (data bit 9, input-only)
+- GPIO 36: Camera Y6 (data bit 6, input-only)
+- GPIO 39: Camera Y7 (data bit 7, input-only)
 
-Constraints:
-- GPIO 34, 35, 36, 39 are input-only
+SHARED PINS STRATEGY:
+- GPIO 1: PIR_PIN (primary) / UART_TX (debug only, OK to share)
+- GPIO 32: PWDN_GPIO_NUM (camera) / SOLAR_VOLTAGE_PIN (ADC input, compatible)
+- GPIO 33: BATTERY_VOLTAGE_PIN / LIGHT_SENSOR_PIN (both ADC inputs, can be read sequentially)
+- GPIO 26: SIOD_GPIO_NUM (camera I2C) / BME280_SDA_PIN (same I2C bus, compatible)
+- GPIO 27: SIOC_GPIO_NUM (camera I2C) / BME280_SCL_PIN (same I2C bus, compatible)
+
+CONDITIONAL PINS (used based on configuration):
+- GPIO 2: SD_D0 (when SD enabled) / POWER_LED_PIN (when SD disabled)
+- GPIO 14: SD_CLK (when SD enabled) / CHARGING_CONTROL_PIN (when SD disabled)
+- GPIO 15: SD_CMD (when SD enabled) / CHARGING_LED_PIN (when SD disabled)
+- GPIO 16: IR_LED_PIN (when IR enabled) / LORA_CS_PIN (when LoRa enabled, but conflicts with camera)
+
+LORA CONFLICTS (LoRa disabled due to fundamental conflicts):
+- GPIO 5: LORA_CS vs Y2_GPIO_NUM (camera data bit 2)
+- GPIO 16: LORA_CS vs CHARGING_LED_PIN/IR_LED_PIN  
+- GPIO 18: LORA_SCK vs Y3_GPIO_NUM (camera data bit 3)
+- GPIO 19: LORA_MISO vs Y4_GPIO_NUM (camera data bit 4) 
+- GPIO 23: LORA_MOSI vs HREF_GPIO_NUM (camera horizontal reference)
+- GPIO 26: LORA_DIO0 vs SIOD_GPIO_NUM (camera I2C data)
+
+CONSTRAINTS:
+- GPIO 34, 35, 36, 39 are input-only (used for camera and voltage monitoring)
 - GPIO 6-11 are connected to SPI flash (do not use)
 - GPIO 12 has internal pull-down (affects boot if HIGH)
 - GPIO 2 and 15 have internal pull-ups (affect boot mode)
+
+RESOLUTION: Camera functionality takes priority. LoRa networking requires
+ESP32-S3-CAM or ESP-EYE with more available GPIO pins.
 */
 
 // ===========================
