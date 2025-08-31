@@ -14,6 +14,8 @@
 #include "message_protocol.h"
 #include "discovery_protocol.h"
 #include "../camera_handler.h"
+#include "../../src/camera/camera_manager.h"
+#include "../../src/detection/motion_detection_manager.h"
 
 // Node states
 enum NodeState {
@@ -193,6 +195,12 @@ private:
     
     // Camera handler for image capture tasks
     CameraHandler cameraHandler_;
+    
+    // Camera manager for motion detection integration
+    CameraManager cameraManager_;
+    
+    // Motion detection manager for wildlife monitoring
+    MotionDetectionManager motionManager_;
     
     // Network state
     int coordinatorNode_;

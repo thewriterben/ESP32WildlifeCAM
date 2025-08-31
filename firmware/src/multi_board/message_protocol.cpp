@@ -6,6 +6,8 @@
 #include "message_protocol.h"
 #include "../config.h"
 #include "../hal/board_detector.h"
+#include "../power_manager.h"
+#include "../../src/data/storage_manager.h"
 #include <esp_system.h>
 
 namespace MessageProtocol {
@@ -15,6 +17,7 @@ static int g_nodeId = 0;
 static BoardType g_boardType = BOARD_UNKNOWN;
 static SensorType g_sensorType = SENSOR_UNKNOWN;
 static bool g_initialized = false;
+static PowerManager g_powerManager;
 
 /**
  * Detect AI capabilities based on hardware features
@@ -262,15 +265,21 @@ BoardCapabilities getCurrentCapabilities() {
     // Detect AI capabilities based on hardware features
     caps.hasAI = detectAICapabilities();
     
-    caps.hasSD = true;  // TODO: Detect SD card
+    caps.hasSD = StorageManager::initialize(); // Detect SD card presence
     caps.hasCellular = false; // TODO: Detect cellular modem
     caps.hasSatellite = false; // TODO: Detect satellite modem
     
-    // Power status (placeholder values)
-    caps.batteryLevel = 85; // TODO: Read actual battery level
+    // Power status - read from actual power management system
+    // Initialize power manager if not already done
+    if (!g_powerManager.isInitialized()) {
+        g_powerManager.init();
+    }
+    g_powerManager.update();
+    
+    caps.batteryLevel = (int)g_powerManager.getBatteryPercentage();
     caps.powerProfile = 2; // Medium power
-    caps.solarVoltage = 4.2; // TODO: Read actual solar voltage
-    caps.availableStorage = 1024 * 1024; // TODO: Check actual storage
+    caps.solarVoltage = g_powerManager.getSolarVoltage();
+    caps.availableStorage = caps.hasSD ? StorageManager::getStatistics().freeSpace : 0;
     
     return caps;
 }
