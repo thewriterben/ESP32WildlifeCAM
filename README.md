@@ -18,6 +18,7 @@ ESP32WildlifeCAM is a production-ready, open-source wildlife monitoring platform
 - 🤖 **On-Device AI** - Species identification, behavior analysis, and pattern recognition
 - 📱 **Real-time Streaming** - Live video feeds with burst capture modes
 - 🔗 **LoRa Mesh Network** - Long-range, low-power wireless communication
+- 🛰️ **Satellite Communication** - Global connectivity via Iridium, Swarm, and RockBLOCK
 - ☀️ **Solar Power System** - Autonomous operation with intelligent power management
 
 **Advanced Features**
@@ -65,6 +66,7 @@ Choose from multiple supported platforms:
 
 **Required Components**
 - LoRa module (SX1276/SX1278) for mesh networking
+- Satellite module (optional): Iridium 9603N, Swarm M138, or RockBLOCK for remote areas
 - PIR motion sensor (HC-SR501 or similar)
 - Solar panel (5W minimum) with charge controller
 - LiPo battery (3000mAh+ for 24/7 operation)
@@ -195,7 +197,7 @@ ESP32WildlifeCAM/
 ### 🚧 Active Development
 - [ ] **Federated Learning** - Collaborative model improvement across devices
 - [ ] **Edge AI Optimization** - Enhanced on-device processing efficiency  
-- [ ] **Satellite Communication** - Iridium/GlobalStar integration for remote areas
+- [x] **Satellite Communication** - Iridium/Swarm/RockBLOCK integration for remote areas
 - [ ] **Advanced Analytics Dashboard** - Real-time data visualization platform
 - [ ] **Multi-language Support** - UI localization for global deployment
 
@@ -270,6 +272,8 @@ python3 scripts/validate_component.py [component] --simulation
 - **[Assembly Instructions](docs/ASSEMBLY_INSTRUCTIONS.md)** - Step-by-step build guide
 - **[Board Compatibility](docs/board_compatibility.md)** - Multi-board support details
 - **[Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md)** - Pre-deployment validation
+- **[Satellite Communication](docs/SATELLITE_COMMUNICATION.md)** - Remote connectivity setup
+- **[Satellite Wiring](docs/SATELLITE_WIRING_DIAGRAMS.md)** - Hardware integration diagrams
 
 ### 🔬 Advanced Features
 - **[AI Architecture](docs/ai/ai_architecture.md)** - Machine learning implementation
