@@ -6,8 +6,9 @@
  */
 
 #include "system_manager.h"
-#include "../utils/logger.h"
+#include "../src/utils/logger.h"
 #include "../config.h"
+#include "../src/detection/motion_coordinator.h"
 #include <esp_system.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
@@ -16,6 +17,7 @@
 #include <Wire.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <time.h>
 
 SystemManager::SystemManager(BoardDetector::BoardType board) 
     : m_boardType(board), 
@@ -96,6 +98,12 @@ bool SystemManager::initialize() {
         setError("Task initialization failed");
         enterSafeMode();
         return false;
+    }
+    
+    // Initialize enhanced motion detection
+    if (!initializeMotionDetection()) {
+        Logger::warning("Motion detection initialization failed - using basic PIR only");
+        // Continue with basic functionality
     }
     
     m_initialized = true;
@@ -634,6 +642,117 @@ void SystemManager::setError(const char* error) {
     Logger::error("System error: %s", error);
 }
 
+bool SystemManager::initializeMotionDetection() {
+    Logger::info("Initializing enhanced motion detection...");
+    
+    try {
+        // Create motion coordinator
+        m_motionCoordinator = std::make_unique<MotionCoordinator>();
+        
+        // Configure motion coordinator
+        MotionCoordinator::CoordinatorConfig config;
+        config.enabled = true;
+        config.defaultMethod = MotionCoordinator::DetectionMethod::ADAPTIVE;
+        config.enablePerformanceOptimization = true;
+        config.enableWildlifeAnalysis = true;
+        config.useEnvironmentalAdaptation = true;
+        
+        // Initialize coordinator (camera manager would need to be passed here in real implementation)
+        if (!m_motionCoordinator->initialize(nullptr, config)) {
+            Logger::error("Failed to initialize motion coordinator");
+            return false;
+        }
+        
+        // Set motion detection callback
+        m_motionCoordinator->setMotionCallback(
+            [this](const MotionCoordinator::CoordinatorResult& result) {
+                this->handleMotionDetected(result);
+            }
+        );
+        
+        // Initialize environmental conditions
+        m_environmentalConditions = MotionCoordinator::EnvironmentalConditions{};
+        updateEnvironmentalConditions();
+        
+        Logger::info("Enhanced motion detection initialized successfully");
+        return true;
+        
+    } catch (const std::exception& e) {
+        Logger::error("Motion detection initialization failed: %s", e.what());
+        return false;
+    }
+}
+
+void SystemManager::handleMotionDetected(const MotionCoordinator::CoordinatorResult& result) {
+    Logger::info("Motion detected - Method: %s, Confidence: %.2f, Wildlife: %s, Capture: %s",
+                 result.methodUsed == MotionCoordinator::DetectionMethod::PIR_ONLY ? "PIR" : "Fusion",
+                 result.fusionConfidence,
+                 result.wildlifeAnalysis.isWildlife ? "Yes" : "No",
+                 result.shouldCapture ? "Yes" : "No");
+    
+    if (result.shouldCapture) {
+        // Trigger camera capture
+        Logger::info("Triggering camera capture based on motion detection");
+        
+        // In a real implementation, this would:
+        // 1. Capture image from camera
+        // 2. Save to storage if shouldSave is true
+        // 3. Transmit via LoRa if shouldTransmit is true
+        // 4. Send alerts if shouldAlert is true
+        
+        // For now, just log the action
+        if (result.shouldSave) {
+            Logger::info("Image would be saved to storage");
+        }
+        if (result.shouldTransmit) {
+            Logger::info("Image would be transmitted via LoRa");
+        }
+        if (result.shouldAlert) {
+            Logger::info("Alert would be triggered");
+        }
+    }
+    
+    // Log wildlife analysis if available
+    if (result.wildlifeAnalysis.isWildlife) {
+        Logger::info("Wildlife analysis: %s", result.wildlifeAnalysis.description.c_str());
+    }
+}
+
+void SystemManager::updateEnvironmentalConditions() {
+    // Update environmental conditions based on available sensors
+    m_environmentalConditions.batteryVoltage = 3.7f; // Default value
+    m_environmentalConditions.temperature = 20.0f;   // Default value
+    m_environmentalConditions.lightLevel = 0.5f;     // Default value
+    m_environmentalConditions.windSpeed = 0.0f;
+    m_environmentalConditions.humidity = 50.0f;
+    
+    // Get current time for time-of-day adaptation
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+        m_environmentalConditions.currentHour = timeinfo.tm_hour;
+        m_environmentalConditions.isNight = (timeinfo.tm_hour < 6 || timeinfo.tm_hour > 20);
+    } else {
+        m_environmentalConditions.currentHour = 12; // Default to noon
+        m_environmentalConditions.isNight = false;
+    }
+    
+    // Read battery voltage if pin is available
+    if (m_pinConfig.battery_pin >= 0) {
+        int adcValue = analogRead(m_pinConfig.battery_pin);
+        // Convert ADC reading to voltage (this formula depends on voltage divider circuit)
+        m_environmentalConditions.batteryVoltage = (adcValue / 4095.0f) * 3.3f * 2.0f; // Assuming 2:1 voltage divider
+    }
+    
+    // Update weather conditions based on sensor readings
+    // This would be expanded with actual sensor integrations
+    m_environmentalConditions.isWeatherActive = false;
+    
+    // Update motion coordinator with new conditions
+    if (m_motionCoordinator) {
+        m_motionCoordinator->updateEnvironmentalConditions(m_environmentalConditions);
+    }
+}
+
 // FreeRTOS Task Implementations
 
 void SystemManager::systemMonitorTask(void* parameter) {
@@ -730,25 +849,46 @@ void SystemManager::sensorMonitorTask(void* parameter) {
 void SystemManager::motionDetectionTask(void* parameter) {
     SystemManager* system = static_cast<SystemManager*>(parameter);
     TickType_t lastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(100); // 100ms intervals for motion detection
+    const TickType_t frequency = pdMS_TO_TICKS(1000); // 1 second intervals for enhanced motion detection
     
-    Logger::info("Motion Detection Task started");
-    
-    bool lastPirState = false;
-    unsigned long lastMotionTime = 0;
+    Logger::info("Enhanced Motion Detection Task started");
     
     for (;;) {
-        if (system->m_pinConfig.pir_pin >= 0 && system->m_state == STATE_RUNNING) {
+        if (system->m_state == STATE_RUNNING && system->m_motionCoordinator) {
+            try {
+                // Update environmental conditions periodically
+                static uint32_t lastEnvironmentalUpdate = 0;
+                uint32_t now = millis();
+                if (now - lastEnvironmentalUpdate > 30000) { // Update every 30 seconds
+                    system->updateEnvironmentalConditions();
+                    lastEnvironmentalUpdate = now;
+                }
+                
+                // Perform comprehensive motion detection
+                MotionCoordinator::CoordinatorResult result = 
+                    system->m_motionCoordinator->detectMotion(nullptr, system->m_environmentalConditions);
+                
+                // Motion handling is done via callback, no additional action needed here
+                
+            } catch (const std::exception& e) {
+                Logger::error("Motion detection task error: %s", e.what());
+                vTaskDelay(pdMS_TO_TICKS(5000)); // Wait 5 seconds before retrying
+            }
+        } else if (system->m_pinConfig.pir_pin >= 0 && system->m_state == STATE_RUNNING) {
+            // Fallback to basic PIR detection if motion coordinator is not available
+            static bool lastPirState = false;
+            static unsigned long lastMotionTime = 0;
+            
             bool currentPirState = digitalRead(system->m_pinConfig.pir_pin);
             
             // Detect motion (PIR signal change)
             if (currentPirState && !lastPirState) {
                 unsigned long now = millis();
                 if (now - lastMotionTime > 5000) { // Debounce: 5 second minimum between detections
-                    Logger::info("Motion detected!");
+                    Logger::info("Basic PIR motion detected!");
                     lastMotionTime = now;
                     
-                    // Trigger camera capture or other actions
+                    // Trigger basic camera capture or other actions
                     // This would be implemented in a full system
                 }
             }
