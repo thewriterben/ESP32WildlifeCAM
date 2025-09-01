@@ -9,8 +9,8 @@
 #ifndef TROPICAL_CONFIG_H
 #define TROPICAL_CONFIG_H
 
-#include "../enclosure_config.h"
-#include "../sensors/environmental_integration.h"
+#include "../../firmware/src/enclosure_config.h"
+#include "../../firmware/src/sensors/environmental_integration.h"
 
 // Tropical environment constants
 #define TROPICAL_TEMP_MIN 18.0          // °C - minimum tropical temperature
