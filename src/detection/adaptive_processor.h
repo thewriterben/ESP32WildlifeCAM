@@ -11,6 +11,7 @@
 #include <Arduino.h>
 #include <vector>
 #include <memory>
+#include "memory_pool_manager.h"
 
 /**
  * @brief Adaptive Processing Manager for motion detection performance optimization
@@ -203,6 +204,12 @@ public:
      */
     bool loadConfigJSON(const String& jsonConfig);
 
+    /**
+     * @brief Get memory pool manager instance
+     * @return Shared pointer to memory manager
+     */
+    std::shared_ptr<MemoryPoolManager> getMemoryManager() const { return memoryManager_; }
+
 private:
     // Configuration
     AdaptiveConfig config_;
@@ -223,6 +230,9 @@ private:
     
     // Performance metrics
     PerformanceMetrics metrics_;
+    
+    // Memory management
+    std::shared_ptr<MemoryPoolManager> memoryManager_;
     
     // ROI tracking
     std::vector<uint16_t> detectionX_;

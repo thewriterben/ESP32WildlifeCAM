@@ -11,6 +11,8 @@
 #include "motion_detection_manager.h"
 #include "adaptive_processor.h"
 #include "wildlife_analyzer.h"
+#include "config_manager.h"
+#include "../camera/camera_manager.h"
 #include <functional>
 #include <memory>
 
@@ -262,6 +264,7 @@ private:
     std::unique_ptr<MotionDetectionManager> motionManager_;
     std::unique_ptr<AdaptiveProcessor> adaptiveProcessor_;
     std::unique_ptr<WildlifeAnalyzer> wildlifeAnalyzer_;
+    std::shared_ptr<ConfigManager> configManager_;
     
     // Callback
     MotionCallback motionCallback_;

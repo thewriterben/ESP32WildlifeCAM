@@ -6,7 +6,7 @@
  */
 
 #include "system_manager.h"
-#include "../utils/logger.h"
+#include "../src/utils/logger.h"
 #include "../config.h"
 #include "../src/detection/motion_coordinator.h"
 #include <esp_system.h>

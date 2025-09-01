@@ -29,6 +29,13 @@ bool AdaptiveProcessor::initialize(const AdaptiveConfig& config) {
     
     config_ = config;
     
+    // Initialize memory manager
+    memoryManager_ = std::make_shared<MemoryPoolManager>();
+    if (!memoryManager_->initialize(true)) {
+        Serial.println("AdaptiveProcessor: Warning - Memory manager initialization failed");
+        // Continue without memory management
+    }
+    
     // Initialize ROI to center region
     roiConfig_.enabled = false;
     roiConfig_.x = 80;  // Center of 320px width
