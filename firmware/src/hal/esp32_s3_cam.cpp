@@ -119,6 +119,12 @@ PowerProfile ESP32S3CAM::getPowerProfile() const {
     return profile;
 }
 
+DisplayProfile ESP32S3CAM::getDisplayProfile() const {
+    // ESP32-S3-CAM typically doesn't have built-in display
+    // Return no display profile (same as AI-Thinker ESP32-CAM)
+    return NO_DISPLAY_PROFILE;
+}
+
 bool ESP32S3CAM::configureSensor(sensor_t* sensor) {
     if (!sensor) return false;
     
