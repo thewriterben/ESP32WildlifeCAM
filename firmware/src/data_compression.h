@@ -8,6 +8,13 @@
 
 #include <Arduino.h>
 
+// Compression constants
+#define RLE_MAX_COUNT 255
+#define COMPRESSION_MIN_EFFICIENCY 3
+#define JPEG_QUALITY_LOW 50
+#define JPEG_QUALITY_MEDIUM 75
+#define JPEG_QUALITY_HIGH 85
+
 enum CompressionLevel {
     COMPRESSION_NONE = 0,
     COMPRESSION_LOW,
