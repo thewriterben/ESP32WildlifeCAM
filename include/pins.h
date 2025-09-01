@@ -91,10 +91,16 @@
 #define LORA_DIO0_PIN     26  // LoRa DIO0 interrupt
 
 // ===========================
+// SERVO CONTROL PINS
+// ===========================
+#define PAN_SERVO_PIN     16  // Pan servo control pin (SPARE_GPIO_1)
+#define TILT_SERVO_PIN    17  // Tilt servo control pin (SPARE_GPIO_2)
+
+// ===========================
 // SPARE/MULTIPURPOSE PINS
 // ===========================
-#define SPARE_GPIO_1      16  // Spare GPIO for expansion
-#define SPARE_GPIO_2      17  // Spare GPIO for expansion
+#define SPARE_GPIO_1      16  // Spare GPIO for expansion (now used for pan servo)
+#define SPARE_GPIO_2      17  // Spare GPIO for expansion (now used for tilt servo)
 
 // ===========================
 // PIN USAGE NOTES AND SHARING STRATEGY

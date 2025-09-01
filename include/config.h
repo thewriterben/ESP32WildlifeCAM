@@ -293,6 +293,51 @@
 // Pin definitions are in pins.h
 
 // ===========================
+// SERVO CONTROL CONFIGURATION
+// ===========================
+
+// Pan/Tilt System
+#define PAN_TILT_ENABLED true             // Enable pan/tilt servo system
+#define PAN_SERVO_PIN 16                  // GPIO pin for pan servo (SPARE_GPIO_1)
+#define TILT_SERVO_PIN 17                 // GPIO pin for tilt servo (SPARE_GPIO_2)
+
+// Servo Settings
+#define SERVO_POWER_TIMEOUT_MS 5000       // Auto-detach timeout for power saving
+#define SERVO_MOVEMENT_SPEED 90.0f        // Default movement speed (degrees/second)
+#define SERVO_SMOOTH_MOVEMENT true        // Enable smooth movements by default
+
+// Pan Servo Configuration
+#define PAN_MIN_ANGLE 0.0f                // Minimum pan angle (degrees)
+#define PAN_MAX_ANGLE 180.0f              // Maximum pan angle (degrees)
+#define PAN_CENTER_ANGLE 90.0f            // Center pan position (degrees)
+#define PAN_INVERT_DIRECTION false        // Invert pan direction
+
+// Tilt Servo Configuration
+#define TILT_MIN_ANGLE 45.0f              // Minimum tilt angle (degrees) - looking up
+#define TILT_MAX_ANGLE 135.0f             // Maximum tilt angle (degrees) - looking down
+#define TILT_CENTER_ANGLE 90.0f           // Center tilt position (degrees) - horizontal
+#define TILT_INVERT_DIRECTION false       // Invert tilt direction
+
+// Scanning Configuration
+#define AUTO_SCANNING_ENABLED true        // Enable automatic scanning when idle
+#define SCAN_DWELL_TIME_MS 2000           // Time to pause at each scan position
+#define SCAN_MOVE_TIME_MS 1000            // Time allowed for movement between positions
+#define SCAN_PAN_STEP 30.0f               // Pan angle step for scanning
+#define SCAN_TILT_STEP 30.0f              // Tilt angle step for scanning
+#define DEFAULT_SCAN_PATTERN 1            // 0=None, 1=Horizontal, 2=Vertical, 3=Grid, 4=Spiral, 5=Random
+
+// Tracking Configuration
+#define WILDLIFE_TRACKING_ENABLED true    // Enable automatic wildlife tracking
+#define TRACKING_TIMEOUT_MS 10000         // Stop tracking if no updates for this time
+#define TRACKING_MIN_CONFIDENCE 0.6f      // Minimum confidence to start/continue tracking
+#define TRACKING_PREDICTION_TIME 1000     // Predict target movement for this time (ms)
+
+// Power Management Integration
+#define SERVO_POWER_MANAGEMENT true       // Integrate servo power with main power management
+#define SERVO_LOW_POWER_MODE true         // Enable servo-specific power saving modes
+#define SERVO_SLEEP_MODE_DELAY 30000      // Delay before entering servo sleep mode (ms)
+
+// ===========================
 // ADVANCED FEATURES
 // ===========================
 
