@@ -43,6 +43,8 @@
 #include "display/hmi_system.h"
 #include "hal/board_detector.h"
 #include "audio/acoustic_detection.h"
+#include "i18n/language_manager.h"
+#include "web/web_language_integration.h"
 
 // Environmental Sensors Integration
 #include "sensors/advanced_environmental_sensors.h"

@@ -19,6 +19,7 @@ class WildlifeDashboard {
         this.setupTheme();
         this.setupEventListeners();
         this.setupWebSocketEvents();
+        this.setupLanguageSupport(); // Add language support
         this.startPeriodicUpdates();
         this.loadInitialData();
         
@@ -159,6 +160,108 @@ class WildlifeDashboard {
         window.addEventListener('errorAlert', (e) => {
             this.showToast('error', e.detail.data.message);
         });
+    }
+    
+    setupLanguageSupport() {
+        // Listen for language changes
+        if (window.i18n) {
+            window.i18n.addObserver((event, data) => {
+                if (event === 'languageChanged') {
+                    this.onLanguageChange(data.language);
+                }
+            });
+        }
+        
+        // Handle custom language change events
+        document.addEventListener('languageChanged', (e) => {
+            if (e.detail && e.detail.language) {
+                this.onLanguageChange(e.detail.language);
+            }
+        });
+    }
+    
+    onLanguageChange(language) {
+        console.log(`Dashboard language changed to: ${language}`);
+        
+        // Update dynamic content that may not be handled by the i18n framework
+        this.updateLocalizedContent();
+        
+        // Update chart labels if charts are loaded
+        if (this.charts && Object.keys(this.charts).length > 0) {
+            this.updateChartLabels();
+        }
+        
+        // Refresh data to get localized system messages
+        this.loadSystemStatus();
+        
+        // Show language change notification
+        const languageInfo = window.i18n ? window.i18n.getCurrentLanguageInfo() : null;
+        if (languageInfo) {
+            this.showToast('success', `${languageInfo.flag} ${t('ui.language')}: ${languageInfo.nativeName}`);
+        }
+    }
+    
+    updateLocalizedContent() {
+        // Update document title
+        const titleKey = document.title.includes('Dashboard') ? 'ui.dashboard' : 'system.device_name';
+        if (window.t) {
+            document.title = window.t(titleKey) + ' - Wildlife Camera';
+        }
+        
+        // Update any dynamic content that needs manual translation
+        this.updateImageGalleryTexts();
+        this.updateChartTooltips();
+    }
+    
+    updateImageGalleryTexts() {
+        // Update image gallery pagination and empty state texts
+        const emptyState = document.querySelector('.gallery-empty-state');
+        if (emptyState && window.t) {
+            emptyState.textContent = window.t('storage.no_images');
+        }
+    }
+    
+    updateChartLabels() {
+        // Update chart labels when language changes
+        Object.keys(this.charts).forEach(chartType => {
+            const chart = this.charts[chartType];
+            if (chart && chart.options && window.t) {
+                // Update chart title and axis labels based on chart type
+                this.localizeChart(chart, chartType);
+            }
+        });
+    }
+    
+    updateChartTooltips() {
+        // Update chart tooltips with localized text
+        if (window.formatDate && window.formatTime) {
+            // Charts will use the global formatting functions automatically
+        }
+    }
+    
+    localizeChart(chart, chartType) {
+        if (!window.t) return;
+        
+        try {
+            switch (chartType) {
+                case 'battery':
+                    chart.options.plugins.title.text = window.t('power.battery_level');
+                    chart.options.scales.y.title.text = window.t('power.percentage');
+                    break;
+                case 'storage':
+                    chart.options.plugins.title.text = window.t('storage.storage_usage');
+                    chart.options.scales.y.title.text = window.t('storage.usage_percent');
+                    break;
+                case 'wildlife':
+                    chart.options.plugins.title.text = window.t('wildlife.activity_chart');
+                    chart.options.scales.y.title.text = window.t('wildlife.detection_count');
+                    break;
+            }
+            
+            chart.update('none'); // Update without animation
+        } catch (error) {
+            console.warn('Failed to update chart labels:', error);
+        }
     }
     
     startPeriodicUpdates() {

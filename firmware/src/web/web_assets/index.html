@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wildlife Camera Dashboard</title>
+    <title data-i18n="ui.dashboard">Wildlife Camera Dashboard</title>
     <link rel="stylesheet" href="/assets/dashboard.css">
     <link rel="manifest" href="/assets/manifest.json">
     <meta name="theme-color" content="#2c3e50">
@@ -17,15 +17,18 @@
             <div class="header-content">
                 <h1 class="logo">
                     <span class="icon">🦌</span>
-                    Wildlife Camera
+                    <span data-i18n="system.device_name">Wildlife Camera</span>
                 </h1>
                 <div class="header-controls">
-                    <button id="theme-toggle" class="btn btn-icon" title="Toggle theme">
+                    <!-- Language Selector -->
+                    <div id="header-language-selector" data-language-selector data-variant="inline"></div>
+                    
+                    <button id="theme-toggle" class="btn btn-icon" title="Toggle theme" data-i18n-target="title" data-i18n="ui.theme">
                         <span class="theme-icon">🌙</span>
                     </button>
                     <div class="connection-status" id="connection-status">
                         <span class="status-indicator"></span>
-                        <span class="status-text">Connecting...</span>
+                        <span class="status-text" data-i18n="system.status_loading">Connecting...</span>
                     </div>
                 </div>
             </div>
@@ -38,13 +41,13 @@
                 <!-- System Health Card -->
                 <div class="card system-health">
                     <div class="card-header">
-                        <h3>System Health</h3>
-                        <span class="status-badge" id="system-status">Good</span>
+                        <h3 data-i18n="system.system_health">System Health</h3>
+                        <span class="status-badge" id="system-status" data-i18n="system.status_ok">Good</span>
                     </div>
                     <div class="card-content">
                         <div class="metrics-grid">
                             <div class="metric">
-                                <span class="metric-label">Uptime</span>
+                                <span class="metric-label" data-i18n="system.uptime">Uptime</span>
                                 <span class="metric-value" id="uptime">--</span>
                             </div>
                             <div class="metric">
@@ -306,6 +309,8 @@
     </div>
 
     <!-- Scripts -->
+    <script src="/assets/i18n.js"></script>
+    <script src="/assets/language_selector.js"></script>
     <script src="/assets/websocket.js"></script>
     <script src="/assets/charts.js"></script>
     <script src="/assets/dashboard.js"></script>
