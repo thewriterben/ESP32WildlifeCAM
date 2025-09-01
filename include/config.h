@@ -293,6 +293,90 @@
 // Pin definitions are in pins.h
 
 // ===========================
+// AUDIO CLASSIFICATION CONFIGURATION
+// ===========================
+
+// Audio System Enable/Disable
+#define AUDIO_CLASSIFICATION_ENABLED true // Enable audio-based wildlife classification
+#define I2S_MICROPHONE_ENABLED true       // Enable I2S digital microphone
+#define ANALOG_MICROPHONE_ENABLED false   // Enable analog microphone (alternative)
+
+// I2S Microphone Configuration
+#define I2S_WS_PIN 25                     // I2S Word Select pin
+#define I2S_SCK_PIN 26                    // I2S Serial Clock pin (shared with camera I2C)
+#define I2S_SD_PIN 22                     // I2S Serial Data pin (shared with camera)
+#define I2S_SAMPLE_RATE 16000             // Audio sample rate (Hz)
+#define I2S_BITS_PER_SAMPLE_16BIT 16      // Bits per sample
+#define AUDIO_DMA_BUFFER_COUNT 4          // Number of DMA buffers
+#define AUDIO_DMA_BUFFER_SIZE 1024        // Size of each DMA buffer
+
+// Audio Classification Settings
+#define AUDIO_CLASSIFICATION_SENSITIVITY 0.7f  // Classification sensitivity (0.0-1.0)
+#define AUDIO_NOISE_FILTERING true             // Enable noise filtering
+#define AUDIO_BUFFER_SIZE 4096                 // Audio processing buffer size
+#define AUDIO_ANALYSIS_INTERVAL_MS 100         // Audio analysis interval
+
+// Multi-Modal Detection
+#define MULTIMODAL_DETECTION_ENABLED true      // Enable audio+visual fusion
+#define AUDIO_VISUAL_CORRELATION_TIMEOUT 5000  // Max time between audio/visual detections (ms)
+#define COMBINED_CONFIDENCE_THRESHOLD 0.8f     // Minimum combined confidence for positive detection
+
+// Wildlife Audio Signatures
+#define PRELOAD_BIRD_SIGNATURES true           // Load bird audio signatures
+#define PRELOAD_MAMMAL_SIGNATURES true         // Load mammal audio signatures
+#define CUSTOM_SPECIES_SIGNATURES true         // Enable custom species signatures
+
+// Audio Power Management
+#define AUDIO_POWER_MANAGEMENT true            // Enable audio power saving
+#define AUDIO_IDLE_TIMEOUT_MS 30000           // Audio idle timeout
+#define AUDIO_LOW_POWER_MODE true              // Enable audio low power mode
+
+// ===========================
+// SERVO CONTROL CONFIGURATION
+// ===========================
+
+// Pan/Tilt System
+#define PAN_TILT_ENABLED true             // Enable pan/tilt servo system
+#define PAN_SERVO_PIN 16                  // GPIO pin for pan servo (SPARE_GPIO_1)
+#define TILT_SERVO_PIN 17                 // GPIO pin for tilt servo (SPARE_GPIO_2)
+
+// Servo Settings
+#define SERVO_POWER_TIMEOUT_MS 5000       // Auto-detach timeout for power saving
+#define SERVO_MOVEMENT_SPEED 90.0f        // Default movement speed (degrees/second)
+#define SERVO_SMOOTH_MOVEMENT true        // Enable smooth movements by default
+
+// Pan Servo Configuration
+#define PAN_MIN_ANGLE 0.0f                // Minimum pan angle (degrees)
+#define PAN_MAX_ANGLE 180.0f              // Maximum pan angle (degrees)
+#define PAN_CENTER_ANGLE 90.0f            // Center pan position (degrees)
+#define PAN_INVERT_DIRECTION false        // Invert pan direction
+
+// Tilt Servo Configuration
+#define TILT_MIN_ANGLE 45.0f              // Minimum tilt angle (degrees) - looking up
+#define TILT_MAX_ANGLE 135.0f             // Maximum tilt angle (degrees) - looking down
+#define TILT_CENTER_ANGLE 90.0f           // Center tilt position (degrees) - horizontal
+#define TILT_INVERT_DIRECTION false       // Invert tilt direction
+
+// Scanning Configuration
+#define AUTO_SCANNING_ENABLED true        // Enable automatic scanning when idle
+#define SCAN_DWELL_TIME_MS 2000           // Time to pause at each scan position
+#define SCAN_MOVE_TIME_MS 1000            // Time allowed for movement between positions
+#define SCAN_PAN_STEP 30.0f               // Pan angle step for scanning
+#define SCAN_TILT_STEP 30.0f              // Tilt angle step for scanning
+#define DEFAULT_SCAN_PATTERN 1            // 0=None, 1=Horizontal, 2=Vertical, 3=Grid, 4=Spiral, 5=Random
+
+// Tracking Configuration
+#define WILDLIFE_TRACKING_ENABLED true    // Enable automatic wildlife tracking
+#define TRACKING_TIMEOUT_MS 10000         // Stop tracking if no updates for this time
+#define TRACKING_MIN_CONFIDENCE 0.6f      // Minimum confidence to start/continue tracking
+#define TRACKING_PREDICTION_TIME 1000     // Predict target movement for this time (ms)
+
+// Power Management Integration
+#define SERVO_POWER_MANAGEMENT true       // Integrate servo power with main power management
+#define SERVO_LOW_POWER_MODE true         // Enable servo-specific power saving modes
+#define SERVO_SLEEP_MODE_DELAY 30000      // Delay before entering servo sleep mode (ms)
+
+// ===========================
 // ADVANCED FEATURES
 // ===========================
 
