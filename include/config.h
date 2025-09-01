@@ -293,6 +293,45 @@
 // Pin definitions are in pins.h
 
 // ===========================
+// AUDIO CLASSIFICATION CONFIGURATION
+// ===========================
+
+// Audio System Enable/Disable
+#define AUDIO_CLASSIFICATION_ENABLED true // Enable audio-based wildlife classification
+#define I2S_MICROPHONE_ENABLED true       // Enable I2S digital microphone
+#define ANALOG_MICROPHONE_ENABLED false   // Enable analog microphone (alternative)
+
+// I2S Microphone Configuration
+#define I2S_WS_PIN 25                     // I2S Word Select pin
+#define I2S_SCK_PIN 26                    // I2S Serial Clock pin (shared with camera I2C)
+#define I2S_SD_PIN 22                     // I2S Serial Data pin (shared with camera)
+#define I2S_SAMPLE_RATE 16000             // Audio sample rate (Hz)
+#define I2S_BITS_PER_SAMPLE_16BIT 16      // Bits per sample
+#define AUDIO_DMA_BUFFER_COUNT 4          // Number of DMA buffers
+#define AUDIO_DMA_BUFFER_SIZE 1024        // Size of each DMA buffer
+
+// Audio Classification Settings
+#define AUDIO_CLASSIFICATION_SENSITIVITY 0.7f  // Classification sensitivity (0.0-1.0)
+#define AUDIO_NOISE_FILTERING true             // Enable noise filtering
+#define AUDIO_BUFFER_SIZE 4096                 // Audio processing buffer size
+#define AUDIO_ANALYSIS_INTERVAL_MS 100         // Audio analysis interval
+
+// Multi-Modal Detection
+#define MULTIMODAL_DETECTION_ENABLED true      // Enable audio+visual fusion
+#define AUDIO_VISUAL_CORRELATION_TIMEOUT 5000  // Max time between audio/visual detections (ms)
+#define COMBINED_CONFIDENCE_THRESHOLD 0.8f     // Minimum combined confidence for positive detection
+
+// Wildlife Audio Signatures
+#define PRELOAD_BIRD_SIGNATURES true           // Load bird audio signatures
+#define PRELOAD_MAMMAL_SIGNATURES true         // Load mammal audio signatures
+#define CUSTOM_SPECIES_SIGNATURES true         // Enable custom species signatures
+
+// Audio Power Management
+#define AUDIO_POWER_MANAGEMENT true            // Enable audio power saving
+#define AUDIO_IDLE_TIMEOUT_MS 30000           // Audio idle timeout
+#define AUDIO_LOW_POWER_MODE true              // Enable audio low power mode
+
+// ===========================
 // SERVO CONTROL CONFIGURATION
 // ===========================
 

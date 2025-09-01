@@ -139,6 +139,25 @@ private:
      * @return Unified result
      */
     UnifiedMotionResult convertLegacyResult(const HybridMotionDetector::HybridResult& legacyResult);
+    
+    // Servo integration (optional)
+    #if PAN_TILT_ENABLED
+    friend class ServoIntegrationManager;
+    std::unique_ptr<class ServoIntegrationManager> servo_integration;
+    bool servo_integration_enabled = false;
+    
+    /**
+     * Initialize servo integration
+     * @return true if servo integration initialized successfully
+     */
+    bool initializeServoIntegration();
+    
+    /**
+     * Process motion result with servo response
+     * @param result Motion detection result
+     */
+    void processServoResponse(const UnifiedMotionResult& result);
+    #endif
 };
 
 #endif // MOTION_DETECTION_MANAGER_H
