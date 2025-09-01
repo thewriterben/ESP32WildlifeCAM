@@ -390,7 +390,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 - **Community Discussions**: [GitHub Discussions](https://github.com/thewriterben/ESP32WildlifeCAM/discussions) - General questions and community support
 - **Bug Reports**: [GitHub Issues](https://github.com/thewriterben/ESP32WildlifeCAM/issues) - Technical issues and feature requests
 - **Documentation**: Comprehensive guides in `docs/` directory
-- **Email Support**: thewriterben@[domain] - Project maintainer
+- **Email Support**: benjamin.j.snider@gmail.com - Project maintainer
 
 ### 🌟 Project Stats
 - **🔧 326+ Source Files** - Comprehensive implementation
