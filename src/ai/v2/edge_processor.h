@@ -21,6 +21,9 @@
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
 
+// Forward declarations
+class EdgeAIPerformanceMonitor;
+
 // ===========================
 // CONSTANTS
 // ===========================
@@ -197,7 +200,61 @@ public:
     // Wildlife-specific methods
     void enableSpeciesClassification(bool enable) { config_.speciesClassificationEnabled = enable; }
     void enableBehaviorAnalysis(bool enable) { config_.behaviorAnalysisEnabled = enable; }
-    void enableTemporalFiltering(bool enable) { config_.temporalFilteringEnabled = enable; }
+    // Enhanced edge AI optimization features
+    void enableMultiCoreProcessing(bool enable);
+    void enableSIMDOptimizations(bool enable);
+    void enablePipelineParallelism(bool enable);
+    void enableBatchProcessing(bool enable);
+    void setMemoryPoolSize(size_t pool_size);
+    
+    // Dynamic model selection and optimization
+    void enableDynamicModelSelection(bool enable);
+    bool loadModelVariant(const String& variant_name, const uint8_t* model_data, size_t model_size);
+    void selectOptimalModel(float battery_level, float performance_requirement, 
+                          const String& environmental_conditions);
+    
+    // Edge learning and adaptation
+    void enableEdgeLearning(bool enable);
+    void addTrainingSample(const uint8_t* image_data, const String& ground_truth_label);
+    bool performLocalModelAdaptation();
+    void shareModelUpdates(); // For federated learning
+    
+    // Multi-modal processing
+    bool processMultiModal(const uint8_t* image_data, const float* audio_features,
+                         const float* sensor_data, WildlifeDetectionResult& result);
+    void enableMultiModalFusion(bool enable);
+    
+    // Behavioral pattern recognition
+    bool detectBehaviorPattern(const std::vector<WildlifeDetectionResult>& recent_detections,
+                             String& detected_pattern);
+    void enableBehaviorTracking(bool enable);
+    
+    // Population counting
+    bool estimatePopulationCount(const WildlifeDetectionResult& detection,
+                               uint8_t& estimated_count, float& confidence);
+    void enablePopulationCounting(bool enable);
+    
+    // Environmental context integration
+    void updateEnvironmentalContext(float temperature, float humidity, float light_level,
+                                  uint8_t time_of_day, uint8_t season);
+    void enableEnvironmentalAdaptation(bool enable);
+    
+    // Real-time performance monitoring
+    void enablePerformanceMonitoring(bool enable);
+    void setPerformanceThresholds(float min_fps, float max_inference_time_ms,
+                                float min_accuracy_percent);
+    std::vector<String> getPerformanceAlerts();
+    float getSystemHealthScore();
+    
+    // Confidence-based processing
+    void enableConfidenceBasedProcessing(bool enable);
+    void setConfidenceThresholds(float detection_threshold, float species_threshold,
+                               float behavior_threshold);
+    
+    // Temporal consistency
+    void enableTemporalConsistency(bool enable);
+    void setTemporalWindow(uint8_t frame_count);
+    String applyTemporalSmoothing(const String& current_prediction, float confidence);
     
     // Advanced features
     std::vector<WildlifeDetectionResult> getDetectionHistory() const { return detectionQueue_; }
@@ -212,6 +269,21 @@ private:
     bool processingActive_;
     bool powerOptimizationEnabled_;
     
+    // Enhanced edge AI features
+    bool multi_core_enabled_;
+    bool simd_enabled_;
+    bool pipeline_enabled_;
+    bool batch_processing_enabled_;
+    bool dynamic_model_selection_enabled_;
+    bool edge_learning_enabled_;
+    bool multi_modal_enabled_;
+    bool behavior_tracking_enabled_;
+    bool population_counting_enabled_;
+    bool environmental_adaptation_enabled_;
+    bool performance_monitoring_enabled_;
+    bool confidence_based_processing_enabled_;
+    bool temporal_consistency_enabled_;
+    
     // Timing and frame tracking
     unsigned long lastInference_;
     uint32_t frameCount_;
@@ -221,6 +293,78 @@ private:
     std::unique_ptr<tflite::MicroInterpreter> interpreter_;
     tflite::ErrorReporter* errorReporter_;
     uint8_t* tensorArena_;
+    size_t tensor_arena_size_;
+    
+    // Memory pool management
+    struct MemoryPool {
+        uint8_t* pool_data;
+        size_t pool_size;
+        std::vector<bool> block_allocated;
+        size_t block_size;
+        size_t total_blocks;
+    } memory_pool_;
+    
+    // Model variants for dynamic selection
+    struct ModelVariant {
+        String name;
+        const uint8_t* model_data;
+        size_t model_size;
+        float accuracy_rating;
+        float speed_rating;
+        float power_rating;
+    };
+    std::vector<ModelVariant> loaded_models_;
+    String current_model_variant_;
+    
+    // Edge learning data
+    struct TrainingSample {
+        std::vector<float> features;
+        String label;
+        float confidence;
+        unsigned long timestamp;
+    };
+    std::vector<TrainingSample> training_samples_;
+    static const size_t MAX_TRAINING_SAMPLES = 1000;
+    
+    // Temporal consistency
+    struct TemporalFrame {
+        String prediction;
+        float confidence;
+        std::vector<float> features;
+        unsigned long timestamp;
+    };
+    std::vector<TemporalFrame> temporal_history_;
+    uint8_t temporal_window_size_;
+    
+    // Environmental context
+    struct EnvironmentalContext {
+        float temperature;
+        float humidity;
+        float light_level;
+        uint8_t time_of_day;
+        uint8_t season;
+        unsigned long last_update;
+    } environmental_context_;
+    
+    // Performance monitoring
+    class EdgeAIPerformanceMonitor* performance_monitor_;
+    
+    // Multi-modal processing
+    struct MultiModalData {
+        std::vector<float> visual_features;
+        std::vector<float> audio_features;
+        std::vector<float> sensor_features;
+        unsigned long timestamp;
+    } current_multimodal_data_;
+    
+    // Behavioral pattern tracking
+    struct BehaviorPattern {
+        String pattern_name;
+        std::vector<String> sequence;
+        float confidence;
+        uint32_t occurrence_count;
+    };
+    std::vector<BehaviorPattern> detected_patterns_;
     
     // Image processing
     float* preprocessedImage_;
@@ -237,6 +381,62 @@ private:
     
     // External model data (would be loaded from flash/SD)
     extern const unsigned char wildlife_detection_model_data[];
+    
+    // Enhanced private methods - Multi-core and SIMD processing
+    bool initializeMultiCoreProcessing();
+    bool initializeSIMDProcessing();
+    void processFrameMultiCore();
+    void processFrameSIMD();
+    static void inferenceTask(void* parameters);
+    
+    // Enhanced private methods - Memory pool management
+    bool initializeMemoryPool(size_t pool_size);
+    void cleanupMemoryPool();
+    uint8_t* allocateFromPool(size_t size);
+    void releaseToPool(uint8_t* ptr);
+    
+    // Enhanced private methods - Dynamic model management
+    bool switchToModel(const String& model_name);
+    ModelVariant* findOptimalModel(float battery_level, float performance_requirement);
+    void evaluateModelPerformance(const String& model_name, float accuracy, float speed, float power);
+    
+    // Enhanced private methods - Edge learning
+    void extractFeaturesForLearning(const uint8_t* image_data, std::vector<float>& features);
+    bool shouldTriggerAdaptation();
+    void cleanupOldTrainingSamples();
+    
+    // Enhanced private methods - Multi-modal fusion
+    std::vector<float> fuseMultiModalFeatures(const std::vector<float>& visual,
+                                            const std::vector<float>& audio,
+                                            const std::vector<float>& sensor);
+    
+    // Enhanced private methods - Behavioral pattern detection
+    void updateBehaviorHistory(const WildlifeDetectionResult& result);
+    bool matchBehaviorPattern(const std::vector<String>& recent_behaviors,
+                            BehaviorPattern& matched_pattern);
+    
+    // Enhanced private methods - Population counting
+    std::vector<BoundingBox> detectIndividuals(const WildlifeDetectionResult& result);
+    uint8_t countNonOverlappingDetections(const std::vector<BoundingBox>& detections);
+    
+    // Enhanced private methods - Environmental adaptation
+    void applyEnvironmentalFiltering(WildlifeDetectionResult& result);
+    float calculateEnvironmentalWeight(const String& species);
+    
+    // Enhanced private methods - Temporal consistency
+    void updateTemporalHistory(const String& prediction, float confidence,
+                             const std::vector<float>& features);
+    String getTemporalConsensus();
+    float calculateTemporalConfidence();
+    
+    // Enhanced private methods - Confidence-based processing
+    bool shouldSkipInference(float motion_confidence);
+    bool shouldProcessFullPipeline(float detection_confidence);
+    
+    // Enhanced private methods - Performance optimization
+    void optimizeBasedOnPerformance();
+    void adjustProcessingParameters();
+    bool checkPerformanceThresholds();
     
     // Private methods - Initialization
     bool initializeTensorFlowLite();

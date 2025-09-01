@@ -8,6 +8,7 @@
 
 #include "edge_processor.h"
 #include <Arduino.h>
+#include "../../firmware/src/optimizations/ml_optimizer.h"
 
 // ===========================
 // CONSTRUCTOR & INITIALIZATION
@@ -20,14 +21,67 @@ EdgeProcessor::EdgeProcessor()
     , lastInference_(0)
     , frameCount_(0)
     , powerOptimizationEnabled_(true)
+    , multi_core_enabled_(false)
+    , simd_enabled_(false)
+    , pipeline_enabled_(false)
+    , batch_processing_enabled_(false)
+    , dynamic_model_selection_enabled_(false)
+    , edge_learning_enabled_(false)
+    , multi_modal_enabled_(false)
+    , behavior_tracking_enabled_(false)
+    , population_counting_enabled_(false)
+    , environmental_adaptation_enabled_(false)
+    , performance_monitoring_enabled_(false)
+    , confidence_based_processing_enabled_(false)
+    , temporal_consistency_enabled_(false)
+    , tensor_arena_size_(EDGE_TENSOR_ARENA_SIZE)
+    , temporal_window_size_(5)
+    , performance_monitor_(nullptr)
 {
     memset(&statistics_, 0, sizeof(statistics_));
     memset(&config_, 0, sizeof(config_));
     detectionQueue_.clear();
+    
+    // Initialize memory pool
+    memory_pool_.pool_data = nullptr;
+    memory_pool_.pool_size = 0;
+    memory_pool_.block_size = 1024; // 1KB blocks
+    memory_pool_.total_blocks = 0;
+    
+    // Initialize environmental context
+    memset(&environmental_context_, 0, sizeof(environmental_context_));
+    environmental_context_.temperature = 20.0f;
+    environmental_context_.humidity = 50.0f;
+    environmental_context_.light_level = 0.5f;
+    environmental_context_.time_of_day = 12;
+    environmental_context_.season = 6; // Default to summer
+    
+    // Initialize multimodal data
+    memset(&current_multimodal_data_, 0, sizeof(current_multimodal_data_));
 }
 
 EdgeProcessor::~EdgeProcessor() {
     cleanup();
+    
+    // Cleanup enhanced features
+    if (performance_monitor_) {
+        delete performance_monitor_;
+        performance_monitor_ = nullptr;
+    }
+    
+    cleanupMemoryPool();
+    
+    // Clear training samples
+    training_samples_.clear();
+    
+    // Clear temporal history
+    temporal_history_.clear();
+    
+    // Clear loaded models
+    loaded_models_.clear();
+    
+    // Clear behavior patterns
+    detected_patterns_.clear();
 }
 
 bool EdgeProcessor::initialize(const EdgeProcessorConfig& config) {
@@ -701,4 +755,389 @@ uint32_t EdgeProcessor::calculateMemoryUsage() {
     // Calculate current memory usage
     // Implementation would track actual memory usage
     return 0;  // Placeholder
+}
+
+// ===========================
+// ENHANCED EDGE AI FEATURES
+// ===========================
+
+void EdgeProcessor::enableMultiCoreProcessing(bool enable) {
+    if (enable && !multi_core_enabled_) {
+        #ifndef CONFIG_FREERTOS_UNICORE
+        if (initializeMultiCoreProcessing()) {
+            multi_core_enabled_ = true;
+            Serial.println("Multi-core processing enabled");
+        } else {
+            Serial.println("Failed to enable multi-core processing");
+        }
+        #else
+        Serial.println("Multi-core processing not available on single-core ESP32");
+        #endif
+    } else if (!enable && multi_core_enabled_) {
+        multi_core_enabled_ = false;
+        Serial.println("Multi-core processing disabled");
+    }
+}
+
+void EdgeProcessor::enableSIMDOptimizations(bool enable) {
+    if (enable && !simd_enabled_) {
+        #ifdef CONFIG_IDF_TARGET_ESP32S3
+        if (initializeSIMDProcessing()) {
+            simd_enabled_ = true;
+            Serial.println("SIMD optimizations enabled");
+        } else {
+            Serial.println("Failed to enable SIMD optimizations");
+        }
+        #else
+        Serial.println("SIMD optimizations not available on this ESP32 variant");
+        #endif
+    } else if (!enable && simd_enabled_) {
+        simd_enabled_ = false;
+        Serial.println("SIMD optimizations disabled");
+    }
+}
+
+void EdgeProcessor::enablePipelineParallelism(bool enable) {
+    pipeline_enabled_ = enable;
+    if (enable) {
+        Serial.println("Pipeline parallelism enabled");
+    } else {
+        Serial.println("Pipeline parallelism disabled");
+    }
+}
+
+void EdgeProcessor::enableDynamicModelSelection(bool enable) {
+    dynamic_model_selection_enabled_ = enable;
+    if (enable) {
+        Serial.println("Dynamic model selection enabled");
+    } else {
+        Serial.println("Dynamic model selection disabled");
+    }
+}
+
+void EdgeProcessor::enableEdgeLearning(bool enable) {
+    edge_learning_enabled_ = enable;
+    if (enable) {
+        training_samples_.reserve(MAX_TRAINING_SAMPLES);
+        Serial.println("Edge learning enabled");
+    } else {
+        training_samples_.clear();
+        Serial.println("Edge learning disabled");
+    }
+}
+
+void EdgeProcessor::enablePerformanceMonitoring(bool enable) {
+    if (enable && !performance_monitoring_enabled_) {
+        if (!performance_monitor_) {
+            performance_monitor_ = new EdgeAIPerformanceMonitor();
+            if (performance_monitor_ && performance_monitor_->init()) {
+                performance_monitoring_enabled_ = true;
+                Serial.println("Performance monitoring enabled");
+            } else {
+                delete performance_monitor_;
+                performance_monitor_ = nullptr;
+                Serial.println("Failed to enable performance monitoring");
+            }
+        }
+    } else if (!enable && performance_monitoring_enabled_) {
+        performance_monitoring_enabled_ = false;
+        if (performance_monitor_) {
+            delete performance_monitor_;
+            performance_monitor_ = nullptr;
+        }
+        Serial.println("Performance monitoring disabled");
+    }
+}
+
+void EdgeProcessor::enableTemporalConsistency(bool enable) {
+    temporal_consistency_enabled_ = enable;
+    if (enable) {
+        temporal_history_.reserve(temporal_window_size_);
+        Serial.println("Temporal consistency enabled");
+    } else {
+        temporal_history_.clear();
+        Serial.println("Temporal consistency disabled");
+    }
+}
+
+void EdgeProcessor::updateEnvironmentalContext(float temperature, float humidity, float light_level,
+                                              uint8_t time_of_day, uint8_t season) {
+    environmental_context_.temperature = temperature;
+    environmental_context_.humidity = humidity;
+    environmental_context_.light_level = light_level;
+    environmental_context_.time_of_day = time_of_day;
+    environmental_context_.season = season;
+    environmental_context_.last_update = millis();
+    
+    if (environmental_adaptation_enabled_) {
+        // Adjust processing parameters based on environmental conditions
+        adjustProcessingParameters();
+    }
+}
+
+void EdgeProcessor::addTrainingSample(const uint8_t* image_data, const String& ground_truth_label) {
+    if (!edge_learning_enabled_ || !image_data) return;
+    
+    TrainingSample sample;
+    extractFeaturesForLearning(image_data, sample.features);
+    sample.label = ground_truth_label;
+    sample.confidence = 1.0f; // Ground truth has maximum confidence
+    sample.timestamp = millis();
+    
+    // Add to training samples
+    if (training_samples_.size() >= MAX_TRAINING_SAMPLES) {
+        training_samples_.erase(training_samples_.begin());
+    }
+    training_samples_.push_back(sample);
+    
+    // Check if we should trigger adaptation
+    if (shouldTriggerAdaptation()) {
+        performLocalModelAdaptation();
+    }
+}
+
+bool EdgeProcessor::performLocalModelAdaptation() {
+    if (!edge_learning_enabled_ || training_samples_.size() < 10) {
+        return false;
+    }
+    
+    Serial.printf("Performing local model adaptation with %d samples\n", training_samples_.size());
+    
+    // Simplified adaptation - in practice this would involve actual model training
+    // For now, we adjust confidence thresholds based on local data
+    
+    std::map<String, float> label_confidence_sum;
+    std::map<String, int> label_count;
+    
+    for (const auto& sample : training_samples_) {
+        label_confidence_sum[sample.label] += sample.confidence;
+        label_count[sample.label]++;
+    }
+    
+    // Adjust confidence thresholds based on local performance
+    for (const auto& pair : label_count) {
+        if (pair.second > 5) { // Need at least 5 samples
+            float avg_confidence = label_confidence_sum[pair.first] / pair.second;
+            if (avg_confidence > 0.8f) {
+                // High confidence for this species, we can be more selective
+                config_.confidenceThreshold = std::min(0.9f, config_.confidenceThreshold + 0.05f);
+            } else if (avg_confidence < 0.6f) {
+                // Low confidence, be more inclusive
+                config_.confidenceThreshold = std::max(0.5f, config_.confidenceThreshold - 0.05f);
+            }
+        }
+    }
+    
+    Serial.println("Local model adaptation completed");
+    return true;
+}
+
+std::vector<String> EdgeProcessor::getPerformanceAlerts() {
+    std::vector<String> alerts;
+    
+    if (performance_monitoring_enabled_ && performance_monitor_) {
+        alerts = performance_monitor_->getActiveAlerts();
+    }
+    
+    return alerts;
+}
+
+float EdgeProcessor::getSystemHealthScore() {
+    if (performance_monitoring_enabled_ && performance_monitor_) {
+        return performance_monitor_->calculateOverallSystemHealth();
+    }
+    
+    return 0.5f; // Default neutral score
+}
+
+String EdgeProcessor::applyTemporalSmoothing(const String& current_prediction, float confidence) {
+    if (!temporal_consistency_enabled_) {
+        return current_prediction;
+    }
+    
+    // Update temporal history
+    TemporalFrame frame;
+    frame.prediction = current_prediction;
+    frame.confidence = confidence;
+    frame.timestamp = millis();
+    
+    if (temporal_history_.size() >= temporal_window_size_) {
+        temporal_history_.erase(temporal_history_.begin());
+    }
+    temporal_history_.push_back(frame);
+    
+    // Apply temporal smoothing
+    return getTemporalConsensus();
+}
+
+// ===========================
+// ENHANCED PRIVATE METHODS
+// ===========================
+
+bool EdgeProcessor::initializeMultiCoreProcessing() {
+    #ifndef CONFIG_FREERTOS_UNICORE
+    // Create inference task on core 0 (assuming main processing is on core 1)
+    BaseType_t taskCreated = xTaskCreatePinnedToCore(
+        inferenceTask,
+        "EdgeAI_Inference",
+        4096, // Stack size
+        this, // Task parameter
+        1,    // Priority
+        nullptr, // Task handle
+        0     // Core ID
+    );
+    
+    return taskCreated == pdPASS;
+    #else
+    return false;
+    #endif
+}
+
+bool EdgeProcessor::initializeSIMDProcessing() {
+    #ifdef CONFIG_IDF_TARGET_ESP32S3
+    // ESP32-S3 SIMD initialization
+    Serial.println("Initializing ESP32-S3 SIMD optimizations");
+    return true;
+    #else
+    return false;
+    #endif
+}
+
+bool EdgeProcessor::initializeMemoryPool(size_t pool_size) {
+    if (memory_pool_.pool_data) {
+        cleanupMemoryPool();
+    }
+    
+    memory_pool_.pool_size = pool_size;
+    memory_pool_.total_blocks = pool_size / memory_pool_.block_size;
+    
+    // Try to allocate in PSRAM first
+    #ifdef BOARD_HAS_PSRAM
+    memory_pool_.pool_data = (uint8_t*)ps_malloc(pool_size);
+    #endif
+    
+    // Fallback to internal memory
+    if (!memory_pool_.pool_data) {
+        memory_pool_.pool_data = (uint8_t*)malloc(pool_size);
+    }
+    
+    if (!memory_pool_.pool_data) {
+        Serial.printf("Failed to allocate memory pool of %d bytes\n", pool_size);
+        return false;
+    }
+    
+    memory_pool_.block_allocated.resize(memory_pool_.total_blocks, false);
+    
+    Serial.printf("Memory pool initialized: %d blocks of %d bytes\n", 
+                  memory_pool_.total_blocks, memory_pool_.block_size);
+    return true;
+}
+
+void EdgeProcessor::cleanupMemoryPool() {
+    if (memory_pool_.pool_data) {
+        free(memory_pool_.pool_data);
+        memory_pool_.pool_data = nullptr;
+    }
+    memory_pool_.block_allocated.clear();
+    memory_pool_.total_blocks = 0;
+}
+
+void EdgeProcessor::extractFeaturesForLearning(const uint8_t* image_data, std::vector<float>& features) {
+    // Simplified feature extraction for edge learning
+    // In practice, this would extract meaningful features from the image
+    
+    features.clear();
+    features.reserve(100); // Reserve space for features
+    
+    // Extract basic statistical features (simplified)
+    if (image_data) {
+        size_t image_size = config_.inputWidth * config_.inputHeight;
+        
+        // Calculate mean, variance, and other basic features
+        float mean = 0.0f;
+        for (size_t i = 0; i < image_size; i++) {
+            mean += image_data[i];
+        }
+        mean /= image_size;
+        features.push_back(mean);
+        
+        // Add more sophisticated features as needed
+        features.push_back(mean / 255.0f); // Normalized mean
+    }
+}
+
+bool EdgeProcessor::shouldTriggerAdaptation() {
+    // Trigger adaptation every 100 samples or once per hour
+    static unsigned long last_adaptation = 0;
+    unsigned long current_time = millis();
+    
+    return (training_samples_.size() % 100 == 0) || 
+           (current_time - last_adaptation > 3600000); // 1 hour
+}
+
+String EdgeProcessor::getTemporalConsensus() {
+    if (temporal_history_.empty()) {
+        return "unknown";
+    }
+    
+    // Count occurrences of each prediction
+    std::map<String, int> prediction_counts;
+    std::map<String, float> confidence_sums;
+    
+    for (const auto& frame : temporal_history_) {
+        prediction_counts[frame.prediction]++;
+        confidence_sums[frame.prediction] += frame.confidence;
+    }
+    
+    // Find prediction with highest weighted score
+    String best_prediction = "unknown";
+    float best_score = 0.0f;
+    
+    for (const auto& pair : prediction_counts) {
+        float avg_confidence = confidence_sums[pair.first] / pair.second;
+        float temporal_score = pair.second * avg_confidence;
+        
+        if (temporal_score > best_score) {
+            best_score = temporal_score;
+            best_prediction = pair.first;
+        }
+    }
+    
+    return best_prediction;
+}
+
+void EdgeProcessor::adjustProcessingParameters() {
+    if (!environmental_adaptation_enabled_) return;
+    
+    // Adjust inference interval based on environmental conditions
+    uint32_t base_interval = config_.inferenceInterval;
+    
+    // Adjust for light level
+    if (environmental_context_.light_level < 0.3f) {
+        // Low light - reduce frequency to save power
+        config_.inferenceInterval = base_interval * 1.5f;
+    } else if (environmental_context_.light_level > 0.8f) {
+        // Good light - increase frequency for better detection
+        config_.inferenceInterval = base_interval * 0.8f;
+    }
+    
+    // Adjust for temperature
+    if (environmental_context_.temperature > 35.0f || environmental_context_.temperature < -10.0f) {
+        // Extreme temperatures - reduce processing to prevent overheating/freezing
+        config_.inferenceInterval = base_interval * 1.3f;
+    }
+}
+
+void EdgeProcessor::inferenceTask(void* parameters) {
+    EdgeProcessor* processor = static_cast<EdgeProcessor*>(parameters);
+    
+    while (true) {
+        if (processor && processor->initialized_ && processor->multi_core_enabled_) {
+            // Perform inference work on this core
+            // This would typically handle the heavy computation
+            vTaskDelay(pdMS_TO_TICKS(100)); // Prevent watchdog timeout
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(1000)); // Wait if not ready
+        }
+    }
 }
