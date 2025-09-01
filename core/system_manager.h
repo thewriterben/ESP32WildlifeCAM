@@ -10,8 +10,10 @@
 
 #include <Arduino.h>
 #include <vector>
+#include <memory>
 #include "../hardware/board_detector.h"
 #include "../firmware/include/power/power_manager.h"
+#include "../src/detection/motion_coordinator.h"
 
 /**
  * @brief Main system manager class that coordinates all subsystems
@@ -68,6 +70,10 @@ private:
     bool m_networkReady;
     bool m_sensorsReady;
     
+    // Enhanced motion detection
+    std::unique_ptr<MotionCoordinator> m_motionCoordinator;
+    MotionCoordinator::EnvironmentalConditions m_environmentalConditions;
+    
     // Error tracking
     char m_lastError[128];
     int m_errorCount;
@@ -80,6 +86,11 @@ private:
     bool initializePowerManagement();
     bool initializeNetwork();
     bool initializeTasks();
+    bool initializeMotionDetection();
+    
+    // Motion detection handlers
+    void handleMotionDetected(const MotionCoordinator::CoordinatorResult& result);
+    void updateEnvironmentalConditions();
     
     // Helper methods
     void setError(const char* error);
