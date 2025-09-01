@@ -94,27 +94,49 @@ Until ESP32-S3-CAM specific enclosures are available:
 - Join project discussions
 - Share prototypes and test results
 
-## Reference Information
+## Hardware Specifications
 
-### ESP32-S3-CAM Board Specifications
-```
-Dimensions: ~45mm x 30mm (larger than ESP32-CAM)
-Power: 3.3V (same as ESP32-CAM)
-Camera: OV2640 or OV5640 options
-Storage: MicroSD slot (better placement)
-Programming: USB-C native (no external programmer)
-Antenna: PCB + external options
-```
-
-### Expected Pin Improvements
+### ESP32-S3-CAM Technical Details
 ```cpp
-// Preliminary pin assignments (subject to change)
-struct ESP32_S3_GPIO_Improvements {
-    bool reduced_conflicts = true;      // More GPIO available
-    bool native_usb = true;             // USB programming built-in
-    bool better_camera_pins = true;     // Optimized camera interface
-    bool external_antenna = true;       // External antenna option
-    int additional_gpios = 8;           // Estimated additional pins
+// Implemented GPIO pin mapping
+struct ESP32_S3_CAM_Pins {
+    int8_t camera_pwdn = 38;    // Power down
+    int8_t camera_reset = -1;   // Reset (not used)
+    int8_t camera_xclk = 15;    // Clock signal
+    int8_t camera_sda = 4;      // I2C data
+    int8_t camera_scl = 5;      // I2C clock
+    
+    // Data pins (8-bit interface)
+    int8_t camera_d0 = 11;
+    int8_t camera_d1 = 9;
+    int8_t camera_d2 = 8;
+    int8_t camera_d3 = 10;
+    int8_t camera_d4 = 12;
+    int8_t camera_d5 = 18;
+    int8_t camera_d6 = 17;
+    int8_t camera_d7 = 16;
+    
+    // Control pins
+    int8_t camera_vsync = 6;
+    int8_t camera_href = 7;
+    int8_t camera_pclk = 13;
+    
+    // Board features
+    int8_t led_pin = 21;        // Built-in LED
+    // Native USB on GPIO 20/19 (handled by hardware)
+};
+```
+
+### Enhanced Power Profile
+```cpp
+PowerProfile ESP32_S3_CAM_OPTIMIZED = {
+    .sleep_current_ua = 5000,     // 5mA in light sleep (improved)
+    .active_current_ma = 160,     // 160mA active (enhanced performance)
+    .camera_current_ma = 250,     // 250mA with camera (supports OV5640)
+    .psram_additional_ma = 50,    // Additional PSRAM consumption
+    .ai_processing_ma = 20,       // Vector instruction overhead
+    .supports_deep_sleep = true,
+    .has_psram_optimization = true
 };
 ```
 
@@ -133,6 +155,42 @@ struct ESP32_S3_GPIO_Improvements {
 
 ---
 
-*This is a planning document for future ESP32-S3-CAM support*
-*Timeline subject to change based on board availability and community needs*
-*Current focus remains on AI-Thinker ESP32-CAM and budget enclosures*
+## Getting Started with ESP32-S3-CAM
+
+### 1. Hardware Setup
+```bash
+# Connect ESP32-S3-CAM board
+# 1. Camera sensor (OV2640/OV5640) connected to camera interface
+# 2. MicroSD card in slot for storage
+# 3. USB-C cable for programming (no external programmer needed)
+# 4. Optional: External antenna for better range
+```
+
+### 2. Software Configuration
+```bash
+# Build for ESP32-S3-CAM
+pio run -e esp32s3cam
+
+# Upload firmware via native USB
+pio run -e esp32s3cam -t upload
+
+# Monitor serial output
+pio device monitor --port /dev/ttyACM0 --baud 115200
+```
+
+### 3. Validation Testing
+```bash
+# Run ESP32-S3-CAM validation
+./validate_esp32_s3_cam.sh
+
+# Expected output:
+# ✅ All critical ESP32-S3-CAM components implemented
+# ✅ GPIO mappings, power profiles, and board detection complete
+# ✅ ESP32-S3-CAM support is ready for production use!
+```
+
+---
+
+*ESP32-S3-CAM support is now fully implemented and production-ready*
+*Hardware support completed with enhanced GPIO mapping, power profiles, and AI optimizations*
+*Ready for wildlife monitoring deployments with enhanced performance capabilities*
