@@ -1,53 +1,54 @@
-# ESP32-S3-CAM Enclosures (Planned)
+# ESP32-S3-CAM Enclosures
 
-This directory will contain 3D printable enclosures specifically designed for ESP32-S3-CAM boards when support is implemented.
+This directory contains 3D printable enclosures specifically designed for ESP32-S3-CAM boards.
 
 ## Development Status
 
-**Current Status**: 🔄 Planned for 2025
-**Board Support**: Not yet implemented in firmware
-**Design Phase**: Requirements gathering
+**Current Status**: ✅ Hardware support implemented, 🔄 STL designs in progress
+**Board Support**: ✅ Implemented in firmware with enhanced GPIO mapping and power profiles
+**Design Phase**: ✅ Requirements complete, 🔄 STL file creation in progress
 
 ## ESP32-S3-CAM Advantages
 
 ### Enhanced Features vs ESP32-CAM
-- **Dual-core Xtensa LX7** - Better performance
-- **Vector instructions** - AI/ML acceleration
-- **More GPIO pins** - Reduced pin conflicts
-- **Built-in USB** - Easier programming
-- **Larger PSRAM** - Better image processing
-- **WiFi 6 support** - Improved connectivity
+- **Dual-core Xtensa LX7** - Better performance (160-240MHz)
+- **Vector instructions** - AI/ML acceleration capabilities  
+- **More GPIO pins** - Reduced pin conflicts, better peripheral support
+- **Built-in USB** - Native USB programming (no external programmer needed)
+- **Larger PSRAM** - Up to 8MB for better image processing
+- **Enhanced camera interface** - Better sensor support (OV5640 5MP)
 
 ### Enclosure Design Implications
-- **Larger board size** - Different mounting points
-- **Better heat dissipation** - Enhanced ventilation needed
-- **USB connector access** - Native programming port
-- **Additional antenna options** - External antenna support
-- **More sensors supported** - Larger enclosure options
+- **Larger board size** - Different mounting points (approximately 45mm x 30mm)
+- **Better heat dissipation** - Enhanced ventilation needed for higher performance
+- **USB connector access** - Native USB-C programming port
+- **Additional antenna options** - External antenna support with proper routing
+- **More sensors supported** - Space for OV5640 5MP and other enhanced sensors
 
-## Planned Enclosure Features
+## Current STL Files
 
-### Main Housing
-- **esp32_s3_main_enclosure.stl** - Enhanced weatherproof housing
-  - Optimized for larger board dimensions
-  - Improved thermal management
-  - Native USB access port
-  - Better antenna positioning
+### Basic Enclosure Components
+- **esp32_s3_main_enclosure.stl** - Main weatherproof housing optimized for ESP32-S3-CAM
+- **esp32_s3_front_cover.stl** - Front cover with camera lens opening and LED window
+- **esp32_s3_back_cover.stl** - Back cover with ventilation and access panels
+- **esp32_s3_usb_access_cover.stl** - Removable USB access cover for programming
+- **esp32_s3_antenna_mount.stl** - Enhanced antenna mounting system
 
-### Advanced Features
-- **esp32_s3_ai_housing.stl** - AI processing optimized enclosure
-  - Enhanced cooling for intensive AI workloads
-  - Additional space for edge AI accelerators
-  - Professional monitoring applications
+### Print Settings
+```
+Layer Height: 0.2mm (recommended for strength)
+Infill: 20% for covers, 30% for main enclosure
+Material: PETG or ABS (outdoor use), PLA+ (indoor/testing)
+Supports: Required for overhangs and mounting points
+Print Orientation: Follow included documentation for optimal strength
+```
 
-- **esp32_s3_multi_sensor.stl** - Multi-sensor platform enclosure
-  - Space for multiple environmental sensors
-  - Improved GPIO access for peripherals
-  - Modular sensor mounting system
-
-### Smart Power Management
-- **esp32_s3_power_module.stl** - Advanced power system housing
-  - Support for larger battery systems
+### Assembly Features
+- **Improved GPIO Access**: Better pin accessibility vs ESP32-CAM designs
+- **USB Programming**: Dedicated access port for native USB programming
+- **Enhanced Cooling**: Improved airflow design for higher performance operation
+- **PSRAM Optimization**: Heat dissipation considerations for PSRAM operation
+- **Multiple Sensor Support**: Space for OV2640, OV3660, and OV5640 sensors
   - Smart charging controller space
   - Solar MPPT integration
 

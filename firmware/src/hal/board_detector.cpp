@@ -208,12 +208,20 @@ BoardType BoardDetector::detectByPinConfiguration() {
             return BOARD_ESP32_S3_EYE;
         }
         
-        // Test for ESP32-S3-CAM standard configuration
-        if (testGPIOPin(40, false)) { // GPIO 40 is commonly used for XCLK on ESP32-S3-CAM
-            if (testGPIOPin(48, false)) { // GPIO 48 is commonly used for LED
-                DEBUG_PRINTLN("ESP32-S3-CAM pin configuration detected");
-                return BOARD_ESP32_S3_CAM;
+        // Test for ESP32-S3-CAM standard configuration (updated pin mapping)
+        if (testGPIOPin(15, false)) { // GPIO 15 is XCLK on ESP32-S3-CAM
+            if (testGPIOPin(21, false)) { // GPIO 21 is LED on ESP32-S3-CAM
+                if (testGPIOPin(38, false)) { // GPIO 38 is PWDN on ESP32-S3-CAM
+                    DEBUG_PRINTLN("ESP32-S3-CAM pin configuration detected");
+                    return BOARD_ESP32_S3_CAM;
+                }
             }
+        }
+        
+        // Fallback detection for ESP32-S3-CAM variants
+        if (testGPIOPin(13, false) && testGPIOPin(6, false)) { // PCLK and VSYNC
+            DEBUG_PRINTLN("ESP32-S3-CAM variant detected via camera pins");
+            return BOARD_ESP32_S3_CAM;
         }
     } else if (strstr(chip_model, "ESP32")) {
         DEBUG_PRINTLN("ESP32 chip detected, checking for board configurations");

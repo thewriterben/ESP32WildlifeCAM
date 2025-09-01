@@ -157,6 +157,19 @@ const WildlifeSettings LOW_POWER_WILDLIFE_SETTINGS = {
     .vflip = false
 };
 
+// ESP32-S3 optimized settings for enhanced wildlife photography
+const WildlifeSettings ESP32_S3_ENHANCED_WILDLIFE_SETTINGS = {
+    .brightness = 0,        // Balanced brightness
+    .contrast = 2,          // Enhanced contrast using S3's processing power
+    .saturation = 1,        // Vibrant colors for wildlife
+    .wb_mode = 0,           // Auto white balance with S3 acceleration
+    .aec_value = 150,       // Superior low light with S3's capabilities
+    .agc_gain = 5,          // Moderate gain for noise balance
+    .gainceiling = (gainceiling_t)3,
+    .hmirror = false,
+    .vflip = false
+};
+
 // Function to get sensor capabilities by type
 inline const SensorCapabilities* getSensorCapabilities(SensorType sensor_type) {
     switch (sensor_type) {
