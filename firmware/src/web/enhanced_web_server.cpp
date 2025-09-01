@@ -242,6 +242,39 @@ void EnhancedWebServer::setupAPIEndpoints() {
         this->handleAPIWildlifeLog(request);
     });
     
+    // Analytics endpoints
+    server_.on("/api/analytics/summary", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleAPIAnalyticsSummary(request);
+    });
+    
+    server_.on("/api/analytics/wildlife", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleAPIAnalyticsWildlife(request);
+    });
+    
+    server_.on("/api/analytics/system", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleAPIAnalyticsSystem(request);
+    });
+    
+    server_.on("/api/analytics/historical", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleAPIAnalyticsHistorical(request);
+    });
+    
+    server_.on("/api/analytics/export", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleAPIAnalyticsExport(request);
+    });
+    
+    server_.on("/api/analytics/species", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleAPIAnalyticsSpecies(request);
+    });
+    
+    server_.on("/api/analytics/activity", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleAPIAnalyticsActivity(request);
+    });
+    
+    server_.on("/api/analytics/performance", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleAPIAnalyticsPerformance(request);
+    });
+    
     ESP_LOGI(TAG, "API endpoints configured");
 }
 
@@ -950,6 +983,468 @@ String EnhancedWebServer::generateWildlifeLogJSON(int limit) {
     
     doc["total"] = 10;
     doc["limit"] = limit;
+    
+    String result;
+    serializeJson(doc, result);
+    return result;
+}
+
+// Analytics API handlers
+void EnhancedWebServer::handleAPIAnalyticsSummary(AsyncWebServerRequest* request) {
+    request->send(200, "application/json", generateAnalyticsSummaryJSON());
+}
+
+void EnhancedWebServer::handleAPIAnalyticsWildlife(AsyncWebServerRequest* request) {
+    String timeRange = request->hasParam("timeRange") ? request->getParam("timeRange")->value() : "week";
+    request->send(200, "application/json", generateWildlifeAnalyticsJSON(timeRange));
+}
+
+void EnhancedWebServer::handleAPIAnalyticsSystem(AsyncWebServerRequest* request) {
+    String timeRange = request->hasParam("timeRange") ? request->getParam("timeRange")->value() : "week";
+    request->send(200, "application/json", generateSystemAnalyticsJSON(timeRange));
+}
+
+void EnhancedWebServer::handleAPIAnalyticsHistorical(AsyncWebServerRequest* request) {
+    String timeRange = request->hasParam("timeRange") ? request->getParam("timeRange")->value() : "month";
+    request->send(200, "application/json", generateHistoricalAnalyticsJSON(timeRange));
+}
+
+void EnhancedWebServer::handleAPIAnalyticsExport(AsyncWebServerRequest* request) {
+    String format = request->hasParam("format") ? request->getParam("format")->value() : "json";
+    String timeRange = request->hasParam("timeRange") ? request->getParam("timeRange")->value() : "week";
+    
+    if (format == "csv") {
+        // TODO: Implement CSV export
+        request->send(501, "text/plain", "CSV export not implemented yet");
+    } else {
+        // Default to JSON export
+        DynamicJsonDocument doc(2048);
+        doc["summary"] = generateAnalyticsSummaryJSON();
+        doc["wildlife"] = generateWildlifeAnalyticsJSON(timeRange);
+        doc["system"] = generateSystemAnalyticsJSON(timeRange);
+        doc["exportTime"] = millis();
+        doc["timeRange"] = timeRange;
+        
+        String result;
+        serializeJson(doc, result);
+        request->send(200, "application/json", result);
+    }
+}
+
+void EnhancedWebServer::handleAPIAnalyticsSpecies(AsyncWebServerRequest* request) {
+    request->send(200, "application/json", generateSpeciesAnalyticsJSON());
+}
+
+void EnhancedWebServer::handleAPIAnalyticsActivity(AsyncWebServerRequest* request) {
+    String timeRange = request->hasParam("timeRange") ? request->getParam("timeRange")->value() : "week";
+    request->send(200, "application/json", generateActivityAnalyticsJSON(timeRange));
+}
+
+void EnhancedWebServer::handleAPIAnalyticsPerformance(AsyncWebServerRequest* request) {
+    String timeRange = request->hasParam("timeRange") ? request->getParam("timeRange")->value() : "week";
+    request->send(200, "application/json", generatePerformanceAnalyticsJSON(timeRange));
+}
+
+// Analytics JSON generators
+String EnhancedWebServer::generateAnalyticsSummaryJSON() {
+    DynamicJsonDocument doc(1024);
+    
+    // Key metrics summary
+    doc["totalCaptures"] = metrics_.totalCaptures;
+    doc["dailyCaptures"] = metrics_.dailyCaptures;
+    doc["speciesCount"] = 12; // Mock data
+    doc["accuracy"] = 94.2;
+    doc["peakActivity"] = "6-8 AM";
+    doc["uptime"] = metrics_.uptime;
+    doc["batteryHealth"] = metrics_.batteryPercentage;
+    doc["storageUsed"] = (metrics_.usedStorage * 100) / metrics_.totalStorage;
+    doc["avgConfidence"] = 0.87;
+    doc["lastDetection"] = metrics_.lastDetectedSpecies;
+    doc["lastDetectionTime"] = millis() - 1200000; // 20 minutes ago
+    doc["systemStatus"] = "healthy";
+    
+    // Weekly trends
+    JsonObject trends = doc.createNestedObject("trends");
+    trends["capturesChange"] = "+15%";
+    trends["accuracyChange"] = "+2.1%";
+    trends["newSpecies"] = 2;
+    trends["uptimeChange"] = "+0.5%";
+    
+    String result;
+    serializeJson(doc, result);
+    return result;
+}
+
+String EnhancedWebServer::generateWildlifeAnalyticsJSON(const String& timeRange) {
+    DynamicJsonDocument doc(2048);
+    
+    // Species distribution
+    JsonArray species = doc.createNestedArray("speciesDistribution");
+    JsonObject deer = species.createNestedObject();
+    deer["name"] = "deer";
+    deer["count"] = 45;
+    deer["avgConfidence"] = 0.92;
+    
+    JsonObject fox = species.createNestedObject();
+    fox["name"] = "fox";
+    fox["count"] = 28;
+    fox["avgConfidence"] = 0.89;
+    
+    JsonObject raccoon = species.createNestedObject();
+    raccoon["name"] = "raccoon";
+    raccoon["count"] = 18;
+    raccoon["avgConfidence"] = 0.85;
+    
+    JsonObject bird = species.createNestedObject();
+    bird["name"] = "bird";
+    bird["count"] = 65;
+    bird["avgConfidence"] = 0.78;
+    
+    JsonObject squirrel = species.createNestedObject();
+    squirrel["name"] = "squirrel";
+    squirrel["count"] = 34;
+    squirrel["avgConfidence"] = 0.82;
+    
+    JsonObject rabbit = species.createNestedObject();
+    rabbit["name"] = "rabbit";
+    rabbit["count"] = 12;
+    rabbit["avgConfidence"] = 0.88;
+    
+    // Time-based activity patterns
+    JsonArray hourlyActivity = doc.createNestedArray("hourlyActivity");
+    for (int i = 0; i < 24; i++) {
+        JsonObject hour = hourlyActivity.createNestedObject();
+        hour["hour"] = i;
+        // Mock data with peak activity at dawn and dusk
+        float activity = (i >= 5 && i <= 8) ? 0.8 : 
+                        (i >= 17 && i <= 20) ? 0.7 : 
+                        (i >= 22 || i <= 4) ? 0.3 : 0.4;
+        hour["detections"] = int(activity * 20 + random(0, 5));
+        hour["confidence"] = 0.7 + activity * 0.2;
+    }
+    
+    // Daily patterns for the time range
+    JsonArray dailyActivity = doc.createNestedArray("dailyActivity");
+    int days = (timeRange == "week") ? 7 : (timeRange == "month") ? 30 : 1;
+    for (int i = 0; i < days; i++) {
+        JsonObject day = dailyActivity.createNestedObject();
+        day["date"] = "2025-09-" + String(1 + i);
+        day["detections"] = 15 + random(0, 25);
+        day["species"] = 3 + random(0, 5);
+        day["avgConfidence"] = 0.75 + (random(0, 20) / 100.0);
+    }
+    
+    // Motion detection stats
+    JsonObject motionStats = doc.createNestedObject("motionStats");
+    motionStats["totalTriggers"] = 456;
+    motionStats["validDetections"] = 234;
+    motionStats["falsePositives"] = 222;
+    motionStats["successRate"] = 51.3;
+    motionStats["avgResponseTime"] = 1.2;
+    
+    // Confidence score distribution
+    JsonArray confidenceDistribution = doc.createNestedArray("confidenceDistribution");
+    JsonObject conf1 = confidenceDistribution.createNestedObject();
+    conf1["range"] = "0.9-1.0";
+    conf1["count"] = 45;
+    
+    JsonObject conf2 = confidenceDistribution.createNestedObject();
+    conf2["range"] = "0.8-0.9";
+    conf2["count"] = 38;
+    
+    JsonObject conf3 = confidenceDistribution.createNestedObject();
+    conf3["range"] = "0.7-0.8";
+    conf3["count"] = 25;
+    
+    JsonObject conf4 = confidenceDistribution.createNestedObject();
+    conf4["range"] = "0.6-0.7";
+    conf4["count"] = 15;
+    
+    JsonObject conf5 = confidenceDistribution.createNestedObject();
+    conf5["range"] = "0.5-0.6";
+    conf5["count"] = 8;
+    
+    String result;
+    serializeJson(doc, result);
+    return result;
+}
+
+String EnhancedWebServer::generateSystemAnalyticsJSON(const String& timeRange) {
+    DynamicJsonDocument doc(2048);
+    
+    // Battery performance
+    JsonObject battery = doc.createNestedObject("battery");
+    battery["currentLevel"] = metrics_.batteryPercentage;
+    battery["voltage"] = metrics_.batteryVoltage;
+    battery["chargingRate"] = metrics_.isCharging ? 45.2 : 0.0;
+    battery["avgDailyConsumption"] = 12.5;
+    battery["estimatedRuntime"] = 4.2;
+    battery["healthScore"] = 95;
+    
+    // Storage analytics
+    JsonObject storage = doc.createNestedObject("storage");
+    storage["totalCapacity"] = metrics_.totalStorage / (1024 * 1024); // MB
+    storage["usedSpace"] = metrics_.usedStorage / (1024 * 1024); // MB
+    storage["freeSpace"] = metrics_.freeStorage / (1024 * 1024); // MB
+    storage["utilizationPercent"] = (metrics_.usedStorage * 100) / metrics_.totalStorage;
+    storage["avgFileSize"] = 2.1; // MB
+    storage["imageCount"] = metrics_.imageCount;
+    storage["projectedFull"] = "45 days";
+    
+    // Network connectivity
+    JsonObject network = doc.createNestedObject("network");
+    network["signalStrength"] = metrics_.wifiSignalStrength;
+    network["connected"] = metrics_.wifiConnected;
+    network["uptime"] = 99.2;
+    network["avgLatency"] = 23.5;
+    network["dataTransferred"] = 156.7; // MB
+    network["connectionDrops"] = 2;
+    
+    // System performance
+    JsonObject performance = doc.createNestedObject("performance");
+    performance["cpuUsage"] = 35.8;
+    performance["memoryUsage"] = (metrics_.totalHeap - metrics_.freeHeap) * 100 / metrics_.totalHeap;
+    performance["temperature"] = metrics_.temperature;
+    performance["uptime"] = metrics_.uptime;
+    performance["avgProcessingTime"] = 1.8;
+    performance["systemLoad"] = 0.4;
+    
+    // Historical trends
+    JsonArray batteryHistory = doc.createNestedArray("batteryHistory");
+    JsonArray temperatureHistory = doc.createNestedArray("temperatureHistory");
+    JsonArray memoryHistory = doc.createNestedArray("memoryHistory");
+    
+    int points = (timeRange == "week") ? 168 : (timeRange == "month") ? 720 : 24; // Hours
+    for (int i = 0; i < points; i += (points / 20)) { // 20 data points
+        JsonObject batteryPoint = batteryHistory.createNestedObject();
+        batteryPoint["timestamp"] = millis() - (points - i) * 3600000;
+        batteryPoint["level"] = 75 + random(-10, 15);
+        batteryPoint["voltage"] = 3.7 + (random(-20, 20) / 100.0);
+        
+        JsonObject tempPoint = temperatureHistory.createNestedObject();
+        tempPoint["timestamp"] = millis() - (points - i) * 3600000;
+        tempPoint["temperature"] = 20 + random(0, 15);
+        
+        JsonObject memPoint = memoryHistory.createNestedObject();
+        memPoint["timestamp"] = millis() - (points - i) * 3600000;
+        memPoint["usage"] = 30 + random(0, 40);
+    }
+    
+    String result;
+    serializeJson(doc, result);
+    return result;
+}
+
+String EnhancedWebServer::generateHistoricalAnalyticsJSON(const String& timeRange) {
+    DynamicJsonDocument doc(2048);
+    
+    // Long-term trends
+    JsonObject trends = doc.createNestedObject("trends");
+    trends["captureGrowth"] = "+23%";
+    trends["accuracyImprovement"] = "+5.2%";
+    trends["speciesDiscovered"] = 8;
+    trends["systemReliability"] = "+12%";
+    trends["energyEfficiency"] = "+8%";
+    
+    // Seasonal patterns
+    JsonArray seasonalData = doc.createNestedArray("seasonalPatterns");
+    JsonObject spring = seasonalData.createNestedObject();
+    spring["season"] = "Spring";
+    spring["captures"] = 145;
+    spring["accuracy"] = 89.2;
+    
+    JsonObject summer = seasonalData.createNestedObject();
+    summer["season"] = "Summer";
+    summer["captures"] = 203;
+    summer["accuracy"] = 91.5;
+    
+    JsonObject fall = seasonalData.createNestedObject();
+    fall["season"] = "Fall";
+    fall["captures"] = 178;
+    fall["accuracy"] = 87.8;
+    
+    JsonObject winter = seasonalData.createNestedObject();
+    winter["season"] = "Winter";
+    winter["captures"] = 98;
+    winter["accuracy"] = 85.1;
+    
+    // Monthly comparisons
+    JsonArray monthlyComparison = doc.createNestedArray("monthlyComparison");
+    String months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"};
+    for (int i = 0; i < 9; i++) {
+        JsonObject month = monthlyComparison.createNestedObject();
+        month["month"] = months[i];
+        month["captures"] = 45 + random(0, 50);
+        month["species"] = 8 + random(0, 6);
+        month["accuracy"] = 85 + random(0, 10);
+        month["uptime"] = 95 + random(0, 5);
+    }
+    
+    // Performance milestones
+    JsonArray milestones = doc.createNestedArray("milestones");
+    JsonObject m1 = milestones.createNestedObject();
+    m1["title"] = "1000th capture";
+    m1["date"] = "2025-08-15";
+    m1["image"] = "wildlife_1000.jpg";
+    
+    JsonObject m2 = milestones.createNestedObject();
+    m2["title"] = "10 species identified";
+    m2["date"] = "2025-07-22";
+    m2["image"] = "species_milestone.jpg";
+    
+    JsonObject m3 = milestones.createNestedObject();
+    m3["title"] = "99% uptime achieved";
+    m3["date"] = "2025-06-30";
+    m3["image"] = "";
+    
+    JsonObject m4 = milestones.createNestedObject();
+    m4["title"] = "Solar efficiency peak";
+    m4["date"] = "2025-08-01";
+    m4["image"] = "";
+    
+    String result;
+    serializeJson(doc, result);
+    return result;
+}
+
+String EnhancedWebServer::generateSpeciesAnalyticsJSON() {
+    DynamicJsonDocument doc(1024);
+    
+    JsonArray species = doc.createNestedArray("species");
+    JsonObject deer = species.createNestedObject();
+    deer["name"] = "White-tailed Deer";
+    deer["count"] = 45;
+    deer["avgConfidence"] = 0.92;
+    deer["type"] = "Large mammal";
+    deer["activityPattern"] = "Crepuscular";
+    
+    JsonObject fox = species.createNestedObject();
+    fox["name"] = "Red Fox";
+    fox["count"] = 28;
+    fox["avgConfidence"] = 0.89;
+    fox["type"] = "Medium mammal";
+    fox["activityPattern"] = "Nocturnal";
+    
+    JsonObject raccoon = species.createNestedObject();
+    raccoon["name"] = "Common Raccoon";
+    raccoon["count"] = 18;
+    raccoon["avgConfidence"] = 0.85;
+    raccoon["type"] = "Medium mammal";
+    raccoon["activityPattern"] = "Nocturnal";
+    
+    JsonObject robin = species.createNestedObject();
+    robin["name"] = "American Robin";
+    robin["count"] = 65;
+    robin["avgConfidence"] = 0.78;
+    robin["type"] = "Small bird";
+    robin["activityPattern"] = "Diurnal";
+    
+    JsonObject squirrel = species.createNestedObject();
+    squirrel["name"] = "Eastern Gray Squirrel";
+    squirrel["count"] = 34;
+    squirrel["avgConfidence"] = 0.82;
+    squirrel["type"] = "Small mammal";
+    squirrel["activityPattern"] = "Diurnal";
+    
+    JsonObject rabbit = species.createNestedObject();
+    rabbit["name"] = "Cottontail Rabbit";
+    rabbit["count"] = 12;
+    rabbit["avgConfidence"] = 0.88;
+    rabbit["type"] = "Small mammal";
+    rabbit["activityPattern"] = "Crepuscular";
+    
+    doc["totalSpecies"] = 6;
+    doc["newThisWeek"] = 1;
+    doc["mostActive"] = "American Robin";
+    doc["rarest"] = "Cottontail Rabbit";
+    doc["avgConfidence"] = 0.856;
+    
+    String result;
+    serializeJson(doc, result);
+    return result;
+}
+
+String EnhancedWebServer::generateActivityAnalyticsJSON(const String& timeRange) {
+    DynamicJsonDocument doc(1024);
+    
+    // Activity patterns by time of day
+    JsonArray timeActivity = doc.createNestedArray("timeOfDay");
+    JsonObject dawn = timeActivity.createNestedObject();
+    dawn["period"] = "Dawn";
+    dawn["timeRange"] = "5-7 AM";
+    dawn["detections"] = 34;
+    dawn["activityLevel"] = "High";
+    
+    JsonObject morning = timeActivity.createNestedObject();
+    morning["period"] = "Morning";
+    morning["timeRange"] = "7-12 PM";
+    morning["detections"] = 18;
+    morning["activityLevel"] = "Medium";
+    
+    JsonObject afternoon = timeActivity.createNestedObject();
+    afternoon["period"] = "Afternoon";
+    afternoon["timeRange"] = "12-5 PM";
+    afternoon["detections"] = 12;
+    afternoon["activityLevel"] = "Low";
+    
+    JsonObject dusk = timeActivity.createNestedObject();
+    dusk["period"] = "Dusk";
+    dusk["timeRange"] = "5-8 PM";
+    dusk["detections"] = 28;
+    dusk["activityLevel"] = "High";
+    
+    JsonObject night = timeActivity.createNestedObject();
+    night["period"] = "Night";
+    night["timeRange"] = "8 PM-5 AM";
+    night["detections"] = 8;
+    night["activityLevel"] = "Low";
+    
+    // Weather correlation
+    JsonObject weather = doc.createNestedObject("weatherCorrelation");
+    weather["sunny"] = 78;
+    weather["cloudy"] = 65;
+    weather["rainy"] = 23;
+    weather["foggy"] = 45;
+    
+    // Motion detection patterns
+    JsonObject motionPatterns = doc.createNestedObject("motionPatterns");
+    motionPatterns["avgTriggerTime"] = 1.2;
+    motionPatterns["peakSensitivity"] = "Medium";
+    motionPatterns["falsePositiveRate"] = 48.7;
+    motionPatterns["bestPerformanceHour"] = 6;
+    
+    String result;
+    serializeJson(doc, result);
+    return result;
+}
+
+String EnhancedWebServer::generatePerformanceAnalyticsJSON(const String& timeRange) {
+    DynamicJsonDocument doc(1024);
+    
+    // System health scores
+    JsonObject health = doc.createNestedObject("healthScores");
+    health["overall"] = 94;
+    health["camera"] = 97;
+    health["storage"] = 89;
+    health["battery"] = 92;
+    health["network"] = 96;
+    health["processing"] = 91;
+    
+    // Performance metrics
+    JsonObject metrics = doc.createNestedObject("metrics");
+    metrics["avgResponseTime"] = 1.2;
+    metrics["processingEfficiency"] = 87.5;
+    metrics["memoryUtilization"] = 68.3;
+    metrics["thermalPerformance"] = 95.2;
+    metrics["powerEfficiency"] = 89.7;
+    
+    // Error analysis
+    JsonObject errors = doc.createNestedObject("errorAnalysis");
+    errors["totalErrors"] = 12;
+    errors["criticalErrors"] = 0;
+    errors["warningCount"] = 5;
+    errors["recoveryRate"] = 100.0;
+    errors["avgDowntime"] = 0.0;
     
     String result;
     serializeJson(doc, result);

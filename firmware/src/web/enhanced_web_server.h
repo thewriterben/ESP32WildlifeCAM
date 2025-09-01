@@ -205,6 +205,16 @@ private:
     void handleAPIPowerStats(AsyncWebServerRequest* request);
     void handleAPIWildlifeLog(AsyncWebServerRequest* request);
     
+    // Analytics API endpoints
+    void handleAPIAnalyticsSummary(AsyncWebServerRequest* request);
+    void handleAPIAnalyticsWildlife(AsyncWebServerRequest* request);
+    void handleAPIAnalyticsSystem(AsyncWebServerRequest* request);
+    void handleAPIAnalyticsHistorical(AsyncWebServerRequest* request);
+    void handleAPIAnalyticsExport(AsyncWebServerRequest* request);
+    void handleAPIAnalyticsSpecies(AsyncWebServerRequest* request);
+    void handleAPIAnalyticsActivity(AsyncWebServerRequest* request);
+    void handleAPIAnalyticsPerformance(AsyncWebServerRequest* request);
+    
     // Helper methods
     String generateSystemStatusJSON();
     String generateImageListJSON(int page = 0, int pageSize = 20);
@@ -212,6 +222,15 @@ private:
     String generateStorageStatsJSON();
     String generatePowerStatsJSON();
     String generateWildlifeLogJSON(int limit = 50);
+    
+    // Analytics JSON generators
+    String generateAnalyticsSummaryJSON();
+    String generateWildlifeAnalyticsJSON(const String& timeRange = "week");
+    String generateSystemAnalyticsJSON(const String& timeRange = "week");
+    String generateHistoricalAnalyticsJSON(const String& timeRange = "month");
+    String generateSpeciesAnalyticsJSON();
+    String generateActivityAnalyticsJSON(const String& timeRange = "week");
+    String generatePerformanceAnalyticsJSON(const String& timeRange = "week");
     bool authenticateRequest(AsyncWebServerRequest* request);
     void logMessage(const String& message);
     void updatePowerMetrics();

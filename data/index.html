@@ -6,6 +6,7 @@
     <title>ESP32 Wildlife CAM - Control Dashboard</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23228b22' d='M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z'/></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -185,39 +186,326 @@
             <!-- Analytics Section -->
             <section id="analytics-section" class="section">
                 <div class="analytics-container">
-                    <h2>Wildlife Analytics</h2>
-                    
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <h3>Total Captures</h3>
-                            <div class="metric-value">1,247</div>
-                            <div class="metric-change">+23 today</div>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Species Identified</h3>
-                            <div class="metric-value">18</div>
-                            <div class="metric-change">+2 this week</div>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Peak Activity</h3>
-                            <div class="metric-value">6-8 AM</div>
-                            <div class="metric-change">Dawn feeding</div>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Detection Accuracy</h3>
-                            <div class="metric-value">94.2%</div>
-                            <div class="metric-change">+1.3% this month</div>
+                    <div class="analytics-header">
+                        <h2>Wildlife Analytics Dashboard</h2>
+                        <div class="analytics-controls">
+                            <select id="analytics-timerange" class="analytics-select">
+                                <option value="today">Today</option>
+                                <option value="week" selected>This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
+                            </select>
+                            <button id="export-analytics" class="btn btn-secondary">📊 Export Data</button>
+                            <button id="refresh-analytics" class="btn btn-primary">🔄 Refresh</button>
                         </div>
                     </div>
 
-                    <div class="charts-container">
-                        <div class="chart-card">
-                            <h3>Daily Activity Pattern</h3>
-                            <canvas id="activity-chart" width="400" height="200"></canvas>
+                    <!-- Analytics Navigation Tabs -->
+                    <nav class="analytics-nav">
+                        <button class="analytics-tab active" data-tab="overview">📊 Overview</button>
+                        <button class="analytics-tab" data-tab="wildlife">🦌 Wildlife</button>
+                        <button class="analytics-tab" data-tab="system">⚙️ System Health</button>
+                        <button class="analytics-tab" data-tab="historical">📈 Historical</button>
+                        <button class="analytics-tab" data-tab="performance">🎯 Performance</button>
+                    </nav>
+
+                    <!-- Overview Tab -->
+                    <div id="overview-tab" class="analytics-tab-content active">
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-icon">📸</div>
+                                <div class="metric-content">
+                                    <h3>Total Captures</h3>
+                                    <div class="metric-value" id="total-captures">Loading...</div>
+                                    <div class="metric-change" id="captures-change">Calculating...</div>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon">🦝</div>
+                                <div class="metric-content">
+                                    <h3>Species Identified</h3>
+                                    <div class="metric-value" id="species-count">Loading...</div>
+                                    <div class="metric-change" id="species-change">Calculating...</div>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon">🌅</div>
+                                <div class="metric-content">
+                                    <h3>Peak Activity</h3>
+                                    <div class="metric-value" id="peak-activity">Loading...</div>
+                                    <div class="metric-change" id="activity-pattern">Analyzing...</div>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon">🎯</div>
+                                <div class="metric-content">
+                                    <h3>Detection Accuracy</h3>
+                                    <div class="metric-value" id="detection-accuracy">Loading...</div>
+                                    <div class="metric-change" id="accuracy-trend">Calculating...</div>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon">🔋</div>
+                                <div class="metric-content">
+                                    <h3>System Health</h3>
+                                    <div class="metric-value" id="system-health">Loading...</div>
+                                    <div class="metric-change" id="health-status">Checking...</div>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon">⏱️</div>
+                                <div class="metric-content">
+                                    <h3>Uptime</h3>
+                                    <div class="metric-value" id="system-uptime">Loading...</div>
+                                    <div class="metric-change" id="uptime-change">Calculating...</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="chart-card">
-                            <h3>Species Distribution</h3>
-                            <canvas id="species-chart" width="400" height="200"></canvas>
+
+                        <div class="charts-row">
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h3>Daily Activity Pattern</h3>
+                                    <div class="chart-controls">
+                                        <button class="chart-toggle" data-chart="hourly">Hourly</button>
+                                        <button class="chart-toggle active" data-chart="daily">Daily</button>
+                                    </div>
+                                </div>
+                                <canvas id="overview-activity-chart" width="400" height="200"></canvas>
+                            </div>
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h3>Species Distribution</h3>
+                                    <div class="chart-controls">
+                                        <button class="chart-toggle active" data-chart="pie">Pie</button>
+                                        <button class="chart-toggle" data-chart="bar">Bar</button>
+                                    </div>
+                                </div>
+                                <canvas id="overview-species-chart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Wildlife Analytics Tab -->
+                    <div id="wildlife-tab" class="analytics-tab-content">
+                        <div class="wildlife-analytics">
+                            <div class="analytics-section">
+                                <h3>Species Detection Analytics</h3>
+                                <div class="charts-row">
+                                    <div class="chart-card">
+                                        <h4>Species Frequency</h4>
+                                        <canvas id="species-frequency-chart" width="300" height="150"></canvas>
+                                    </div>
+                                    <div class="chart-card">
+                                        <h4>Detection Confidence Distribution</h4>
+                                        <canvas id="confidence-distribution-chart" width="300" height="150"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analytics-section">
+                                <h3>Activity Patterns</h3>
+                                <div class="charts-row">
+                                    <div class="chart-card">
+                                        <h4>Hourly Activity Heatmap</h4>
+                                        <canvas id="hourly-heatmap-chart" width="300" height="150"></canvas>
+                                    </div>
+                                    <div class="chart-card">
+                                        <h4>Motion Detection Success Rate</h4>
+                                        <canvas id="motion-success-chart" width="300" height="150"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analytics-section">
+                                <h3>Species Details</h3>
+                                <div class="species-table-container">
+                                    <table id="species-details-table" class="analytics-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Species</th>
+                                                <th>Detections</th>
+                                                <th>Avg Confidence</th>
+                                                <th>Activity Pattern</th>
+                                                <th>Last Seen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="species-table-body">
+                                            <!-- Populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Health Tab -->
+                    <div id="system-tab" class="analytics-tab-content">
+                        <div class="system-health-analytics">
+                            <div class="analytics-section">
+                                <h3>Power Management</h3>
+                                <div class="charts-row">
+                                    <div class="chart-card">
+                                        <h4>Battery Level Trend</h4>
+                                        <canvas id="battery-trend-chart" width="300" height="150"></canvas>
+                                    </div>
+                                    <div class="chart-card">
+                                        <h4>Power Consumption</h4>
+                                        <canvas id="power-consumption-chart" width="300" height="150"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analytics-section">
+                                <h3>Storage & Network</h3>
+                                <div class="charts-row">
+                                    <div class="chart-card">
+                                        <h4>Storage Usage</h4>
+                                        <canvas id="storage-usage-chart" width="300" height="150"></canvas>
+                                    </div>
+                                    <div class="chart-card">
+                                        <h4>Network Performance</h4>
+                                        <canvas id="network-performance-chart" width="300" height="150"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analytics-section">
+                                <h3>Environmental Conditions</h3>
+                                <div class="charts-row">
+                                    <div class="chart-card">
+                                        <h4>Temperature Trend</h4>
+                                        <canvas id="temperature-trend-chart" width="300" height="150"></canvas>
+                                    </div>
+                                    <div class="chart-card">
+                                        <h4>System Load</h4>
+                                        <canvas id="system-load-chart" width="300" height="150"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historical Trends Tab -->
+                    <div id="historical-tab" class="analytics-tab-content">
+                        <div class="historical-analytics">
+                            <div class="analytics-section">
+                                <h3>Long-term Trends</h3>
+                                <div class="trend-summary">
+                                    <div class="trend-card">
+                                        <h4>Capture Growth</h4>
+                                        <div class="trend-value" id="capture-growth">+23%</div>
+                                        <div class="trend-period">vs last period</div>
+                                    </div>
+                                    <div class="trend-card">
+                                        <h4>Accuracy Improvement</h4>
+                                        <div class="trend-value" id="accuracy-improvement">+5.2%</div>
+                                        <div class="trend-period">vs last period</div>
+                                    </div>
+                                    <div class="trend-card">
+                                        <h4>Species Discovered</h4>
+                                        <div class="trend-value" id="species-discovered">8</div>
+                                        <div class="trend-period">new species</div>
+                                    </div>
+                                    <div class="trend-card">
+                                        <h4>System Reliability</h4>
+                                        <div class="trend-value" id="system-reliability">99.2%</div>
+                                        <div class="trend-period">uptime</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analytics-section">
+                                <h3>Monthly Comparison</h3>
+                                <canvas id="monthly-comparison-chart" width="600" height="300"></canvas>
+                            </div>
+
+                            <div class="analytics-section">
+                                <h3>Seasonal Patterns</h3>
+                                <canvas id="seasonal-patterns-chart" width="600" height="300"></canvas>
+                            </div>
+
+                            <div class="analytics-section">
+                                <h3>Milestones & Achievements</h3>
+                                <div id="milestones-list" class="milestones-container">
+                                    <!-- Populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Tab -->
+                    <div id="performance-tab" class="analytics-tab-content">
+                        <div class="performance-analytics">
+                            <div class="analytics-section">
+                                <h3>System Performance Metrics</h3>
+                                <div class="performance-grid">
+                                    <div class="performance-card">
+                                        <h4>Overall Health Score</h4>
+                                        <div class="score-display">
+                                            <div class="score-circle">
+                                                <span id="overall-score">94</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="performance-card">
+                                        <h4>Component Status</h4>
+                                        <div class="component-status">
+                                            <div class="status-item">
+                                                <span>Camera</span>
+                                                <span class="status-badge good" id="camera-status">97%</span>
+                                            </div>
+                                            <div class="status-item">
+                                                <span>Storage</span>
+                                                <span class="status-badge warning" id="storage-status">89%</span>
+                                            </div>
+                                            <div class="status-item">
+                                                <span>Battery</span>
+                                                <span class="status-badge good" id="battery-status">92%</span>
+                                            </div>
+                                            <div class="status-item">
+                                                <span>Network</span>
+                                                <span class="status-badge excellent" id="network-status">96%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analytics-section">
+                                <h3>Processing Performance</h3>
+                                <div class="charts-row">
+                                    <div class="chart-card">
+                                        <h4>Response Time Trend</h4>
+                                        <canvas id="response-time-chart" width="300" height="150"></canvas>
+                                    </div>
+                                    <div class="chart-card">
+                                        <h4>Memory Utilization</h4>
+                                        <canvas id="memory-utilization-chart" width="300" height="150"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analytics-section">
+                                <h3>Error Analysis</h3>
+                                <div class="error-metrics">
+                                    <div class="error-card">
+                                        <h4>Total Errors</h4>
+                                        <div class="error-count" id="total-errors">12</div>
+                                        <div class="error-trend">↓ 25% from last week</div>
+                                    </div>
+                                    <div class="error-card">
+                                        <h4>Critical Errors</h4>
+                                        <div class="error-count critical" id="critical-errors">0</div>
+                                        <div class="error-trend">No critical issues</div>
+                                    </div>
+                                    <div class="error-card">
+                                        <h4>Recovery Rate</h4>
+                                        <div class="error-count" id="recovery-rate">100%</div>
+                                        <div class="error-trend">Excellent reliability</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

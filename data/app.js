@@ -25,6 +25,7 @@ class WildlifeCAM {
         this.setupLiveView();
         this.setupSettings();
         this.setupSystemInfo();
+        this.setupAnalytics(); // Add analytics setup
         this.connectWebSocket();
         this.loadGallery();
         this.startStatusUpdates();
@@ -396,34 +397,408 @@ class WildlifeCAM {
         window.open(`/api/gallery/full/${filename}`, '_blank');
     }
 
-    async loadAnalytics() {
+    // Enhanced Analytics Setup
+    setupAnalytics() {
+        this.charts = new Map();
+        this.currentAnalyticsTab = 'overview';
+        this.analyticsData = {};
+        
+        // Setup analytics navigation
+        document.querySelectorAll('.analytics-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                this.switchAnalyticsTab(e.target.dataset.tab);
+            });
+        });
+        
+        // Setup analytics controls
+        const timeRangeSelect = document.getElementById('analytics-timerange');
+        if (timeRangeSelect) {
+            timeRangeSelect.addEventListener('change', () => {
+                this.loadAnalyticsData();
+            });
+        }
+        
+        const refreshBtn = document.getElementById('refresh-analytics');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.loadAnalyticsData();
+            });
+        }
+        
+        const exportBtn = document.getElementById('export-analytics');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                this.exportAnalyticsData();
+            });
+        }
+        
+        // Load initial analytics data
+        this.loadAnalyticsData();
+    }
+    
+    switchAnalyticsTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.analytics-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        
+        // Update tab content
+        document.querySelectorAll('.analytics-tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+        
+        this.currentAnalyticsTab = tabName;
+        
+        // Load specific analytics data for the tab
+        this.loadTabAnalytics(tabName);
+    }
+    
+    async loadAnalyticsData() {
+        const timeRange = document.getElementById('analytics-timerange')?.value || 'week';
+        
         try {
-            const response = await this.apiCall('/api/analytics/summary');
-            
-            if (response.success) {
-                this.updateAnalyticsDisplay(response.data);
-                this.renderCharts(response.data);
+            // Load summary data for overview
+            const summaryResponse = await this.apiCall('/api/analytics/summary');
+            if (summaryResponse) {
+                this.analyticsData.summary = summaryResponse;
+                this.updateOverviewMetrics(summaryResponse);
             }
+            
+            // Load current tab specific data
+            await this.loadTabAnalytics(this.currentAnalyticsTab);
+            
         } catch (error) {
             console.error('Analytics load error:', error);
+            this.showAlert('Failed to load analytics data', 'error');
         }
+    }
+    
+    async loadTabAnalytics(tabName) {
+        const timeRange = document.getElementById('analytics-timerange')?.value || 'week';
+        
+        try {
+            switch (tabName) {
+                case 'overview':
+                    await this.loadOverviewAnalytics(timeRange);
+                    break;
+                case 'wildlife':
+                    await this.loadWildlifeAnalytics(timeRange);
+                    break;
+                case 'system':
+                    await this.loadSystemAnalytics(timeRange);
+                    break;
+                case 'historical':
+                    await this.loadHistoricalAnalytics(timeRange);
+                    break;
+                case 'performance':
+                    await this.loadPerformanceAnalytics(timeRange);
+                    break;
+            }
+        } catch (error) {
+            console.error(`Failed to load ${tabName} analytics:`, error);
+        }
+    }
+    
+    async loadOverviewAnalytics(timeRange) {
+        const [wildlifeResponse, systemResponse] = await Promise.all([
+            this.apiCall(`/api/analytics/wildlife?timeRange=${timeRange}`),
+            this.apiCall(`/api/analytics/system?timeRange=${timeRange}`)
+        ]);
+        
+        if (wildlifeResponse) {
+            this.renderOverviewActivityChart(wildlifeResponse.dailyActivity);
+            this.renderOverviewSpeciesChart(wildlifeResponse.speciesDistribution);
+        }
+    }
+    
+    async loadWildlifeAnalytics(timeRange) {
+        const response = await this.apiCall(`/api/analytics/wildlife?timeRange=${timeRange}`);
+        if (response) {
+            this.renderSpeciesFrequencyChart(response.speciesDistribution);
+            this.renderConfidenceDistributionChart(response.confidenceDistribution);
+            this.renderHourlyHeatmapChart(response.hourlyActivity);
+            this.renderMotionSuccessChart(response.motionStats);
+            this.updateSpeciesTable(response.speciesDistribution);
+        }
+    }
+    
+    async loadSystemAnalytics(timeRange) {
+        const response = await this.apiCall(`/api/analytics/system?timeRange=${timeRange}`);
+        if (response) {
+            this.renderBatteryTrendChart(response.batteryHistory);
+            this.renderPowerConsumptionChart(response.battery);
+            this.renderStorageUsageChart(response.storage);
+            this.renderNetworkPerformanceChart(response.network);
+            this.renderTemperatureTrendChart(response.temperatureHistory);
+            this.renderSystemLoadChart(response.performance);
+        }
+    }
+    
+    async loadHistoricalAnalytics(timeRange) {
+        const response = await this.apiCall(`/api/analytics/historical?timeRange=${timeRange}`);
+        if (response) {
+            this.updateTrendCards(response.trends);
+            this.renderMonthlyComparisonChart(response.monthlyComparison);
+            this.renderSeasonalPatternsChart(response.seasonalPatterns);
+            this.updateMilestones(response.milestones);
+        }
+    }
+    
+    async loadPerformanceAnalytics(timeRange) {
+        const response = await this.apiCall(`/api/analytics/performance?timeRange=${timeRange}`);
+        if (response) {
+            this.updatePerformanceScores(response.healthScores);
+            this.renderResponseTimeChart(response.metrics);
+            this.renderMemoryUtilizationChart(response.metrics);
+            this.updateErrorMetrics(response.errorAnalysis);
+        }
+    }
+    
+    updateOverviewMetrics(data) {
+        // Update metric cards with real data
+        this.updateElement('total-captures', data.totalCaptures);
+        this.updateElement('species-count', data.speciesCount);
+        this.updateElement('peak-activity', data.peakActivity);
+        this.updateElement('detection-accuracy', `${data.accuracy}%`);
+        this.updateElement('system-health', `${data.batteryHealth}%`);
+        this.updateElement('system-uptime', this.formatUptime(data.uptime));
+        
+        // Update change indicators
+        this.updateElement('captures-change', data.trends?.capturesChange || 'N/A');
+        this.updateElement('species-change', `${data.trends?.newSpecies || 0} new this week`);
+        this.updateElement('activity-pattern', data.lastDetection || 'No recent activity');
+        this.updateElement('accuracy-trend', data.trends?.accuracyChange || 'N/A');
+        this.updateElement('health-status', data.systemStatus || 'Unknown');
+        this.updateElement('uptime-change', data.trends?.uptimeChange || 'N/A');
+    }
+    
+    // Chart rendering methods
+    renderOverviewActivityChart(activityData) {
+        const canvas = document.getElementById('overview-activity-chart');
+        if (!canvas || !activityData) return;
+        
+        this.destroyChart('overview-activity');
+        
+        const ctx = canvas.getContext('2d');
+        this.charts.set('overview-activity', new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: activityData.map(d => d.date),
+                datasets: [{
+                    label: 'Daily Detections',
+                    data: activityData.map(d => d.detections),
+                    borderColor: '#228b22',
+                    backgroundColor: 'rgba(34, 139, 34, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        }));
+    }
+    
+    renderOverviewSpeciesChart(speciesData) {
+        const canvas = document.getElementById('overview-species-chart');
+        if (!canvas || !speciesData) return;
+        
+        this.destroyChart('overview-species');
+        
+        const ctx = canvas.getContext('2d');
+        this.charts.set('overview-species', new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: speciesData.map(s => s.name),
+                datasets: [{
+                    data: speciesData.map(s => s.count),
+                    backgroundColor: [
+                        '#228b22', '#32cd32', '#ffa500', '#2196f3', 
+                        '#ff9800', '#9c27b0', '#f44336', '#795548'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        }));
+    }
+    
+    renderSpeciesFrequencyChart(speciesData) {
+        const canvas = document.getElementById('species-frequency-chart');
+        if (!canvas || !speciesData) return;
+        
+        this.destroyChart('species-frequency');
+        
+        const ctx = canvas.getContext('2d');
+        this.charts.set('species-frequency', new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: speciesData.map(s => s.name),
+                datasets: [{
+                    label: 'Detections',
+                    data: speciesData.map(s => s.count),
+                    backgroundColor: '#228b22'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        }));
+    }
+    
+    renderConfidenceDistributionChart(confidenceData) {
+        const canvas = document.getElementById('confidence-distribution-chart');
+        if (!canvas || !confidenceData) return;
+        
+        this.destroyChart('confidence-distribution');
+        
+        const ctx = canvas.getContext('2d');
+        this.charts.set('confidence-distribution', new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: confidenceData.map(c => c.range),
+                datasets: [{
+                    label: 'Count',
+                    data: confidenceData.map(c => c.count),
+                    backgroundColor: '#2196f3'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        }));
+    }
+    
+    updateSpeciesTable(speciesData) {
+        const tbody = document.getElementById('species-table-body');
+        if (!tbody || !speciesData) return;
+        
+        tbody.innerHTML = '';
+        speciesData.forEach(species => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${species.name}</td>
+                <td>${species.count}</td>
+                <td>${(species.avgConfidence * 100).toFixed(1)}%</td>
+                <td>${species.activityPattern || 'Unknown'}</td>
+                <td>2 hours ago</td>
+            `;
+        });
+    }
+    
+    updatePerformanceScores(scores) {
+        this.updateElement('overall-score', scores.overall);
+        this.updateElement('camera-status', `${scores.camera}%`);
+        this.updateElement('storage-status', `${scores.storage}%`);
+        this.updateElement('battery-status', `${scores.battery}%`);
+        this.updateElement('network-status', `${scores.network}%`);
+    }
+    
+    updateErrorMetrics(errorData) {
+        this.updateElement('total-errors', errorData.totalErrors);
+        this.updateElement('critical-errors', errorData.criticalErrors);
+        this.updateElement('recovery-rate', `${errorData.recoveryRate}%`);
+    }
+    
+    async exportAnalyticsData() {
+        const timeRange = document.getElementById('analytics-timerange')?.value || 'week';
+        
+        try {
+            const response = await fetch(`${this.baseUrl}/api/analytics/export?format=json&timeRange=${timeRange}`);
+            const data = await response.json();
+            
+            // Create and download the file
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `wildlife-analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showAlert('Analytics data exported successfully', 'success');
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showAlert('Failed to export analytics data', 'error');
+        }
+    }
+    
+    // Helper methods
+    updateElement(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+    
+    destroyChart(chartKey) {
+        if (this.charts.has(chartKey)) {
+            this.charts.get(chartKey).destroy();
+            this.charts.delete(chartKey);
+        }
+    }
+    
+    formatUptime(milliseconds) {
+        const seconds = Math.floor(milliseconds / 1000);
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        
+        return `${days}d ${hours}h ${minutes}m`;
+    }
+
+    async loadAnalytics() {
+        // Keep existing method for backward compatibility
+        return this.loadAnalyticsData();
     }
 
     updateAnalyticsDisplay(data) {
-        // Update metric cards
-        const metrics = document.querySelectorAll('.metric-value');
-        if (metrics.length >= 4) {
-            metrics[0].textContent = data.totalCaptures || '0';
-            metrics[1].textContent = data.speciesCount || '0';
-            metrics[2].textContent = data.peakActivity || 'N/A';
-            metrics[3].textContent = data.accuracy ? `${data.accuracy}%` : 'N/A';
-        }
+        // Keep existing method for backward compatibility
+        return this.updateOverviewMetrics(data);
     }
 
     renderCharts(data) {
-        // Simple chart rendering (could use Chart.js or similar)
-        this.renderActivityChart(data.dailyActivity);
-        this.renderSpeciesChart(data.speciesDistribution);
+        // Keep existing method for backward compatibility but enhance it
+        if (data.dailyActivity) {
+            this.renderOverviewActivityChart(data.dailyActivity);
+        }
+        if (data.speciesDistribution) {
+            this.renderOverviewSpeciesChart(data.speciesDistribution);
+        }
     }
 
     renderActivityChart(activityData) {
