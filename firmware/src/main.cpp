@@ -134,6 +134,9 @@ private:
     AcousticDetection audioSystem;
     std::unique_ptr<CameraBoard> detectedBoard;
     
+    // Language support
+    WebLanguageIntegration* webLanguageIntegration;
+    
     // Meshtastic subsystems
     LoRaDriver* loraDriver;
     MeshInterface* meshInterface;
@@ -248,7 +251,7 @@ void loop() {
  * SystemManager Constructor
  */
 SystemManager::SystemManager() 
-    : sdCardInitialized(false), loraInitialized(false), audioInitialized(false), 
+    : webLanguageIntegration(nullptr), sdCardInitialized(false), loraInitialized(false), audioInitialized(false), 
       lastMotionTime(0), bootTime(0), dailyTriggerCount(0), lastStatusCheck(0)
 #ifdef ESP32_AI_ENABLED
     , aiSystemInitialized(false), lastAIAnalysis(0)
@@ -352,6 +355,23 @@ bool SystemManager::init() {
         }
         DEBUG_TIMER_END("wifi_init");
     }
+    
+    // Initialize language manager for multi-language support
+    DEBUG_TIMER_START("language_init");
+    if (!g_languageManager.begin(LanguageCode::EN)) {
+        DEBUG_SYSTEM_WARN("Warning: Language manager initialization failed");
+        // Not critical - system can continue with default language
+    } else {
+        DEBUG_SYSTEM_INFO("Language manager initialized - Current language: %s", 
+                         g_languageManager.getLanguageString().c_str());
+        
+        // Initialize web language integration
+        webLanguageIntegration = new WebLanguageIntegration(g_languageManager);
+        if (webLanguageIntegration) {
+            DEBUG_SYSTEM_INFO("Web language integration initialized");
+        }
+    }
+    DEBUG_TIMER_END("language_init");
     
     // Initialize LoRa mesh networking if enabled
     if (LORA_ENABLED) {
@@ -691,6 +711,12 @@ void SystemManager::cleanup() {
     motionFilter.cleanup();
     powerManager.cleanup();
     wifiManager.cleanup();
+    
+    if (webLanguageIntegration) {
+        DEBUG_SYSTEM_DEBUG("Cleaning up web language integration");
+        delete webLanguageIntegration;
+        webLanguageIntegration = nullptr;
+    }
     
     if (audioInitialized) {
         DEBUG_SYSTEM_DEBUG("Cleaning up audio system");
