@@ -24,7 +24,8 @@ EnhancedWebServer::EnhancedWebServer() :
     running_(false),
     lastSystemUpdate_(0),
     lastHeartbeat_(0),
-    streamManager_(nullptr) {
+    streamManager_(nullptr),
+    languageIntegration_(nullptr) {
 }
 
 EnhancedWebServer::~EnhancedWebServer() {
@@ -274,6 +275,12 @@ void EnhancedWebServer::setupAPIEndpoints() {
     server_.on("/api/analytics/performance", HTTP_GET, [this](AsyncWebServerRequest* request) {
         this->handleAPIAnalyticsPerformance(request);
     });
+    
+    // Setup language API endpoints if language integration is available
+    if (languageIntegration_) {
+        languageIntegration_->setupAPIEndpoints(server_);
+        ESP_LOGI(TAG, "Language API endpoints configured");
+    }
     
     ESP_LOGI(TAG, "API endpoints configured");
 }

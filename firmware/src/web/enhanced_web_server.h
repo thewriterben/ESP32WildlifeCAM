@@ -26,6 +26,8 @@
 #include "../../src/data/storage_manager.h"
 #include "../../src/ai/wildlife_classifier.h"
 #include "../../src/streaming/stream_manager.h"
+#include "../i18n/language_manager.h"
+#include "web_language_integration.h"
 
 /**
  * WebSocket message types for real-time updates
@@ -123,6 +125,10 @@ public:
     void setStreamManager(StreamManager* streamManager) { streamManager_ = streamManager; }
     StreamManager* getStreamManager() { return streamManager_; }
     
+    // Language integration
+    void setLanguageIntegration(WebLanguageIntegration* languageIntegration) { languageIntegration_ = languageIntegration; }
+    WebLanguageIntegration* getLanguageIntegration() { return languageIntegration_; }
+    
     // Real-time updates
     void broadcastSystemStatus();
     void broadcastWildlifeDetection(const String& species, float confidence, const String& imagePath);
@@ -164,6 +170,7 @@ private:
     
     // External components
     StreamManager* streamManager_;
+    WebLanguageIntegration* languageIntegration_;
     
     // Timing
     unsigned long lastSystemUpdate_;
