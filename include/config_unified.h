@@ -536,7 +536,7 @@
 // FIRMWARE INFORMATION
 // ===========================
 
-#define FIRMWARE_VERSION "1.1.0"         // Firmware version string (updated for multi-board support)
+#define FIRMWARE_VERSION "2.5.0"         // Firmware version string (aligned with project version)
 #define HARDWARE_VERSION "1.0"           // Hardware version string
 #define BUILD_DATE __DATE__               // Build date (automatically set)
 #define BUILD_TIME __TIME__               // Build time (automatically set)

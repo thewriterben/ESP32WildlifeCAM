@@ -36,13 +36,13 @@
 #define PIR_POWER_PIN     17  // PIR sensor power control (moved from GPIO 12 to avoid SD conflict)
 
 // ===========================
-// POWER MANAGEMENT PINS
+// POWER MANAGEMENT PINS - UPDATED TO AVOID CONFLICTS
 // ===========================
-#define BATTERY_VOLTAGE_PIN    33  // Battery voltage monitoring (ADC1_CH5)
+#define BATTERY_VOLTAGE_PIN    34  // Battery voltage monitoring (shared with camera Y8, input-only)
 #define SOLAR_VOLTAGE_PIN      32  // Solar panel voltage monitoring (shared with camera PWDN)
 #define CHARGING_CONTROL_PIN   14  // Charging control pin (shared with SD_CLK - use conditionally)
-#define POWER_LED_PIN          2   // Power status LED (shared with SD_D0 - use conditionally)
-#define CHARGING_LED_PIN       15  // Charging status LED (shared with SD_CMD - use conditionally)
+#define POWER_LED_PIN          4   // Power status LED (built-in LED, shared with SD_D1)
+#define CHARGING_LED_PIN       2   // Charging status LED (moved from GPIO 15 to avoid SD conflict)
 
 // ===========================
 // STORAGE PINS
@@ -71,9 +71,9 @@
 #define BME280_ADDRESS    0x76 // BME280 I2C address
 
 // ===========================
-// NIGHT VISION PINS
+// NIGHT VISION PINS - DISABLED DUE TO PIN CONFLICTS
 // ===========================
-#define IR_LED_PIN        16  // IR LED control pin (shared with LORA_CS when LoRa disabled)
+// #define IR_LED_PIN        16  // DISABLED - conflicts with LoRa CS and servo pins
 #define LIGHT_SENSOR_PIN  33  // Light sensor ADC pin (shared with battery monitoring)
 
 // ===========================
@@ -91,16 +91,17 @@
 #define LORA_DIO0_PIN     26  // LoRa DIO0 interrupt
 
 // ===========================
-// SERVO CONTROL PINS
+// SERVO CONTROL PINS - DISABLED DUE TO PIN CONFLICTS
 // ===========================
-#define PAN_SERVO_PIN     16  // Pan servo control pin (SPARE_GPIO_1)
-#define TILT_SERVO_PIN    17  // Tilt servo control pin (SPARE_GPIO_2)
+// Servo functionality disabled due to insufficient GPIO pins on AI-Thinker ESP32-CAM
+// #define PAN_SERVO_PIN     16  // DISABLED - conflicts with LoRa CS and IR LED
+// #define TILT_SERVO_PIN    17  // DISABLED - conflicts with LoRa RST and PIR power
 
 // ===========================
-// SPARE/MULTIPURPOSE PINS
+// SPARE/MULTIPURPOSE PINS - AVAILABLE FOR LORA WHEN ENABLED
 // ===========================
-#define SPARE_GPIO_1      16  // Spare GPIO for expansion (now used for pan servo)
-#define SPARE_GPIO_2      17  // Spare GPIO for expansion (now used for tilt servo)
+#define SPARE_GPIO_1      16  // Available for LoRa CS when LoRa enabled
+#define SPARE_GPIO_2      17  // Available for LoRa RST when LoRa enabled
 
 // ===========================
 // PIN USAGE NOTES AND SHARING STRATEGY
@@ -128,7 +129,7 @@ CAMERA PINS (Fixed by hardware, highest priority):
 SHARED PINS STRATEGY:
 - GPIO 1: PIR_PIN (primary) / UART_TX (debug only, OK to share)
 - GPIO 32: PWDN_GPIO_NUM (camera) / SOLAR_VOLTAGE_PIN (ADC input, compatible)
-- GPIO 33: BATTERY_VOLTAGE_PIN / LIGHT_SENSOR_PIN (both ADC inputs, can be read sequentially)
+- GPIO 34: Y8_GPIO_NUM (camera) / BATTERY_VOLTAGE_PIN (both input-only, compatible)
 - GPIO 26: SIOD_GPIO_NUM (camera I2C) / BME280_SDA_PIN (same I2C bus, compatible)
 - GPIO 27: SIOC_GPIO_NUM (camera I2C) / BME280_SCL_PIN (same I2C bus, compatible)
 
