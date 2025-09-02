@@ -1,7 +1,9 @@
 # Software Implementation Guides
 
-*Last Updated: September 1, 2025*  
+*Last Updated: September 2, 2025*  
 *Purpose: Comprehensive guides for firmware development and implementation*
+
+**📌 Navigation**: [🏠 Main README](../../README.md) | [📚 Documentation Index](../README.md) | [🚀 Quick Start](../../QUICK_START.md) | [🤝 Contributing](../../CONTRIBUTING.md)
 
 ## Overview
 

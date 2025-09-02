@@ -1,5 +1,7 @@
 # STL Files Directory
 
+**📌 Navigation**: [🏠 Main README](../README.md) | [📚 Documentation Index](../docs/README.md) | [🚀 Quick Start](../QUICK_START.md) | [🤝 Contributing](../CONTRIBUTING.md)
+
 This directory contains template STL files for 3D printing wildlife camera enclosures and components. These files serve as foundational templates that can be customized for specific deployment needs.
 
 ## Directory Structure
