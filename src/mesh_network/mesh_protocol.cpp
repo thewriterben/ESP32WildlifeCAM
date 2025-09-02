@@ -190,6 +190,34 @@ bool MeshProtocol::sendDetectionAlert(const char* species_detected, float confid
     return sendMessage(alert_msg);
 }
 
+bool MeshProtocol::sendWildlifeDetection(const WildlifeDetectionData& detection_data, uint8_t priority) {
+    MeshMessage detection_msg;
+    detection_msg.message_id = next_message_id_++;
+    detection_msg.sender_id = config_.node_id;
+    detection_msg.receiver_id = 0;  // Broadcast to all nodes
+    detection_msg.type = MessageType::WILDLIFE_DETECTION;
+    detection_msg.timestamp = getTimestamp();
+    detection_msg.priority = priority;
+    detection_msg.hop_count = 0;
+    detection_msg.max_hops = config_.max_hop_count;
+    detection_msg.requires_ack = false;  // Broadcast doesn't require ACK
+    
+    // Serialize wildlife detection data as binary payload
+    detection_msg.payload.resize(sizeof(WildlifeDetectionData));
+    memcpy(detection_msg.payload.data(), &detection_data, sizeof(WildlifeDetectionData));
+    detection_msg.payload_size = detection_msg.payload.size();
+    
+    bool success = sendMessage(detection_msg);
+    
+    if (success) {
+        // Update statistics for wildlife detection messages
+        stats_.messages_sent++;
+        stats_.bytes_sent += detection_msg.payload_size;
+    }
+    
+    return success;
+}
+
 std::vector<NodeInfo> MeshProtocol::getDiscoveredNodes() const {
     return discovered_nodes_;
 }

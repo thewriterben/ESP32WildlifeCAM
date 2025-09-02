@@ -93,12 +93,30 @@ Supported wildlife species:
 
 ## Integration with Existing AI System
 
-This foundational framework integrates with the comprehensive AI system in `firmware/src/ai/`:
+This foundational framework integrates with the comprehensive AI system in `firmware/src/ai/` and provides seamless integration with mesh networking and edge processing:
 
 ### Upgrade Path
 1. **Start with foundational** - Simple motion + basic classification
-2. **Add advanced features** - TensorFlow Lite models via interface
+2. **Add advanced features** - TensorFlow Lite models via interface  
 3. **Full integration** - Species confidence boost, behavior analysis
+
+### Mesh networking Integration
+
+The AI detection system seamlessly integrates with mesh networking for multi-device deployments:
+
+- **Detection Event Broadcasting**: High-confidence detections are automatically broadcast to other nodes in the mesh networking system
+- **Coordinated Monitoring**: Multiple devices can coordinate wildlife monitoring activities via mesh networking
+- **Data Synchronization**: Detection results and analytics are shared across the mesh networking infrastructure
+- **Load Balancing**: AI processing can be distributed across multiple nodes in the mesh networking topology
+
+### Edge processing Capabilities
+
+The system is designed for complete edge processing without cloud connectivity:
+
+- **Local AI Processing**: All species identification and behavior analysis runs locally on the ESP32 via edge processing
+- **Offline Operation**: Functions completely without internet connectivity using edge processing techniques
+- **Progressive Inference**: Smart edge processing that adapts to available power and computational resources
+- **Local Data Storage**: Detection results and images stored locally with mesh synchronization and edge processing optimization
 
 ### Compatibility Matrix
 | Feature | Foundational | Advanced | Notes |
