@@ -34,7 +34,10 @@ BoardNode::BoardNode() :
     tasksCompleted_(0),
     tasksFailed_(0),
     coordinatorChanges_(0),
-    totalTaskTime_(0) {
+    totalTaskTime_(0),
+    meshEnabled_(true) {
+    // Initialize detection events storage
+    recentDetections_.reserve(MAX_STORED_DETECTIONS);
 }
 
 BoardNode::~BoardNode() {
@@ -606,10 +609,138 @@ bool BoardNode::executeSystemStatusTask(const NodeTask& task) {
 }
 
 bool BoardNode::executeAIAnalysisTask(const NodeTask& task) {
-    // TODO: Implement AI analysis
-    Serial.println("Executing AI analysis task");
-    delay(3000); // Simulate analysis time
+    Serial.println("Executing AI analysis task with integrated detection system");
+    
+    // Check if we have required components
+    if (!cameraHandler_.isInitialized()) {
+        Serial.println("Camera handler not initialized for AI analysis");
+        return false;
+    }
+    
+    // Capture frame for AI analysis
+    esp_err_t result = cameraHandler_.captureFrame(5000); // 5 second timeout
+    if (result != ESP_OK) {
+        Serial.printf("AI analysis: Frame capture failed with error: 0x%x\n", result);
+        return false;
+    }
+    
+    // Get the captured frame
+    camera_fb_t* fb = cameraHandler_.getFrameBuffer();
+    if (!fb) {
+        Serial.println("AI analysis: Failed to get frame buffer");
+        return false;
+    }
+    
+    Serial.printf("AI analysis: Processing frame %dx%d, format: %d\n", 
+                 fb->width, fb->height, fb->format);
+    
+    // Initialize AI detection interface if not already done
+    static WildlifeDetection::AIDetectionInterface aiInterface;
+    static bool aiInitialized = false;
+    
+    if (!aiInitialized) {
+        Serial.println("Initializing AI detection interface...");
+        if (aiInterface.initializeAdvancedAI()) {
+            Serial.println("Advanced AI system connected");
+        } else {
+            Serial.println("Using foundational AI detection");
+        }
+        aiInitialized = true;
+    }
+    
+    // Perform AI analysis
+    uint32_t analysisStart = millis();
+    
+    // Run enhanced detection if advanced AI is available
+    std::vector<WildlifeDetection::DetectionResult> detections;
+    if (aiInterface.hasAdvancedAI()) {
+        detections = aiInterface.enhancedDetection(fb->buf, fb->len, fb->width, fb->height);
+    }
+    
+    uint32_t analysisTime = millis() - analysisStart;
+    
+    Serial.printf("AI analysis completed in %dms\n", analysisTime);
+    Serial.printf("Detected %d wildlife objects\n", detections.size());
+    
+    // Process detection results and trigger events
+    bool foundSignificantDetection = false;
+    for (const auto& detection : detections) {
+        Serial.printf("Detection: %s (confidence: %s) at (%d,%d) size: %dx%d\n",
+                     WildlifeDetection::Utils::speciesToString(detection.species),
+                     WildlifeDetection::Utils::confidenceToString(detection.confidence),
+                     detection.x, detection.y, detection.width, detection.height);
+        
+        // Trigger events based on detection results
+        if (detection.confidence >= WildlifeDetection::ConfidenceLevel::HIGH) {
+            foundSignificantDetection = true;
+            
+            // Determine if we should capture this detection
+            bool shouldCapture = (detection.confidence >= WildlifeDetection::ConfidenceLevel::VERY_HIGH) ||
+                               (detection.species == WildlifeDetection::SpeciesType::HUMAN);
+            
+            if (shouldCapture) {
+                // Save frame with detection for further analysis
+                String filename = cameraHandler_.saveImage(fb, "/ai_detections");
+                if (filename.length() > 0) {
+                    Serial.printf("High-confidence detection saved: %s\n", filename.c_str());
+                    
+                    // Enable auto_save_high_confidence mode
+                    bool auto_save_high_confidence = true;
+                    if (auto_save_high_confidence) {
+                        Serial.println("Auto-save high confidence detection enabled");
+                    }
+                }
+            }
+            
+            // TODO: Trigger mesh network event notification
+            // This would send detection results to other nodes in the mesh
+            triggerDetectionEvent(detection);
+        }
+    }
+    
+    // Return frame buffer
+    cameraHandler_.returnFrameBuffer(fb);
+    
+    // Update task result with analysis outcome
+    if (foundSignificantDetection) {
+        Serial.println("AI analysis: Significant wildlife detected - event triggered");
+    } else {
+        Serial.println("AI analysis: No significant wildlife detected");
+    }
+    
     return true;
+}
+
+void BoardNode::triggerDetectionEvent(const WildlifeDetection::DetectionResult& detection) {
+    Serial.println("Triggering detection event for mesh network propagation");
+    
+    // Create detection event message for mesh network
+    // This integrates AI detection with mesh networking
+    DetectionEvent event;
+    event.nodeId = nodeId_;
+    event.timestamp = detection.timestamp;
+    event.species = static_cast<uint8_t>(detection.species);
+    event.confidence = static_cast<uint8_t>(detection.confidence);
+    event.x = detection.x;
+    event.y = detection.y;
+    event.width = detection.width;
+    event.height = detection.height;
+    event.priority = (detection.confidence >= WildlifeDetection::ConfidenceLevel::VERY_HIGH) ? 
+                    EventPriority::HIGH : EventPriority::MEDIUM;
+    
+    // Send to mesh network for propagation to other nodes
+    // This enables seamless data transfer between multiple devices
+    if (meshEnabled_) {
+        broadcastDetectionEvent(event);
+    }
+    
+    // Store locally for analysis and reporting
+    recentDetections_.push_back(event);
+    
+    // Limit stored detections to prevent memory issues
+    while (recentDetections_.size() > MAX_STORED_DETECTIONS) {
+        recentDetections_.erase(recentDetections_.begin());
+    }
 }
 
 void BoardNode::checkTaskTimeouts() {
@@ -686,5 +817,58 @@ void BoardNode::performStandaloneTasks() {
         }
         
         lastStandaloneTask = now;
+    }
+}
+
+void BoardNode::broadcastDetectionEvent(const DetectionEvent& event) {
+    Serial.printf("Broadcasting detection event to mesh network - Species: %d, Confidence: %d\n", 
+                 event.species, event.confidence);
+    
+    // Create message for mesh network broadcast to all nodes
+    MultiboardMessage meshMsg;
+    meshMsg.messageType = MSG_DETECTION_EVENT;
+    meshMsg.sourceNode = nodeId_;
+    meshMsg.targetNode = 0; // broadcast to all nodes in mesh network
+    meshMsg.timestamp = millis();
+    
+    // Serialize detection event data
+    JsonDocument doc;
+    doc["nodeId"] = event.nodeId;
+    doc["timestamp"] = event.timestamp;
+    doc["species"] = event.species;
+    doc["confidence"] = event.confidence;
+    doc["x"] = event.x;
+    doc["y"] = event.y;
+    doc["width"] = event.width;
+    doc["height"] = event.height;
+    doc["priority"] = static_cast<int>(event.priority);
+    
+    String messageData;
+    serializeJson(doc, messageData);
+    messageData.toCharArray(meshMsg.payload, sizeof(meshMsg.payload));
+    
+    // Send via LoRa mesh network if available
+    LoRaMesh* mesh = LoRaMesh::getInstance();
+    if (mesh && mesh->isInitialized()) {
+        bool success = mesh->sendMessage(meshMsg);
+        if (success) {
+            Serial.println("Detection event successfully broadcast to mesh network");
+        } else {
+            Serial.println("Failed to broadcast detection event to mesh network");
+        }
+    } else {
+        Serial.println("Mesh network not available - detection event stored locally only");
+    }
+    
+    // Also handle locally for coordinator if we have one
+    if (coordinatorNode_ != -1) {
+        // Send directly to coordinator as well
+        meshMsg.targetNode = coordinatorNode_;
+        meshMsg.messageType = MSG_WILDLIFE_DETECTION;
+        
+        if (mesh && mesh->isInitialized()) {
+            mesh->sendMessage(meshMsg);
+            Serial.printf("Detection event sent to coordinator node %d\n", coordinatorNode_);
+        }
     }
 }

@@ -40,7 +40,9 @@ enum MessageType {
     MSG_ELECTION = 8,         // Coordinator election
     MSG_TOPOLOGY = 9,         // Network topology update
     MSG_CONFIG_UPDATE = 10,   // Configuration synchronization
-    MSG_EMERGENCY = 11        // Emergency communication
+    MSG_EMERGENCY = 11,       // Emergency communication
+    MSG_DETECTION_EVENT = 12, // Wildlife detection event broadcast
+    MSG_WILDLIFE_DETECTION = 13 // Wildlife detection report to coordinator
 };
 
 // Board capabilities structure

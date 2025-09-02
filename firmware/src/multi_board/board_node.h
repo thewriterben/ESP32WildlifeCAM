@@ -16,6 +16,7 @@
 #include "../camera_handler.h"
 #include "../../src/camera/camera_manager.h"
 #include "../../src/detection/motion_detection_manager.h"
+#include "../../src/ai_detection/ai_detection_interface.h"
 
 // Node states
 enum NodeState {
@@ -34,6 +35,24 @@ enum TaskStatus {
     TASK_COMPLETED = 2,
     TASK_FAILED = 3,
     TASK_TIMEOUT = 4
+};
+
+// Event priority levels
+enum EventPriority {
+    LOW = 0,
+    MEDIUM = 1,
+    HIGH = 2,
+    CRITICAL = 3
+};
+
+// Detection event structure for mesh network propagation
+struct DetectionEvent {
+    uint8_t nodeId;
+    uint32_t timestamp;
+    uint8_t species;
+    uint8_t confidence;
+    uint16_t x, y, width, height;
+    EventPriority priority;
 };
 
 // Node task execution structure
@@ -183,6 +202,16 @@ public:
      */
     void seekCoordinator();
     
+    /**
+     * Trigger detection event for mesh network propagation
+     */
+    void triggerDetectionEvent(const WildlifeDetection::DetectionResult& detection);
+    
+    /**
+     * Broadcast detection event to mesh network
+     */
+    void broadcastDetectionEvent(const DetectionEvent& event);
+
 private:
     // Core state
     int nodeId_;
@@ -221,6 +250,11 @@ private:
     int tasksFailed_;
     int coordinatorChanges_;
     unsigned long totalTaskTime_;
+    
+    // AI Detection and Mesh Networking
+    std::vector<DetectionEvent> recentDetections_;
+    bool meshEnabled_;
+    static const size_t MAX_STORED_DETECTIONS = 50;
     
     // Internal methods
     void processSeekingCoordinator();

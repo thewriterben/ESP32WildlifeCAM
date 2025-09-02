@@ -38,6 +38,7 @@ enum class MessageType {
     HEARTBEAT = 0,
     IMAGE_DATA,
     DETECTION_ALERT,
+    WILDLIFE_DETECTION,   // Wildlife detection results
     STATUS_UPDATE,
     CONFIGURATION,
     MAINTENANCE,
@@ -86,6 +87,23 @@ struct NodeInfo {
     char node_name[32];
     float battery_level;     // 0.0-1.0
     uint32_t uptime_seconds;
+    bool supports_ai;        // Node has AI detection capabilities
+};
+
+/**
+ * @brief Wildlife detection data for mesh transmission
+ */
+struct WildlifeDetectionData {
+    uint32_t detection_id;
+    uint32_t source_node_id;
+    uint32_t timestamp;
+    uint8_t species_type;    // From SpeciesType enum
+    uint8_t confidence_level; // From ConfidenceLevel enum
+    uint16_t detection_x, detection_y;
+    uint16_t detection_width, detection_height;
+    float size_estimate;
+    uint8_t priority;        // Detection priority (0-3)
+    bool has_image_data;     // Whether associated image is available
 };
 
 /**
@@ -103,6 +121,11 @@ struct MeshConfig {
     bool encryption_enabled = true;
     char mesh_password[64] = "WildlifeCam2025";
     char node_name[32] = "WildlifeCam";
+    
+    // Edge processing configuration
+    bool prefer_local_processing = true;     // Process locally when possible
+    bool enable_offline_operation = true;   // Function without internet
+    uint32_t offline_storage_limit_mb = 100; // offline_storage limit in MB
 };
 
 /**
@@ -168,6 +191,14 @@ public:
      */
     bool sendDetectionAlert(const char* species_detected, float confidence,
                            const uint8_t* image_data = nullptr, size_t image_size = 0);
+
+    /**
+     * @brief Send wildlife detection data to mesh network
+     * @param detection_data Wildlife detection information
+     * @param priority Message priority (0-7, higher = more urgent)
+     * @return true if detection data sent successfully
+     */
+    bool sendWildlifeDetection(const WildlifeDetectionData& detection_data, uint8_t priority = 5);
 
     /**
      * @brief Get current network status
