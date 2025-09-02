@@ -43,11 +43,14 @@ ESP32WildlifeCAM is a production-ready, open-source wildlife monitoring platform
 
 ## 📋 Planning & Development
 
-**🔗 COMPREHENSIVE DOCUMENTATION**: The project features extensive planning and implementation guides:
+**🔗 ESSENTIAL PROJECT NAVIGATION**: Navigate the project efficiently with these key documents:
 
-- **[UNIFIED_DEVELOPMENT_PLAN.md](UNIFIED_DEVELOPMENT_PLAN.md)** - Master development roadmap
-- **[PROJECT_ROADMAP.md](PROJECT_ROADMAP.md)** - Long-term project vision and milestones
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Completed features and validation
+- **[📚 Documentation Index](docs/README.md)** - Master index to all 170+ documentation files
+- **[🚀 Quick Start Guide](QUICK_START.md)** - Get running in 30 minutes
+- **[🗺️ Project Roadmap](ROADMAP.md)** - Consolidated development roadmap (2025-2026)
+- **[📍 Project Status](PROJECT_STATUS.md)** - Current implementation status (90% Phase 1 complete)
+- **[🤝 Contributing Guide](CONTRIBUTING.md)** - How to contribute to the project
+- **[📋 Change Log](CHANGELOG.md)** - Version history and release notes
 - **[TECHNICAL_SPECIFICATION.md](TECHNICAL_SPECIFICATION.md)** - Detailed technical requirements
 
 ### Implementation Status
@@ -234,6 +237,12 @@ ESP32WildlifeCAM/
 
 We welcome contributions from developers, researchers, and wildlife enthusiasts! This project has active community involvement with multiple areas for contribution.
 
+### 🎯 Getting Started
+- **[Contributing Guide](CONTRIBUTING.md)** - Complete contributor onboarding and guidelines
+- **[Quick Start Guide](QUICK_START.md)** - Get familiar with the project in 30 minutes
+- **[Documentation Index](docs/README.md)** - Navigate all project documentation
+- **[Project Status](PROJECT_STATUS.md)** - Understand current implementation status
+
 ### 🎯 Contribution Areas
 
 **Software Development**
@@ -277,10 +286,10 @@ python3 scripts/validate_component.py [component] --simulation
 ```
 
 ### Getting Started
-- **New to the project?** Start with `docs/development/CONTRIBUTING.md`
-- **Hardware focus?** See `docs/hardware/board_compatibility.md`  
-- **AI/ML interest?** Check `docs/ai/ai_architecture.md`
-- **Field deployment?** Review `docs/deployment/DEPLOYMENT_CHECKLIST.md`
+- **New to the project?** Start with [Quick Start Guide](QUICK_START.md) and [Contributing Guide](CONTRIBUTING.md)
+- **Hardware focus?** See [Documentation Index](docs/README.md) → Hardware section
+- **AI/ML interest?** Check [Documentation Index](docs/README.md) → AI & Advanced Features  
+- **Field deployment?** Review [Documentation Index](docs/README.md) → Deployment & Field Operations
 
 ## 📚 Documentation
 
@@ -487,6 +496,9 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ---
 
-*Happy Wildlife Monitoring! 🦊🦝🦌*
-
 **"Connecting technology with conservation, one camera at a time."**
+
+**🔗 Quick Navigation**: 
+[📚 Documentation Index](docs/README.md) | [🚀 Quick Start](QUICK_START.md) | [🤝 Contributing](CONTRIBUTING.md) | [🗺️ Roadmap](ROADMAP.md) | [📍 Project Status](PROJECT_STATUS.md) | [📋 Changelog](CHANGELOG.md)
+
+*Happy Wildlife Monitoring! 🦊🦝🦌*

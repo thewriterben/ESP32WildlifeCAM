@@ -1,6 +1,6 @@
 # ESP32WildlifeCAM Source Code Structure
 
-**📌 For complete project documentation, see the main [README.md](../README.md)**
+**📌 Project Navigation**: [🏠 Main README](../README.md) | [📚 Documentation Index](../docs/README.md) | [🚀 Quick Start](../QUICK_START.md) | [🤝 Contributing](../CONTRIBUTING.md)
 
 This directory contains the complete implementation of the ESP32 Wildlife Camera system with AI-powered species detection, power management, and intelligent data collection.
 
