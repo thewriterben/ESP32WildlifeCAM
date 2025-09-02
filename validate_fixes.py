@@ -123,14 +123,18 @@ def check_gpio_pin_conflicts():
                         32: {"PWDN_GPIO_NUM", "SOLAR_VOLTAGE_PIN"},
                         # GPIO 33: Battery voltage and light sensor can share (both ADC inputs)
                         33: {"BATTERY_VOLTAGE_PIN", "LIGHT_SENSOR_PIN"},
+                        # GPIO 34: Camera Y8 and Battery voltage monitoring can share (both input-only)
+                        34: {"Y8_GPIO_NUM", "BATTERY_VOLTAGE_PIN"},
                         # GPIO 26: Camera I2C and BME280 share the same I2C bus
                         26: {"SIOD_GPIO_NUM", "BME280_SDA_PIN", "LORA_DIO0_PIN"},
                         # GPIO 27: Camera I2C and BME280 share the same I2C bus  
                         27: {"SIOC_GPIO_NUM", "BME280_SCL_PIN"},
                         # SD card and power management pins are mutually exclusive by config
-                        2: {"SD_MISO_PIN", "POWER_LED_PIN"},
+                        2: {"SD_MISO_PIN", "POWER_LED_PIN", "CHARGING_LED_PIN"},
                         14: {"SD_CLK_PIN", "CHARGING_CONTROL_PIN"},
                         15: {"SD_MOSI_PIN", "CHARGING_LED_PIN"},
+                        # GPIO 4: Camera LED and Power LED (same function, different names)
+                        4: {"CAMERA_LED_PIN", "POWER_LED_PIN"},
                         # LoRa pins conflict with camera (LoRa disabled by design)
                         16: {"CHARGING_LED_PIN", "IR_LED_PIN", "LORA_CS_PIN"},
                         17: {"PIR_POWER_PIN", "LORA_RST_PIN"},

@@ -357,7 +357,7 @@ bool ModelAggregator::validateModelUpdate(const ModelUpdate& update) {
             return false;
         }
         
-        if (std::abs(weight) > config_.maxWeightValue) {
+        if (std::fabs(weight) > config_.maxWeightValue) {
             Logger::debug("[ModelAggregator] Update weight exceeds maximum");
             return false;
         }

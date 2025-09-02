@@ -3,7 +3,7 @@
  * @brief ESP32WildlifeCAM Main Entry Point
  * @author thewriterben
  * @date 2025-08-31
- * @version 0.1.0
+ * @version 2.5.0
  */
 
 #include <Arduino.h>
