@@ -15,6 +15,7 @@
 #include "../firmware/include/power/power_manager.h"
 #include "../src/detection/motion_coordinator.h"
 #include "../camera/camera_integration.h"
+#include "../storage/storage_manager.h"
 
 /**
  * @brief Main system manager class that coordinates all subsystems
@@ -57,6 +58,10 @@ public:
     camera_fb_t* captureImage();
     void releaseFrameBuffer(camera_fb_t* fb);
     
+    // Storage operations
+    String saveImage(camera_fb_t* fb, const String& filename = "");
+    bool getStorageStats(uint64_t& totalMB, uint64_t& usedMB, uint64_t& freeMB);
+    
     // Safe mode and error handling
     void enterSafeMode();
     const char* getLastError() const { return m_lastError; }
@@ -77,6 +82,9 @@ private:
     
     // Camera integration
     std::unique_ptr<CameraIntegration> m_camera;
+    
+    // Storage integration
+    std::unique_ptr<StorageManager> m_storage;
     
     // Enhanced motion detection
     std::unique_ptr<MotionCoordinator> m_motionCoordinator;

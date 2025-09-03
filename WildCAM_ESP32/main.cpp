@@ -216,11 +216,82 @@ void setup() {
 }
 
 void loop() {
-    // Main system loop
-    if (g_system) {
-        g_system->update();
+    if (!g_system) {
+        delay(1000);
+        return;
     }
     
-    // Yield to other tasks
-    yield();
+    // Update system manager
+    g_system->update();
+    
+    // Simple motion detection and capture logic
+    static unsigned long lastMotionCheck = 0;
+    static unsigned long lastCaptureTime = 0;
+    const unsigned long MOTION_CHECK_INTERVAL = 1000; // Check every second
+    const unsigned long MIN_CAPTURE_INTERVAL = 5000;  // Minimum 5 seconds between captures
+    
+    unsigned long now = millis();
+    
+    // Perform basic motion detection (this would be enhanced with actual PIR or camera-based detection)
+    if (now - lastMotionCheck > MOTION_CHECK_INTERVAL) {
+        lastMotionCheck = now;
+        
+        // For now, simulate motion detection every 30 seconds for testing
+        static unsigned long lastSimulatedMotion = 0;
+        if (now - lastSimulatedMotion > 30000) { // Every 30 seconds
+            lastSimulatedMotion = now;
+            
+            // Check if camera and storage are ready and enough time has passed
+            if (g_system->isCameraReady() && 
+                g_system->isStorageReady() && 
+                (now - lastCaptureTime > MIN_CAPTURE_INTERVAL)) {
+                
+                Logger::info("Simulated motion detected - capturing image...");
+                
+                // Capture image
+                camera_fb_t* fb = g_system->captureImage();
+                if (fb) {
+                    // Save image to storage
+                    String savedPath = g_system->saveImage(fb);
+                    if (!savedPath.isEmpty()) {
+                        Logger::info("Image captured and saved: %s", savedPath.c_str());
+                        lastCaptureTime = now;
+                        
+                        // Flash LED to indicate successful capture
+                        digitalWrite(LED_BUILTIN, HIGH);
+                        delay(100);
+                        digitalWrite(LED_BUILTIN, LOW);
+                    } else {
+                        Logger::error("Failed to save captured image");
+                    }
+                    
+                    // Release frame buffer
+                    g_system->releaseFrameBuffer(fb);
+                } else {
+                    Logger::error("Failed to capture image");
+                }
+            }
+        }
+    }
+    
+    // Print system status periodically
+    static unsigned long lastStatusReport = 0;
+    if (now - lastStatusReport > 60000) { // Every minute
+        lastStatusReport = now;
+        
+        Logger::info("System Status - Uptime: %lu ms, Free Heap: %d bytes", 
+                    now, ESP.getFreeHeap());
+        
+        // Print storage statistics if available
+        if (g_system->isStorageReady()) {
+            uint64_t totalMB, usedMB, freeMB;
+            if (g_system->getStorageStats(totalMB, usedMB, freeMB)) {
+                Logger::info("Storage: %lluMB total, %lluMB used, %lluMB free", 
+                           totalMB, usedMB, freeMB);
+            }
+        }
+    }
+    
+    // Small delay to prevent excessive CPU usage
+    delay(100);
 }

@@ -35,6 +35,9 @@ SystemManager::SystemManager(BoardDetector::BoardType board)
     
     // Initialize camera integration
     m_camera = std::make_unique<CameraIntegration>();
+    
+    // Initialize storage manager
+    m_storage = std::make_unique<StorageManager>();
 }
 
 SystemManager::~SystemManager() {
@@ -182,49 +185,27 @@ bool SystemManager::initializeCamera() {
 bool SystemManager::initializeStorage() {
     Logger::info("Initializing storage...");
     
-    bool success = false;
-    
-    // Try SD card first
-    if (SD_MMC.begin()) {
-        uint8_t cardType = SD_MMC.cardType();
-        if (cardType != CARD_NONE) {
-            uint64_t cardSize = SD_MMC.cardSize() / (1024 * 1024);
-            Logger::info("SD Card initialized: %lluMB", cardSize);
-            
-            // Create required directories
-            SD_MMC.mkdir("/wildlife");
-            SD_MMC.mkdir("/wildlife/images");
-            SD_MMC.mkdir("/wildlife/logs");
-            
-            success = true;
-        } else {
-            Logger::warning("SD Card detected but not accessible");
-            SD_MMC.end();
-        }
-    } else {
-        Logger::warning("SD Card initialization failed");
+    if (!m_storage) {
+        Logger::error("Storage manager not initialized");
+        return false;
     }
     
-    // Initialize LittleFS as fallback
-    if (!LittleFS.begin()) {
-        Logger::warning("LittleFS mount failed, formatting...");
-        if (LittleFS.format()) {
-            if (LittleFS.begin()) {
-                Logger::info("LittleFS formatted and mounted as fallback storage");
-                success = true;
-            } else {
-                Logger::error("LittleFS mount failed after format");
-            }
-        } else {
-            Logger::error("LittleFS format failed");
-        }
-    } else {
-        Logger::info("LittleFS mounted successfully");
-        success = true;
+    // Initialize SD card storage
+    if (!m_storage->init()) {
+        Logger::warning("SD card initialization failed - continuing without storage");
+        return false;
     }
     
-    m_storageReady = success;
-    return success;
+    // Get storage statistics
+    uint64_t totalMB, usedMB, freeMB;
+    if (m_storage->getStorageStats(totalMB, usedMB, freeMB)) {
+        Logger::info("SD Card: %lluMB total, %lluMB used, %lluMB free", totalMB, usedMB, freeMB);
+    }
+    
+    m_storageReady = true;
+    Logger::info("Storage initialization complete");
+    
+    return true;
 }
 
 bool SystemManager::initializeSensors() {
@@ -935,4 +916,21 @@ void SystemManager::releaseFrameBuffer(camera_fb_t* fb) {
     if (m_camera) {
         m_camera->releaseFrameBuffer(fb);
     }
+}
+
+
+// Storage operation methods
+String SystemManager::saveImage(camera_fb_t* fb, const String& filename) {
+        Logger::error("Storage not ready for saving image");
+        return "";
+    }
+    
+    return m_storage->saveImage(fb, filename);
+}
+
+bool SystemManager::getStorageStats(uint64_t& totalMB, uint64_t& usedMB, uint64_t& freeMB) {
+        return false;
+    }
+    
+    return m_storage->getStorageStats(totalMB, usedMB, freeMB);
 }
