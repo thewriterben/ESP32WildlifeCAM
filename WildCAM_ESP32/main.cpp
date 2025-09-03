@@ -189,6 +189,23 @@ void setup() {
         
         // Enter comprehensive safe mode
         enterSafeMode();
+    } else {
+        Logger::info("=== System Initialized Successfully ===");
+        
+        // Test camera capture if available
+        if (g_system->isCameraReady()) {
+            Logger::info("Testing camera capture...");
+            camera_fb_t* test_fb = g_system->captureImage();
+            if (test_fb) {
+                Logger::info("Test capture successful: %dx%d, %d bytes", 
+                            test_fb->width, test_fb->height, test_fb->len);
+                g_system->releaseFrameBuffer(test_fb);
+            } else {
+                Logger::warning("Test capture failed, but system is running");
+            }
+        }
+        
+        Logger::info("System ready for operation");
     }
     
     Logger::info("System initialization complete!");

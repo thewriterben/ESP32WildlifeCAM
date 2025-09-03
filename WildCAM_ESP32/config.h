@@ -11,6 +11,11 @@
 // Include pin definitions
 #include "include/pins.h"
 
+// LED definitions
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 4  // GPIO 4 is the built-in LED on ESP32-CAM
+#endif
+
 // Version information
 #define VERSION "2.5.0"
 #define VERSION_MAJOR 2

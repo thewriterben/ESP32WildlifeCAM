@@ -14,6 +14,7 @@
 #include "../hardware/board_detector.h"
 #include "../firmware/include/power/power_manager.h"
 #include "../src/detection/motion_coordinator.h"
+#include "../camera/camera_integration.h"
 
 /**
  * @brief Main system manager class that coordinates all subsystems
@@ -52,6 +53,10 @@ public:
     bool isStorageReady() const { return m_storageReady; }
     bool isNetworkReady() const { return m_networkReady; }
     
+    // Camera operations
+    camera_fb_t* captureImage();
+    void releaseFrameBuffer(camera_fb_t* fb);
+    
     // Safe mode and error handling
     void enterSafeMode();
     const char* getLastError() const { return m_lastError; }
@@ -69,6 +74,9 @@ private:
     bool m_storageReady;
     bool m_networkReady;
     bool m_sensorsReady;
+    
+    // Camera integration
+    std::unique_ptr<CameraIntegration> m_camera;
     
     // Enhanced motion detection
     std::unique_ptr<MotionCoordinator> m_motionCoordinator;
