@@ -11,6 +11,7 @@
 #include "../src/detection/motion_coordinator.h"
 #include "../camera/camera_manager.h"
 #include <esp_system.h>
+#include <esp_camera.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
 #include <WiFi.h>
@@ -19,6 +20,9 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <time.h>
+
+// Global power manager instance
+PowerManager* g_powerManager = nullptr;
 
 SystemManager::SystemManager(BoardDetector::BoardType board) 
     : m_boardType(board), 
@@ -104,11 +108,7 @@ bool SystemManager::initialize() {
         return false;
     }
     
-    // Initialize enhanced motion detection
-    if (!initializeMotionDetection()) {
-        Logger::warning("Motion detection initialization failed - using basic PIR only");
-        // Continue with basic functionality
-    }
+    Logger::info("Basic motion detection will use PIR sensor if available");
     
     m_initialized = true;
     m_state = STATE_RUNNING;
@@ -300,36 +300,22 @@ bool SystemManager::initializeSensors() {
 bool SystemManager::initializePowerManagement() {
     Logger::info("Initializing power management...");
     
-    // Initialize the power management system
-    if (!::initializePowerManagement()) {
-        Logger::error("Failed to initialize power management system");
-        return false;
-    }
-    
-    // Configure power management settings
-    PowerConfig config;
-    config.batteryPin = m_pinConfig.battery_pin;
-    config.solarPin = 32; // GPIO 32 (shared with camera PWDN)
-    config.chargingIndicatorPin = 16; // GPIO 16
-    
-    // Initialize global power manager
+    // Initialize the global power manager (simplified)
     if (!g_powerManager) {
         g_powerManager = new PowerManager();
     }
     
-    if (!g_powerManager->initialize(config)) {
-        Logger::error("Failed to initialize power manager");
-        return false;
+    if (!g_powerManager->initialize()) {
+        Logger::warning("Power manager initialization failed - continuing with basic power monitoring");
+        // Continue without power management
+        return true; // Don't fail initialization
     }
     
     // Get initial power status
-    PowerMetrics metrics = g_powerManager->getPowerMetrics();
-    Logger::info("Battery voltage: %.2fV (%.1f%%)", metrics.batteryVoltage, metrics.batteryPercentage);
-    Logger::info("Solar voltage: %.2fV", metrics.solarVoltage);
-    Logger::info("Power status: %d", metrics.powerStatus);
-    
-    // Enable power saving features
-    g_powerManager->enablePowerSaving(true);
+    PowerManager::PowerStats stats = g_powerManager->getStatistics();
+    Logger::info("Battery voltage: %.2fV (%.1f%%)", stats.batteryVoltage, stats.batteryPercentage);
+    Logger::info("Solar voltage: %.2fV", stats.solarVoltage);
+    Logger::info("Power status: %s", stats.isCharging ? "Charging" : "Not Charging");
     
     Logger::info("Power management initialization complete");
     return true;
@@ -521,11 +507,7 @@ void SystemManager::performSystemHealthChecks() {
     if (!m_cameraReady && m_pinConfig.cam_xclk >= 0) {
         Logger::warning("Camera not ready despite configuration");
     }
-    
-    // Check power system health
-    if (g_powerManager && !g_powerManager->areMeasurementsValid()) {
-        Logger::warning("Power management measurements invalid");
-    }
+}
 }
 
 void SystemManager::updateSystemTelemetry() {
@@ -540,9 +522,9 @@ void SystemManager::updateSystemTelemetry() {
         Logger::info("  Free Heap: %d bytes", ESP.getFreeHeap());
         
         if (g_powerManager) {
-            PowerMetrics metrics = g_powerManager->getPowerMetrics();
-            Logger::info("  Battery: %.2fV (%.1f%%)", metrics.batteryVoltage, metrics.batteryPercentage);
-            Logger::info("  Solar: %.2fV (%s)", metrics.solarVoltage, metrics.isCharging ? "Charging" : "Not Charging");
+            PowerManager::PowerStats stats = g_powerManager->getStatistics();
+            Logger::info("  Battery: %.2fV (%.1f%%)", stats.batteryVoltage, stats.batteryPercentage);
+            Logger::info("  Solar: %.2fV (%s)", stats.solarVoltage, stats.isCharging ? "Charging" : "Not Charging");
         }
         
         Logger::info("  Components: Camera=%s, Storage=%s, Network=%s, Sensors=%s",
@@ -557,7 +539,8 @@ void SystemManager::checkPowerConditions() {
     if (g_powerManager) {
         // Power checks are now handled by the power management task
         // This is just a backup check in the main loop
-        if (g_powerManager->isEmergencyShutdownRequired()) {
+        PowerManager::PowerStats stats = g_powerManager->getStatistics();
+        if (stats.currentState == PowerManager::PowerState::CRITICAL) {
             setError("Emergency shutdown required - critical battery");
             enterSafeMode();
         }
@@ -635,117 +618,6 @@ void SystemManager::setError(const char* error) {
     Logger::error("System error: %s", error);
 }
 
-bool SystemManager::initializeMotionDetection() {
-    Logger::info("Initializing enhanced motion detection...");
-    
-    try {
-        // Create motion coordinator
-        m_motionCoordinator = std::make_unique<MotionCoordinator>();
-        
-        // Configure motion coordinator
-        MotionCoordinator::CoordinatorConfig config;
-        config.enabled = true;
-        config.defaultMethod = MotionCoordinator::DetectionMethod::ADAPTIVE;
-        config.enablePerformanceOptimization = true;
-        config.enableWildlifeAnalysis = true;
-        config.useEnvironmentalAdaptation = true;
-        
-        // Initialize coordinator (camera manager would need to be passed here in real implementation)
-        if (!m_motionCoordinator->initialize(nullptr, config)) {
-            Logger::error("Failed to initialize motion coordinator");
-            return false;
-        }
-        
-        // Set motion detection callback
-        m_motionCoordinator->setMotionCallback(
-            [this](const MotionCoordinator::CoordinatorResult& result) {
-                this->handleMotionDetected(result);
-            }
-        );
-        
-        // Initialize environmental conditions
-        m_environmentalConditions = MotionCoordinator::EnvironmentalConditions{};
-        updateEnvironmentalConditions();
-        
-        Logger::info("Enhanced motion detection initialized successfully");
-        return true;
-        
-    } catch (const std::exception& e) {
-        Logger::error("Motion detection initialization failed: %s", e.what());
-        return false;
-    }
-}
-
-void SystemManager::handleMotionDetected(const MotionCoordinator::CoordinatorResult& result) {
-    Logger::info("Motion detected - Method: %s, Confidence: %.2f, Wildlife: %s, Capture: %s",
-                 result.methodUsed == MotionCoordinator::DetectionMethod::PIR_ONLY ? "PIR" : "Fusion",
-                 result.fusionConfidence,
-                 result.wildlifeAnalysis.isWildlife ? "Yes" : "No",
-                 result.shouldCapture ? "Yes" : "No");
-    
-    if (result.shouldCapture) {
-        // Trigger camera capture
-        Logger::info("Triggering camera capture based on motion detection");
-        
-        // In a real implementation, this would:
-        // 1. Capture image from camera
-        // 2. Save to storage if shouldSave is true
-        // 3. Transmit via LoRa if shouldTransmit is true
-        // 4. Send alerts if shouldAlert is true
-        
-        // For now, just log the action
-        if (result.shouldSave) {
-            Logger::info("Image would be saved to storage");
-        }
-        if (result.shouldTransmit) {
-            Logger::info("Image would be transmitted via LoRa");
-        }
-        if (result.shouldAlert) {
-            Logger::info("Alert would be triggered");
-        }
-    }
-    
-    // Log wildlife analysis if available
-    if (result.wildlifeAnalysis.isWildlife) {
-        Logger::info("Wildlife analysis: %s", result.wildlifeAnalysis.description.c_str());
-    }
-}
-
-void SystemManager::updateEnvironmentalConditions() {
-    // Update environmental conditions based on available sensors
-    m_environmentalConditions.batteryVoltage = 3.7f; // Default value
-    m_environmentalConditions.temperature = 20.0f;   // Default value
-    m_environmentalConditions.lightLevel = 0.5f;     // Default value
-    m_environmentalConditions.windSpeed = 0.0f;
-    m_environmentalConditions.humidity = 50.0f;
-    
-    // Get current time for time-of-day adaptation
-    struct tm timeinfo;
-    if (getLocalTime(&timeinfo)) {
-        m_environmentalConditions.currentHour = timeinfo.tm_hour;
-        m_environmentalConditions.isNight = (timeinfo.tm_hour < 6 || timeinfo.tm_hour > 20);
-    } else {
-        m_environmentalConditions.currentHour = 12; // Default to noon
-        m_environmentalConditions.isNight = false;
-    }
-    
-    // Read battery voltage if pin is available
-    if (m_pinConfig.battery_pin >= 0) {
-        int adcValue = analogRead(m_pinConfig.battery_pin);
-        // Convert ADC reading to voltage (this formula depends on voltage divider circuit)
-        m_environmentalConditions.batteryVoltage = (adcValue / 4095.0f) * 3.3f * 2.0f; // Assuming 2:1 voltage divider
-    }
-    
-    // Update weather conditions based on sensor readings
-    // This would be expanded with actual sensor integrations
-    m_environmentalConditions.isWeatherActive = false;
-    
-    // Update motion coordinator with new conditions
-    if (m_motionCoordinator) {
-        m_motionCoordinator->updateEnvironmentalConditions(m_environmentalConditions);
-    }
-}
-
 // FreeRTOS Task Implementations
 
 void SystemManager::systemMonitorTask(void* parameter) {
@@ -766,8 +638,8 @@ void SystemManager::systemMonitorTask(void* parameter) {
             
             // Check power status if power manager is available
             if (g_powerManager) {
-                PowerMetrics metrics = g_powerManager->getPowerMetrics();
-                if (metrics.criticalPowerWarning) {
+                PowerManager::PowerStats stats = g_powerManager->getStatistics();
+                if (stats.currentState == PowerManager::PowerState::CRITICAL) {
                     Logger::error("Critical power warning detected");
                     system->setError("Critical battery level");
                 }
@@ -790,20 +662,17 @@ void SystemManager::powerManagementTask(void* parameter) {
     
     for (;;) {
         if (g_powerManager && system->m_initialized) {
-            // Update power measurements
-            g_powerManager->updateMeasurements();
+            // Update power system
+            g_powerManager->update();
             
-            // Check for low power conditions
-            if (g_powerManager->isBatteryCritical()) {
-                Logger::error("Critical battery level - initiating emergency shutdown");
-                g_powerManager->handleEmergencyShutdown();
-            } else if (g_powerManager->isBatteryLow()) {
-                Logger::warning("Low battery level - entering power saving mode");
-                g_powerManager->enterLowPowerMode();
+            // Check power status
+            PowerManager::PowerStats stats = g_powerManager->getStatistics();
+            if (stats.currentState == PowerManager::PowerState::CRITICAL) {
+                Logger::error("Critical battery level detected");
+                system->setError("Critical battery level");
+            } else if (stats.currentState == PowerManager::PowerState::LOW_BATTERY) {
+                Logger::warning("Low battery level detected");
             }
-            
-            // Optimize power consumption
-            g_powerManager->optimizePowerConsumption();
         }
         
         vTaskDelayUntil(&lastWakeTime, frequency);
@@ -842,33 +711,13 @@ void SystemManager::sensorMonitorTask(void* parameter) {
 void SystemManager::motionDetectionTask(void* parameter) {
     SystemManager* system = static_cast<SystemManager*>(parameter);
     TickType_t lastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(1000); // 1 second intervals for enhanced motion detection
+    const TickType_t frequency = pdMS_TO_TICKS(1000); // 1 second intervals
     
-    Logger::info("Enhanced Motion Detection Task started");
+    Logger::info("Basic PIR Motion Detection Task started");
     
     for (;;) {
-        if (system->m_state == STATE_RUNNING && system->m_motionCoordinator) {
-            try {
-                // Update environmental conditions periodically
-                static uint32_t lastEnvironmentalUpdate = 0;
-                uint32_t now = millis();
-                if (now - lastEnvironmentalUpdate > 30000) { // Update every 30 seconds
-                    system->updateEnvironmentalConditions();
-                    lastEnvironmentalUpdate = now;
-                }
-                
-                // Perform comprehensive motion detection
-                MotionCoordinator::CoordinatorResult result = 
-                    system->m_motionCoordinator->detectMotion(nullptr, system->m_environmentalConditions);
-                
-                // Motion handling is done via callback, no additional action needed here
-                
-            } catch (const std::exception& e) {
-                Logger::error("Motion detection task error: %s", e.what());
-                vTaskDelay(pdMS_TO_TICKS(5000)); // Wait 5 seconds before retrying
-            }
-        } else if (system->m_pinConfig.pir_pin >= 0 && system->m_state == STATE_RUNNING) {
-            // Fallback to basic PIR detection if motion coordinator is not available
+        if (system->m_pinConfig.pir_pin >= 0 && system->m_state == STATE_RUNNING) {
+            // Basic PIR detection
             static bool lastPirState = false;
             static unsigned long lastMotionTime = 0;
             
@@ -881,8 +730,12 @@ void SystemManager::motionDetectionTask(void* parameter) {
                     Logger::info("Basic PIR motion detected!");
                     lastMotionTime = now;
                     
-                    // Trigger basic camera capture or other actions
-                    // This would be implemented in a full system
+                    // Trigger basic camera capture
+                    if (system->captureImage()) {
+                        Logger::info("PIR-triggered image captured successfully");
+                    } else {
+                        Logger::error("Failed to capture PIR-triggered image");
+                    }
                 }
             }
             
@@ -922,6 +775,8 @@ void SystemManager::networkCommTask(void* parameter) {
     }
 }
 
+// Camera operation methods
+
 bool SystemManager::captureImage(const String& folder) {
     if (!m_cameraReady || !m_cameraManager) {
         Logger::error("Camera not ready for capture");
@@ -937,51 +792,20 @@ bool SystemManager::captureImage(const String& folder) {
         return false;
     }
     
-    // Generate timestamped filename
-    time_t now;
-    time(&now);
-    struct tm* timeinfo = localtime(&now);
+    Logger::info("Image captured successfully - %dx%d, %d bytes", 
+                 fb->width, fb->height, fb->len);
     
-    char filename[64];
-    snprintf(filename, sizeof(filename), "%s/%04d%02d%02d_%02d%02d%02d.jpg",
-             folder.c_str(),
-             timeinfo->tm_year + 1900,
-             timeinfo->tm_mon + 1,
-             timeinfo->tm_mday,
-             timeinfo->tm_hour,
-             timeinfo->tm_min,
-             timeinfo->tm_sec);
-    
-    // Save to SD card if storage is ready
-    bool saved = false;
+    // Save to SD card if storage is available
+    String filename = "";
     if (m_storageReady) {
-        // Ensure directory exists
-        String dirPath = folder;
-        if (!SD_MMC.exists(dirPath)) {
-            if (SD_MMC.mkdir(dirPath)) {
-                Logger::info("Created directory: %s", dirPath.c_str());
-            } else {
-                Logger::warning("Failed to create directory: %s", dirPath.c_str());
-            }
-        }
-        
-        // Save image file
-        File file = SD_MMC.open(filename, FILE_WRITE);
-        if (file) {
-            size_t written = file.write(fb->buf, fb->len);
-            file.close();
-            
-            if (written == fb->len) {
-                Logger::info("Image saved: %s (%d bytes)", filename, fb->len);
-                saved = true;
-            } else {
-                Logger::error("Failed to write complete image: %d/%d bytes", written, fb->len);
-            }
+        filename = saveImageToSD(fb, folder.c_str());
+        if (filename.length() > 0) {
+            Logger::info("Image saved as: %s", filename.c_str());
         } else {
-            Logger::error("Failed to open file for writing: %s", filename);
+            Logger::warning("Failed to save image to storage");
         }
     } else {
-        Logger::warning("Storage not ready - image captured but not saved");
+        Logger::warning("Storage not available - image not saved");
     }
     
     // Return frame buffer to system
@@ -992,5 +816,5 @@ bool SystemManager::captureImage(const String& folder) {
     imageCount++;
     Logger::info("Total images captured: %d", imageCount);
     
-    return saved || !m_storageReady; // Success if saved or if we're just testing capture
+    return filename.length() > 0 || !m_storageReady; // Success if saved or if we're just testing capture
 }

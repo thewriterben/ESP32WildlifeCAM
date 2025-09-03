@@ -202,6 +202,31 @@ void loop() {
     // Main system loop
     if (g_system) {
         g_system->update();
+        
+        // Check for serial commands to test camera
+        if (Serial.available()) {
+            String command = Serial.readStringUntil('\n');
+            command.trim();
+            command.toLowerCase();
+            
+            if (command == "c" || command == "capture") {
+                Logger::info("Manual camera capture requested...");
+                if (g_system->isCameraReady()) {
+                    if (g_system->captureImage()) {
+                        Logger::info("Manual capture successful!");
+                    } else {
+                        Logger::error("Manual capture failed!");
+                    }
+                } else {
+                    Logger::error("Camera not ready for capture");
+                }
+            } else if (command == "help") {
+                Logger::info("=== AVAILABLE COMMANDS ===");
+                Logger::info("  c, capture - Test camera capture");
+                Logger::info("  help - Show this help");
+                Logger::info("==========================");
+            }
+        }
     }
     
     // Yield to other tasks
