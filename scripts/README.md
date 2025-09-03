@@ -1,6 +1,6 @@
 # ESP32WildlifeCAM Immediate Action Scripts
 
-This directory contains a comprehensive set of immediate action scripts to support the critical development priorities and enhanced offline workflow as specified in UNIFIED_DEVELOPMENT_PLAN.md v2.0.
+This directory contains a comprehensive set of immediate action scripts to support the critical development priorities and enhanced offline workflow as specified in UPDATED_UNIFIED_DEVELOPMENT_PLAN.md.
 
 ## Scripts Overview
 
@@ -111,7 +111,7 @@ This directory contains a comprehensive set of immediate action scripts to suppo
 ## Integration Points
 
 - **Existing Validation**: Works with `validate_fixes.py`
-- **Development Plan**: Implements UNIFIED_DEVELOPMENT_PLAN.md workflow
+- **Development Plan**: Implements UPDATED_UNIFIED_DEVELOPMENT_PLAN.md workflow
 - **PlatformIO**: Integrates with build system
 - **Hardware Support**: AI-Thinker and ESP32-S3-CAM ready
 
