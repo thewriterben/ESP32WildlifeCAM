@@ -12,8 +12,8 @@
 #include <vector>
 #include <memory>
 #include "../hardware/board_detector.h"
-#include "../firmware/include/power/power_manager.h"
-#include "../src/detection/motion_coordinator.h"
+#include "../../firmware/include/power/power_manager.h"
+#include "../detection/motion_coordinator.h"
 #include "../camera/camera_integration.h"
 #include "../storage/storage_manager.h"
 #include "../network/wifi_manager.h"
