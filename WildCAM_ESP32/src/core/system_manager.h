@@ -13,7 +13,9 @@
 #include <memory>
 #include <esp_camera.h>
 #include "../hardware/board_detector.h"
-#include "../power/power_manager.h"
+#include "../firmware/include/power/power_manager.h"
+#include "../src/detection/motion_coordinator.h"
+#include "../camera/camera_manager.h"
 
 /**
  * @brief Main system manager class that coordinates all subsystems
@@ -60,6 +62,10 @@ public:
     void enterSafeMode();
     const char* getLastError() const { return m_lastError; }
     
+    // Camera operations
+    bool captureImage(const String& folder = "/images");
+    CameraManager* getCameraManager() { return m_cameraManager.get(); }
+    
 private:
     BoardDetector::BoardType m_boardType;
     BoardDetector::PinConfig m_pinConfig;
@@ -73,6 +79,13 @@ private:
     bool m_storageReady;
     bool m_networkReady;
     bool m_sensorsReady;
+    
+    // Enhanced motion detection
+    std::unique_ptr<MotionCoordinator> m_motionCoordinator;
+    MotionCoordinator::EnvironmentalConditions m_environmentalConditions;
+    
+    // Camera manager
+    std::unique_ptr<CameraManager> m_cameraManager;
     
     // Error tracking
     char m_lastError[128];
