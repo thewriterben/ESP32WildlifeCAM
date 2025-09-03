@@ -16,6 +16,8 @@
 #include "../src/detection/motion_coordinator.h"
 #include "../camera/camera_integration.h"
 #include "../storage/storage_manager.h"
+#include "../network/wifi_manager.h"
+#include "../web/web_server.h"
 
 /**
  * @brief Main system manager class that coordinates all subsystems
@@ -62,6 +64,12 @@ public:
     String saveImage(camera_fb_t* fb, const String& filename = "");
     bool getStorageStats(uint64_t& totalMB, uint64_t& usedMB, uint64_t& freeMB);
     
+    // Network operations
+    bool connectWiFi(const char* ssid, const char* password);
+    bool startAccessPoint(const char* ap_ssid = "WildlifeCam", const char* ap_password = "wildlife123");
+    bool isNetworkReady() const { return m_networkReady; }
+    String getIPAddress() const;
+    
     // Safe mode and error handling
     void enterSafeMode();
     const char* getLastError() const { return m_lastError; }
@@ -85,6 +93,10 @@ private:
     
     // Storage integration
     std::unique_ptr<StorageManager> m_storage;
+    
+    // Network integration
+    std::unique_ptr<WiFiManager> m_wifiManager;
+    std::unique_ptr<WildlifeCameraWebServer> m_webServer;
     
     // Enhanced motion detection
     std::unique_ptr<MotionCoordinator> m_motionCoordinator;

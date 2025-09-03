@@ -38,6 +38,10 @@ SystemManager::SystemManager(BoardDetector::BoardType board)
     
     // Initialize storage manager
     m_storage = std::make_unique<StorageManager>();
+    
+    // Initialize network components
+    m_wifiManager = std::make_unique<WiFiManager>();
+    m_webServer = std::make_unique<WildlifeCameraWebServer>(this);
 }
 
 SystemManager::~SystemManager() {
@@ -319,50 +323,46 @@ bool SystemManager::initializePowerManagement() {
 bool SystemManager::initializeNetwork() {
     Logger::info("Initializing network...");
     
-    bool networkAvailable = false;
+    if (!m_wifiManager) {
+        Logger::error("WiFi manager not initialized");
+        return false;
+    }
     
-    // WiFi initialization would depend on board capabilities
-    if (BoardDetector::hasFeature(m_boardType, BoardDetector::FEATURE_WIFI)) {
-        Logger::info("WiFi capability detected");
-        
-        // Basic WiFi initialization (not connecting yet)
-        WiFi.mode(WIFI_STA);
-        WiFi.disconnect(true);
-        
-        // Check if WiFi credentials are available
-        // For production, this would read from secure storage
-        Logger::info("WiFi configured for station mode - credentials required for connection");
-        
-        // Notify power manager of potential network activity
-        if (g_powerManager) {
-            g_powerManager->onNetworkActivity();
+    // Try to connect to default WiFi network
+    // In a production system, these would come from configuration
+    const char* default_ssid = ""; // Set your WiFi SSID here for testing
+    const char* default_password = ""; // Set your WiFi password here for testing
+    
+    // First try connecting to existing network if credentials provided
+    if (strlen(default_ssid) > 0 && m_wifiManager->connect(default_ssid, default_password, 15000)) {
+        Logger::info("Connected to WiFi network: %s", default_ssid);
+        Logger::info("IP Address: %s", m_wifiManager->getIPAddress().c_str());
+    } else {
+        // Fall back to Access Point mode for configuration
+        Logger::info("Starting Access Point mode for configuration");
+        if (!m_wifiManager->startAccessPoint("WildlifeCam_Setup", "wildlife123")) {
+            Logger::error("Failed to start Access Point");
+            return false;
         }
-        
-        networkAvailable = true;
+        Logger::info("Access Point started: WildlifeCam_Setup (password: wildlife123)");
+        Logger::info("IP Address: %s", m_wifiManager->getIPAddress().c_str());
     }
     
-    // LoRa initialization (if supported)
-    if (BoardDetector::hasFeature(m_boardType, BoardDetector::FEATURE_LORA)) {
-        Logger::info("LoRa capability detected");
-        
-        // LoRa initialization would go here
-        // Check if LoRa pins are available and not conflicting
-        Logger::info("LoRa initialization deferred - pin conflicts with camera");
-        
-        // For AI-Thinker ESP32-CAM, LoRa may conflict with camera pins
-        // This would be resolved in production with careful pin selection
+    // Initialize and start web server
+    if (!m_webServer->init()) {
+        Logger::error("Failed to initialize web server");
+        return false;
     }
     
-    // Bluetooth Low Energy for device configuration
-    if (BoardDetector::hasFeature(m_boardType, BoardDetector::FEATURE_BLUETOOTH)) {
-        Logger::info("Bluetooth capability available");
-        // BLE initialization would be implemented for device configuration
+    if (!m_webServer->start()) {
+        Logger::error("Failed to start web server");
+        return false;
     }
     
-    m_networkReady = networkAvailable;
+    Logger::info("Web server started successfully");
+    Logger::info("Access camera at: http://%s/", m_wifiManager->getIPAddress().c_str());
     
-    Logger::info("Network initialization complete - %s", 
-                networkAvailable ? "WiFi ready (offline)" : "No network available");
+    m_networkReady = true;
     
     return true; // Return true to allow offline operation
 }
@@ -469,6 +469,16 @@ void SystemManager::update() {
     if (now - m_lastUpdate >= 1000) {
         // Update once per second
         m_lastUpdate = now;
+        
+        // Update network components
+        if (m_networkReady) {
+            if (m_wifiManager) {
+                m_wifiManager->update();
+            }
+            if (m_webServer && m_webServer->isRunning()) {
+                m_webServer->handleClient();
+            }
+        }
         
         // Reset watchdog
         esp_task_wdt_reset();
@@ -933,4 +943,24 @@ bool SystemManager::getStorageStats(uint64_t& totalMB, uint64_t& usedMB, uint64_
     }
     
     return m_storage->getStorageStats(totalMB, usedMB, freeMB);
+}
+
+
+// Network operation methods
+bool SystemManager::connectWiFi(const char* ssid, const char* password) {
+        return false;
+    }
+    return m_wifiManager->connect(ssid, password);
+}
+
+bool SystemManager::startAccessPoint(const char* ap_ssid, const char* ap_password) {
+        return false;
+    }
+    return m_wifiManager->startAccessPoint(ap_ssid, ap_password);
+}
+
+String SystemManager::getIPAddress() const {
+        return "";
+    }
+    return m_wifiManager->getIPAddress();
 }
