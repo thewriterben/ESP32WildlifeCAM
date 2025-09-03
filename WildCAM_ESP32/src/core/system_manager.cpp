@@ -921,3 +921,76 @@ void SystemManager::networkCommTask(void* parameter) {
         vTaskDelayUntil(&lastWakeTime, frequency);
     }
 }
+
+bool SystemManager::captureImage(const String& folder) {
+    if (!m_cameraReady || !m_cameraManager) {
+        Logger::error("Camera not ready for capture");
+        return false;
+    }
+    
+    Logger::info("Capturing image to folder: %s", folder.c_str());
+    
+    // Capture image using camera manager
+    camera_fb_t* fb = m_cameraManager->captureToBuffer();
+    if (!fb) {
+        Logger::error("Failed to capture image");
+        return false;
+    }
+    
+    // Generate timestamped filename
+    time_t now;
+    time(&now);
+    struct tm* timeinfo = localtime(&now);
+    
+    char filename[64];
+    snprintf(filename, sizeof(filename), "%s/%04d%02d%02d_%02d%02d%02d.jpg",
+             folder.c_str(),
+             timeinfo->tm_year + 1900,
+             timeinfo->tm_mon + 1,
+             timeinfo->tm_mday,
+             timeinfo->tm_hour,
+             timeinfo->tm_min,
+             timeinfo->tm_sec);
+    
+    // Save to SD card if storage is ready
+    bool saved = false;
+    if (m_storageReady) {
+        // Ensure directory exists
+        String dirPath = folder;
+        if (!SD_MMC.exists(dirPath)) {
+            if (SD_MMC.mkdir(dirPath)) {
+                Logger::info("Created directory: %s", dirPath.c_str());
+            } else {
+                Logger::warning("Failed to create directory: %s", dirPath.c_str());
+            }
+        }
+        
+        // Save image file
+        File file = SD_MMC.open(filename, FILE_WRITE);
+        if (file) {
+            size_t written = file.write(fb->buf, fb->len);
+            file.close();
+            
+            if (written == fb->len) {
+                Logger::info("Image saved: %s (%d bytes)", filename, fb->len);
+                saved = true;
+            } else {
+                Logger::error("Failed to write complete image: %d/%d bytes", written, fb->len);
+            }
+        } else {
+            Logger::error("Failed to open file for writing: %s", filename);
+        }
+    } else {
+        Logger::warning("Storage not ready - image captured but not saved");
+    }
+    
+    // Return frame buffer to system
+    m_cameraManager->returnFrameBuffer(fb);
+    
+    // Update statistics
+    static int imageCount = 0;
+    imageCount++;
+    Logger::info("Total images captured: %d", imageCount);
+    
+    return saved || !m_storageReady; // Success if saved or if we're just testing capture
+}

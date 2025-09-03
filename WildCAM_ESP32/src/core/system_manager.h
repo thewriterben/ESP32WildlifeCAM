@@ -57,6 +57,10 @@ public:
     void enterSafeMode();
     const char* getLastError() const { return m_lastError; }
     
+    // Camera operations
+    bool captureImage(const String& folder = "/images");
+    CameraManager* getCameraManager() { return m_cameraManager.get(); }
+    
 private:
     BoardDetector::BoardType m_boardType;
     BoardDetector::PinConfig m_pinConfig;
