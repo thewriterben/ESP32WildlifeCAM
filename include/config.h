@@ -290,6 +290,7 @@
 #define IR_LED_ENABLED true
 #define IR_CUT_FILTER_ENABLED true
 #define AUTO_NIGHT_MODE_ENABLED true
+#define LIGHT_SENSOR_PIN 34  // Light sensor ADC pin (shared with camera Y8)
 // Pin definitions are in pins.h
 
 // ===========================

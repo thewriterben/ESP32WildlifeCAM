@@ -14,6 +14,7 @@
 #include "../hardware/board_detector.h"
 #include "../firmware/include/power/power_manager.h"
 #include "../src/detection/motion_coordinator.h"
+#include "../camera/camera_manager.h"
 
 /**
  * @brief Main system manager class that coordinates all subsystems
@@ -73,6 +74,9 @@ private:
     // Enhanced motion detection
     std::unique_ptr<MotionCoordinator> m_motionCoordinator;
     MotionCoordinator::EnvironmentalConditions m_environmentalConditions;
+    
+    // Camera manager
+    std::unique_ptr<CameraManager> m_cameraManager;
     
     // Error tracking
     char m_lastError[128];

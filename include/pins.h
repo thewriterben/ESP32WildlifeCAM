@@ -45,6 +45,12 @@
 #define CHARGING_LED_PIN       2   // Charging status LED (moved from GPIO 15 to avoid SD conflict)
 
 // ===========================
+// IR LED PINS - CONFIGURED CONDITIONALLY
+// ===========================
+// IR LED disabled by default due to pin conflicts, but defined for compatibility
+#define IR_LED_PIN        16  // IR LED control pin (shared with LoRa CS)
+
+// ===========================
 // STORAGE PINS
 // ===========================
 // SD Card pins are fixed on ESP32-CAM:

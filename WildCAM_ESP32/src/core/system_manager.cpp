@@ -9,6 +9,7 @@
 #include "../src/utils/logger.h"
 #include "../config.h"
 #include "../src/detection/motion_coordinator.h"
+#include "../camera/camera_manager.h"
 #include <esp_system.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
@@ -32,6 +33,9 @@ SystemManager::SystemManager(BoardDetector::BoardType board)
     
     m_pinConfig = BoardDetector::getPinConfig(board);
     memset(m_lastError, 0, sizeof(m_lastError));
+    
+    // Initialize camera manager
+    m_cameraManager = std::make_unique<CameraManager>();
 }
 
 SystemManager::~SystemManager() {
@@ -141,10 +145,15 @@ bool SystemManager::initializeHardware() {
 bool SystemManager::initializeCamera() {
     Logger::info("Initializing camera...");
     
-    // Camera initialization would go here
-    // For now, just validate pins are available
-    if (m_pinConfig.cam_xclk < 0 || m_pinConfig.cam_siod < 0) {
-        Logger::error("Camera pins not properly configured");
+    // Use camera manager for actual camera initialization
+    if (!m_cameraManager) {
+        Logger::error("Camera manager not available");
+        return false;
+    }
+    
+    // Initialize camera using working camera manager implementation
+    if (!m_cameraManager->initialize()) {
+        Logger::error("Camera manager initialization failed");
         return false;
     }
     
@@ -153,36 +162,20 @@ bool SystemManager::initializeCamera() {
         g_powerManager->onCameraActivation();
     }
     
-    // Basic camera pin configuration for AI-Thinker ESP32-CAM
-    // Configure camera power down pin (shared with solar monitoring)
-    if (m_pinConfig.cam_pwdn >= 0) {
-        pinMode(m_pinConfig.cam_pwdn, OUTPUT);
-        digitalWrite(m_pinConfig.cam_pwdn, LOW); // Camera enabled (active low)
+    // Test camera capture to verify functionality
+    camera_fb_t* test_fb = m_cameraManager->captureToBuffer();
+    if (test_fb) {
+        Logger::info("Camera test capture successful (%d bytes)", test_fb->len);
+        m_cameraManager->returnFrameBuffer(test_fb);
+        m_cameraReady = true;
+    } else {
+        Logger::error("Camera test capture failed");
+        return false;
     }
     
-    // Configure camera reset pin if available
-    if (m_pinConfig.cam_reset >= 0) {
-        pinMode(m_pinConfig.cam_reset, OUTPUT);
-        digitalWrite(m_pinConfig.cam_reset, HIGH); // Camera not in reset
-    }
+    Logger::info("Camera initialized successfully");
+    Logger::info("Configuration: %s", m_cameraManager->getConfiguration().c_str());
     
-    // Validate camera is responding
-    // For production implementation, this would include:
-    // - Camera module detection via I2C
-    // - Frame buffer allocation
-    // - Image sensor configuration
-    // - Test capture to verify functionality
-    
-    Logger::info("Camera pin configuration complete");
-    Logger::info("  XCLK: GPIO %d", m_pinConfig.cam_xclk);
-    Logger::info("  SIOD (SDA): GPIO %d", m_pinConfig.cam_siod);
-    Logger::info("  SIOC (SCL): GPIO %d", m_pinConfig.cam_sioc);
-    if (m_pinConfig.cam_pwdn >= 0) {
-        Logger::info("  PWDN: GPIO %d (shared with solar monitoring)", m_pinConfig.cam_pwdn);
-    }
-    
-    m_cameraReady = true;
-    Logger::info("Camera initialization complete");
     return true;
 }
 

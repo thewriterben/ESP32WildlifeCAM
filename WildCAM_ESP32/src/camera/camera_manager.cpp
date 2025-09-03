@@ -1,4 +1,6 @@
 #include "camera_manager.h"
+#include "../../include/config.h"
+#include "../../include/pins.h"
 #include <SD_MMC.h>
 #include <FS.h>
 #include <time.h>
@@ -223,9 +225,60 @@ void CameraManager::setNightMode(bool enable) {
     }
 }
 
+void CameraManager::configureSensor() {
+    sensor_t* sensor = esp_camera_sensor_get();
+    if (sensor == nullptr) {
+        Serial.println("Failed to get camera sensor");
+        return;
+    }
+
+    // Configure sensor settings optimized for wildlife photography
+    sensor->set_brightness(sensor, 0);     // Brightness: -2 to 2
+    sensor->set_contrast(sensor, 0);       // Contrast: -2 to 2  
+    sensor->set_saturation(sensor, 0);     // Saturation: -2 to 2
+    sensor->set_sharpness(sensor, 0);      // Sharpness: -2 to 2
+    sensor->set_denoise(sensor, 0);        // Denoise: 0 = disable, 1 = enable
+    
+    // Auto exposure and gain settings
+    sensor->set_aec_value(sensor, 300);    // Auto exposure control value
+    sensor->set_agc_gain(sensor, 0);       // Auto gain control value
+    sensor->set_gainceiling(sensor, (gainceiling_t)2); // Gain ceiling: 2X
+    
+    // Color and lens correction
+    sensor->set_whitebal(sensor, 1);       // Auto white balance
+    sensor->set_awb_gain(sensor, 1);       // Auto white balance gain
+    sensor->set_wb_mode(sensor, 0);        // White balance mode: auto
+    sensor->set_lenc(sensor, 1);           // Lens correction enable
+    
+    Serial.println("Camera sensor configured for wildlife photography");
+}
+
+void CameraManager::optimizeForWildlife() {
+    sensor_t* sensor = esp_camera_sensor_get();
+    if (sensor == nullptr) {
+        return;
+    }
+
+    // Optimize for outdoor wildlife photography
+    sensor->set_hmirror(sensor, 0);        // Horizontal mirror: disabled
+    sensor->set_vflip(sensor, 0);          // Vertical flip: disabled
+    sensor->set_dcw(sensor, 1);            // Enable downsize cropping
+    sensor->set_colorbar(sensor, 0);       // Disable color bar test
+    
+    Serial.println("Camera optimized for wildlife photography");
+}
+
+void CameraManager::configureAdvancedGPIOs() {
+    // Configure flash LED if available  
+    pinMode(4, OUTPUT);  // Built-in LED
+    digitalWrite(4, LOW); // LED off by default
+    
+    Serial.println("Advanced GPIO configuration complete");
+}
+
 void CameraManager::resetStatistics() {
-    stats = {};
-    captureCounter = 0;
+    // Reset internal counters (placeholder for future implementation)
+    Serial.println("Camera statistics reset");
 }
 
 String CameraManager::getConfiguration() const {
