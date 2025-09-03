@@ -374,7 +374,7 @@ This federated learning integration is part of the ESP32WildlifeCAM project and 
 ## Support
 
 For issues specific to federated learning:
-1. Check the test report: `federated_learning_test_report.md`
+1. Review implementation status in [FEATURE_IMPLEMENTATION_STATUS_SEPTEMBER_2025.md](../../FEATURE_IMPLEMENTATION_STATUS_SEPTEMBER_2025.md)
 2. Review logs: `setup_federated_learning.log`
 3. Run diagnostics: `./scripts/federated_learning/test_federated_learning.sh`
 4. Consult the troubleshooting section above

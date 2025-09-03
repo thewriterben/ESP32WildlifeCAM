@@ -297,9 +297,9 @@ python3 scripts/validate_component.py [component] --simulation
 - **[Technical Specification](TECHNICAL_SPECIFICATION.md)** - Comprehensive system architecture
 - **[Feature Implementation Status](FEATURE_IMPLEMENTATION_STATUS_SEPTEMBER_2025.md)** - Complete feature matrix and performance metrics
 - **[Migration Guide v2.5](MIGRATION_GUIDE_V25.md)** - Upgrade guide for existing users
-- **[Unified Development Plan](UNIFIED_DEVELOPMENT_PLAN.md)** - Development roadmap and priorities
-- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Completed features and validation
-- **[Project Roadmap](PROJECT_ROADMAP.md)** - Long-term vision and milestones
+- **[Updated Unified Development Plan](UPDATED_UNIFIED_DEVELOPMENT_PLAN.md)** - Current development roadmap and priorities
+- **[Project Status September 2025](PROJECT_STATUS_SEPTEMBER_2025.md)** - Current project status and achievements
+- **[Roadmap](ROADMAP.md)** - Long-term vision and milestones
 
 ### 🛠️ Setup & Configuration  
 - **[Hardware Requirements](docs/HARDWARE_REQUIREMENTS.md)** - Component selection guide
@@ -328,7 +328,7 @@ python3 scripts/validate_component.py [component] --simulation
 - **[Firewall Complete Guide](docs/development/firewall_complete_guide.md)** - Offline development
 - **[Troubleshooting Guide](docs/troubleshooting.md)** - Common issues and solutions
 - **[Maintenance Plan](docs/MAINTENANCE_PLAN.md)** - Long-term system care
-- **[Debug Analysis](DEBUG_ANALYSIS_REPORT.md)** - Hardware validation report
+- **[TODO Analysis](TODO_ANALYSIS_SEPTEMBER_2025.md)** - Current development priorities
 
 ## ⚡ Advanced Configuration
 

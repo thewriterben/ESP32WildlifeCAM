@@ -37,7 +37,7 @@ Based on existing repository analysis:
 2. **IMPLEMENTATION_COMPLETE.md**: Detailed implementation status
 3. **Hardware_Setup.md**: Hardware configuration guide
 4. **AUDIT_REPORT.md**: System analysis and recommendations
-5. **DEBUG_ANALYSIS_REPORT.md**: Debugging and troubleshooting
+5. **TODO_ANALYSIS_SEPTEMBER_2025.md**: Current development priorities and debugging
 6. **AI_ENHANCEMENT_SUMMARY.md**: AI capabilities documentation
 7. **raptor_monitoring_guide.md**: Specialized wildlife monitoring
 

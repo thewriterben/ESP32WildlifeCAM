@@ -54,7 +54,7 @@ Based on existing codebase analysis:
 - **Configuration**: `firmware/src/config.h` (network settings)
 
 ## Firewall Considerations
-Based on `FIREWALL_FIX.md`:
+Based on the offline development procedures (see `docs/firewall_fixes/`):
 - **Offline Development**: All dependencies installable locally
 - **PlatformIO Config**: Configured for offline builds
 - **Blocked Domains**: Documented workarounds available
