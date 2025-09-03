@@ -10,6 +10,7 @@ This document provides comprehensive information about ESP32 camera board compat
 |-------|--------|------|--------|-------|-------|------------|
 | AI-Thinker ESP32-CAM | ✅ Full | ESP32 | OV2640 | Optional | 4MB | External |
 | ESP-EYE | ✅ Full | ESP32 | OV2640 | 8MB | 16MB | Advanced |
+| LilyGO T-Camera Plus S3 OV5640 V1.1 | ✅ Full | ESP32-S3 | OV5640 | 8MB | 16MB | Integrated |
 
 ### Planned Support
 
@@ -70,6 +71,11 @@ void setup() {
     // Force specific board type
     if (CameraHandler::init(BOARD_AI_THINKER_ESP32_CAM)) {
         Serial.println("AI-Thinker ESP32-CAM initialized");
+    }
+    
+    // Or use LilyGO T-Camera Plus S3 OV5640 V1.1
+    if (CameraHandler::init(BOARD_LILYGO_T_CAMERA_PLUS_S3)) {
+        Serial.println("LilyGO T-Camera Plus S3 OV5640 V1.1 initialized");
     }
 }
 ```

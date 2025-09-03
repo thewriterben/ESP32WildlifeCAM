@@ -687,4 +687,62 @@ const CameraConfig TTGO_T_CAMERA_V17_CAMERA_CONFIG = {
     .has_flash = true
 };
 
+// LilyGO T-Camera Plus S3 OV5640 V1.1 Profile
+const GPIOMap LILYGO_T_CAMERA_PLUS_S3_GPIO_MAP = {
+    .pwdn_pin = -1,         // Not used on S3 variant
+    .reset_pin = -1,        // Not used on S3 variant
+    .xclk_pin = 40,         // External clock
+    .siod_pin = 17,         // I2C SDA
+    .sioc_pin = 18,         // I2C SCL
+    .y9_pin = 39,           // Camera data pins
+    .y8_pin = 41,
+    .y7_pin = 42,
+    .y6_pin = 12,
+    .y5_pin = 3,
+    .y4_pin = 14,
+    .y3_pin = 47,
+    .y2_pin = 13,
+    .vsync_pin = 21,        // VSYNC pin
+    .href_pin = 38,         // HREF pin
+    .pclk_pin = 11,         // PCLK pin
+    .led_pin = 48,          // Status LED (if available)
+    .flash_pin = 48         // Flash LED (same as status)
+};
+
+const PowerProfile LILYGO_T_CAMERA_PLUS_S3_POWER_PROFILE = {
+    .sleep_current_ua = 3000,      // ESP32-S3 excellent sleep power management
+    .active_current_ma = 85,       // ESP32-S3 improved efficiency
+    .camera_current_ma = 180,      // OV5640 higher current due to 5MP capability
+    .has_external_power = false,   // Battery powered
+    .supports_deep_sleep = true,   // Enhanced deep sleep modes
+    .min_voltage = 3.0,           // Minimum operating voltage
+    .max_voltage = 4.2            // Support for LiPo batteries
+};
+
+const CameraConfig LILYGO_T_CAMERA_PLUS_S3_CAMERA_CONFIG = {
+    .max_framesize = FRAMESIZE_QXGA,    // 5MP OV5640 (2592x1944)
+    .pixel_format = PIXFORMAT_JPEG,     // JPEG for wildlife camera usage
+    .jpeg_quality = 8,                  // Higher quality with ESP32-S3 processing power
+    .fb_count = 3,                      // More frame buffers with PSRAM
+    .xclk_freq_hz = 24000000,          // Higher clock for OV5640 performance
+    .psram_required = true,             // ESP32-S3 with PSRAM required for high resolution
+    .has_flash = true                   // LED flash capability
+};
+
+const DisplayProfile LILYGO_T_CAMERA_PLUS_S3_DISPLAY_PROFILE = {
+    .has_display = true,
+    .display_type = 3,              // ST7789 TFT (1.14 inch)
+    .display_sda_pin = -1,          // SPI, not I2C
+    .display_scl_pin = -1,          // SPI, not I2C
+    .display_cs_pin = 46,           // SPI CS pin
+    .display_dc_pin = 4,            // SPI DC pin
+    .display_rst_pin = 5,           // Reset pin
+    .display_bl_pin = 48,           // Backlight pin
+    .display_i2c_addr = 0,          // Not I2C
+    .display_i2c_freq = 0,          // Not I2C
+    .display_spi_freq = 27000000,   // 27MHz SPI frequency
+    .display_width = 240,           // 240x135 pixels
+    .display_height = 135
+};
+
 #endif // BOARD_PROFILES_H

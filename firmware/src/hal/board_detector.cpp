@@ -16,6 +16,7 @@
 #include "m5stack_esp32cam.h"
 #include "ttgo_t_journal.h"
 #include "lilygo_t_camera_plus.h"
+#include "lilygo_t_camera_plus_s3.h"
 #include "espressif_esp32_cam_mb.h"
 #include "m5stack_unitcam.h"
 #include "ttgo_t_camera_v17.h"
@@ -108,6 +109,9 @@ std::unique_ptr<CameraBoard> BoardDetector::createBoard(BoardType type) {
         case BOARD_LILYGO_T_CAMERA_PLUS:
             return std::make_unique<LILYGOTCAMERAPLUS>();
             
+        case BOARD_LILYGO_T_CAMERA_PLUS_S3:
+            return std::make_unique<LILYGOTCAMERAPLASS3>();
+            
         case BOARD_ESPRESSIF_ESP32_CAM_MB:
             return std::make_unique<ESPRESSIF_ESP32CAMMB>();
             
@@ -137,6 +141,7 @@ const char* BoardDetector::getBoardName(BoardType type) {
         case BOARD_M5STACK_ESP32CAM: return "M5Stack ESP32CAM";
         case BOARD_TTGO_T_JOURNAL: return "TTGO T-Journal";
         case BOARD_LILYGO_T_CAMERA_PLUS: return "LilyGO T-Camera Plus";
+        case BOARD_LILYGO_T_CAMERA_PLUS_S3: return "LilyGO T-Camera Plus S3 OV5640 V1.1";
         case BOARD_ESPRESSIF_ESP32_CAM_MB: return "Espressif ESP32-CAM-MB";
         case BOARD_M5STACK_UNITCAM: return "M5Stack UnitCAM";
         case BOARD_TTGO_T_CAMERA_V17: return "TTGO T-Camera V1.7";
@@ -158,6 +163,7 @@ bool BoardDetector::isBoardSupported(BoardType type) {
         case BOARD_M5STACK_ESP32CAM:
         case BOARD_TTGO_T_JOURNAL:
         case BOARD_LILYGO_T_CAMERA_PLUS:
+        case BOARD_LILYGO_T_CAMERA_PLUS_S3:
         case BOARD_ESPRESSIF_ESP32_CAM_MB:
         case BOARD_M5STACK_UNITCAM:
         case BOARD_TTGO_T_CAMERA_V17:
@@ -195,6 +201,15 @@ BoardType BoardDetector::detectByPinConfiguration() {
     
     if (strstr(chip_model, "ESP32-S3")) {
         DEBUG_PRINTLN("ESP32-S3 chip detected, checking for S3-based boards");
+        
+        // Test for LilyGO T-Camera Plus S3 OV5640 V1.1 (XCLK on 40, specific pin layout)
+        if (testGPIOPin(40, false) && testGPIOPin(17, false) && testGPIOPin(18, false)) {
+            // Test for specific T-Camera Plus S3 configuration
+            if (testGPIOPin(39, false) && testGPIOPin(41, false)) { // Y9 and Y8 pins specific to S3 variant
+                DEBUG_PRINTLN("LilyGO T-Camera Plus S3 OV5640 V1.1 pin configuration detected");
+                return BOARD_LILYGO_T_CAMERA_PLUS_S3;
+            }
+        }
         
         // Test for XIAO ESP32S3 Sense (compact board with unique pin layout)
         if (testGPIOPin(10, false) && testGPIOPin(40, false)) { // XCLK on 10, SIOD on 40
@@ -323,6 +338,14 @@ BoardType BoardDetector::detectByI2CDevices() {
                     DEBUG_PRINTLN("BME280/BMP280 sensor detected");
                     break;
                 case 0x3C:
+                    // OV5640 camera sensor or OLED display
+                    DEBUG_PRINTLN("OV5640 camera sensor or OLED display detected");
+                    // If we're on ESP32-S3, likely T-Camera Plus S3 with OV5640
+                    if (strstr(getChipModel(), "ESP32-S3")) {
+                        DEBUG_PRINTLN("OV5640 on ESP32-S3 - likely LilyGO T-Camera Plus S3");
+                        return BOARD_LILYGO_T_CAMERA_PLUS_S3;
+                    }
+                    break;
                 case 0x3D:
                     // OLED display - common on ESP-EYE boards
                     DEBUG_PRINTLN("OLED display detected - possible ESP-EYE board");
@@ -333,7 +356,7 @@ BoardType BoardDetector::detectByI2CDevices() {
                     break;
                 case 0x21:
                     // Camera sensor OV2640 address
-                    DEBUG_PRINTLN("Camera sensor I2C detected");
+                    DEBUG_PRINTLN("OV2640 camera sensor I2C detected");
                     break;
                 default:
                     DEBUG_PRINTF("Unknown I2C device at 0x%02X\n", address);
