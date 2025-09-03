@@ -19,6 +19,7 @@
 // #define CAMERA_MODEL_M5STACK_WIDE
 // #define CAMERA_MODEL_M5STACK_ESP32CAM
 // #define CAMERA_MODEL_TTGO_T_JOURNAL
+// #define CAMERA_MODEL_LILYGO_T_CAMERA_PLUS_S3  // LilyGO T-Camera Plus S3 OV5640 V1.1
 
 // Camera Capture Settings
 #define CAMERA_FRAME_SIZE FRAMESIZE_UXGA  // Image resolution: 1600x1200
@@ -508,6 +509,30 @@
 #define PCLK_GPIO_NUM     22             // Pixel clock pin - CONFLICTS with RTC_SCL/BME280_SCL
 
 #define CAMERA_LED_PIN     4             // Built-in camera LED pin
+#endif
+
+// LilyGO T-Camera Plus S3 OV5640 V1.1 Pin Definitions
+#if defined(CAMERA_MODEL_LILYGO_T_CAMERA_PLUS_S3)
+#define PWDN_GPIO_NUM     -1             // Power down pin (not used)
+#define RESET_GPIO_NUM    -1             // Reset pin (not used)
+#define XCLK_GPIO_NUM     40             // External clock pin
+#define SIOD_GPIO_NUM     17             // I2C data pin (SDA) for camera
+#define SIOC_GPIO_NUM     18             // I2C clock pin (SCL) for camera
+
+// Camera Data Pins
+#define Y9_GPIO_NUM       39             // Camera data bit 9
+#define Y8_GPIO_NUM       41             // Camera data bit 8
+#define Y7_GPIO_NUM       42             // Camera data bit 7
+#define Y6_GPIO_NUM       12             // Camera data bit 6
+#define Y5_GPIO_NUM        3             // Camera data bit 5
+#define Y4_GPIO_NUM       14             // Camera data bit 4
+#define Y3_GPIO_NUM       47             // Camera data bit 3
+#define Y2_GPIO_NUM       13             // Camera data bit 2
+#define VSYNC_GPIO_NUM    21             // Vertical sync pin
+#define HREF_GPIO_NUM     38             // Horizontal reference pin
+#define PCLK_GPIO_NUM     11             // Pixel clock pin
+
+#define CAMERA_LED_PIN    48             // Built-in status LED pin
 #endif
 
 // TODO: Add pin definitions for other camera models as needed

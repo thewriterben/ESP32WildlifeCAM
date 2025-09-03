@@ -109,7 +109,7 @@ The LilyGO T-Camera Plus S3 is a feature-rich ESP32-S3 camera board with built-i
    - Or use `firmware/platformio.ini` if using PlatformIO
 
 3. **Configure Board-Specific Settings**
-   - Ensure `#define CAMERA_MODEL_LILYGO_T_CAMERA_S3` is uncommented
+   - Ensure `#define CAMERA_MODEL_LILYGO_T_CAMERA_PLUS_S3` is uncommented
    - Verify display configuration settings
    - Set WiFi credentials and other preferences
    - Configure camera resolution and quality settings
