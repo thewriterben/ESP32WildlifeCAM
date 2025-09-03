@@ -11,6 +11,7 @@
 #include <Arduino.h>
 #include <vector>
 #include <memory>
+#include <esp_camera.h>
 #include "../hardware/board_detector.h"
 #include "../firmware/include/power/power_manager.h"
 #include "../src/detection/motion_coordinator.h"
@@ -51,6 +52,10 @@ public:
     bool isCameraReady() const { return m_cameraReady; }
     bool isStorageReady() const { return m_storageReady; }
     bool isNetworkReady() const { return m_networkReady; }
+    
+    // Camera operations
+    bool captureImage();
+    String saveImageToSD(camera_fb_t* fb, const char* folder = "/wildlife/images");
     
     // Safe mode and error handling
     void enterSafeMode();

@@ -8,8 +8,10 @@
 #include "system_manager.h"
 #include "../src/utils/logger.h"
 #include "../config.h"
+#include "../include/pins.h"
 #include "../src/detection/motion_coordinator.h"
 #include <esp_system.h>
+#include <esp_camera.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
 #include <WiFi.h>
@@ -141,8 +143,7 @@ bool SystemManager::initializeHardware() {
 bool SystemManager::initializeCamera() {
     Logger::info("Initializing camera...");
     
-    // Camera initialization would go here
-    // For now, just validate pins are available
+    // Validate pins are available from board configuration
     if (m_pinConfig.cam_xclk < 0 || m_pinConfig.cam_siod < 0) {
         Logger::error("Camera pins not properly configured");
         return false;
@@ -153,7 +154,6 @@ bool SystemManager::initializeCamera() {
         g_powerManager->onCameraActivation();
     }
     
-    // Basic camera pin configuration for AI-Thinker ESP32-CAM
     // Configure camera power down pin (shared with solar monitoring)
     if (m_pinConfig.cam_pwdn >= 0) {
         pinMode(m_pinConfig.cam_pwdn, OUTPUT);
@@ -166,23 +166,107 @@ bool SystemManager::initializeCamera() {
         digitalWrite(m_pinConfig.cam_reset, HIGH); // Camera not in reset
     }
     
-    // Validate camera is responding
-    // For production implementation, this would include:
-    // - Camera module detection via I2C
-    // - Frame buffer allocation
-    // - Image sensor configuration
-    // - Test capture to verify functionality
+    // Set up camera configuration for AI-Thinker ESP32-CAM
+    camera_config_t config;
+    config.ledc_channel = LEDC_CHANNEL_0;
+    config.ledc_timer = LEDC_TIMER_0;
     
-    Logger::info("Camera pin configuration complete");
-    Logger::info("  XCLK: GPIO %d", m_pinConfig.cam_xclk);
-    Logger::info("  SIOD (SDA): GPIO %d", m_pinConfig.cam_siod);
-    Logger::info("  SIOC (SCL): GPIO %d", m_pinConfig.cam_sioc);
-    if (m_pinConfig.cam_pwdn >= 0) {
-        Logger::info("  PWDN: GPIO %d (shared with solar monitoring)", m_pinConfig.cam_pwdn);
+    // Use pin definitions from pins.h
+    config.pin_d0 = Y2_GPIO_NUM;
+    config.pin_d1 = Y3_GPIO_NUM;
+    config.pin_d2 = Y4_GPIO_NUM;
+    config.pin_d3 = Y5_GPIO_NUM;
+    config.pin_d4 = Y6_GPIO_NUM;
+    config.pin_d5 = Y7_GPIO_NUM;
+    config.pin_d6 = Y8_GPIO_NUM;
+    config.pin_d7 = Y9_GPIO_NUM;
+    config.pin_xclk = XCLK_GPIO_NUM;
+    config.pin_pclk = PCLK_GPIO_NUM;
+    config.pin_vsync = VSYNC_GPIO_NUM;
+    config.pin_href = HREF_GPIO_NUM;
+    config.pin_sscb_sda = SIOD_GPIO_NUM;
+    config.pin_sscb_scl = SIOC_GPIO_NUM;
+    config.pin_pwdn = PWDN_GPIO_NUM;
+    config.pin_reset = RESET_GPIO_NUM;
+    
+    // Camera timing and quality settings
+    config.xclk_freq_hz = 20000000;  // 20MHz
+    config.pixel_format = PIXFORMAT_JPEG;
+    
+    // Choose frame size based on PSRAM availability
+    if (psramFound()) {
+        config.frame_size = FRAMESIZE_UXGA;  // 1600x1200 with PSRAM
+        config.jpeg_quality = 10;            // Higher quality
+        config.fb_count = 2;                 // Double buffering
+        Logger::info("Using high-resolution mode with PSRAM");
+    } else {
+        config.frame_size = FRAMESIZE_SVGA;  // 800x600 without PSRAM
+        config.jpeg_quality = 12;            // Good quality
+        config.fb_count = 1;                 // Single buffer
+        Logger::info("Using standard resolution mode without PSRAM");
     }
     
+    config.grab_mode = CAMERA_GRAB_LATEST;
+    
+    // Initialize the ESP32 camera driver
+    esp_err_t err = esp_camera_init(&config);
+    if (err != ESP_OK) {
+        Logger::error("Camera init failed with error 0x%x", err);
+        return false;
+    }
+    
+    // Get camera sensor for additional configuration
+    sensor_t* sensor = esp_camera_sensor_get();
+    if (sensor == nullptr) {
+        Logger::error("Failed to get camera sensor after initialization");
+        esp_camera_deinit();
+        return false;
+    }
+    
+    // Configure sensor settings for wildlife photography
+    sensor->set_brightness(sensor, 0);     // -2 to 2
+    sensor->set_contrast(sensor, 0);       // -2 to 2  
+    sensor->set_saturation(sensor, 0);     // -2 to 2
+    sensor->set_special_effect(sensor, 0); // 0 to 6 (0=No Effect)
+    sensor->set_whitebal(sensor, 1);       // 0 = disable, 1 = enable
+    sensor->set_awb_gain(sensor, 1);       // 0 = disable, 1 = enable
+    sensor->set_wb_mode(sensor, 0);        // 0 to 4 - if awb_gain enabled
+    sensor->set_exposure_ctrl(sensor, 1);  // 0 = disable, 1 = enable
+    sensor->set_aec2(sensor, 0);           // 0 = disable, 1 = enable
+    sensor->set_ae_level(sensor, 0);       // -2 to 2
+    sensor->set_aec_value(sensor, 300);    // 0 to 1200
+    sensor->set_gain_ctrl(sensor, 1);      // 0 = disable, 1 = enable
+    sensor->set_agc_gain(sensor, 0);       // 0 to 30
+    sensor->set_gainceiling(sensor, (gainceiling_t)0); // 0 to 6
+    sensor->set_bpc(sensor, 0);            // 0 = disable, 1 = enable
+    sensor->set_wpc(sensor, 1);            // 0 = disable, 1 = enable
+    sensor->set_raw_gma(sensor, 1);        // 0 = disable, 1 = enable
+    sensor->set_lenc(sensor, 1);           // 0 = disable, 1 = enable
+    sensor->set_hmirror(sensor, 0);        // 0 = disable, 1 = enable
+    sensor->set_vflip(sensor, 0);          // 0 = disable, 1 = enable
+    sensor->set_dcw(sensor, 1);            // 0 = disable, 1 = enable
+    sensor->set_colorbar(sensor, 0);       // 0 = disable, 1 = enable
+    
+    // Test camera with a quick capture to verify it's working
+    camera_fb_t* fb = esp_camera_fb_get();
+    if (fb == nullptr) {
+        Logger::error("Camera test capture failed");
+        esp_camera_deinit();
+        return false;
+    }
+    
+    Logger::info("Camera test capture successful - %dx%d, %d bytes", 
+                 fb->width, fb->height, fb->len);
+    esp_camera_fb_return(fb);
+    
     m_cameraReady = true;
+    
     Logger::info("Camera initialization complete");
+    Logger::info("  Resolution: %s", config.frame_size == FRAMESIZE_UXGA ? "UXGA (1600x1200)" : "SVGA (800x600)");
+    Logger::info("  JPEG Quality: %d", config.jpeg_quality);
+    Logger::info("  Frame Buffers: %d", config.fb_count);
+    Logger::info("  PSRAM: %s", psramFound() ? "Available" : "Not Available");
+    
     return true;
 }
 
@@ -694,21 +778,21 @@ void SystemManager::handleMotionDetected(const MotionCoordinator::CoordinatorRes
         // Trigger camera capture
         Logger::info("Triggering camera capture based on motion detection");
         
-        // In a real implementation, this would:
-        // 1. Capture image from camera
-        // 2. Save to storage if shouldSave is true
-        // 3. Transmit via LoRa if shouldTransmit is true
-        // 4. Send alerts if shouldAlert is true
-        
-        // For now, just log the action
-        if (result.shouldSave) {
-            Logger::info("Image would be saved to storage");
-        }
-        if (result.shouldTransmit) {
-            Logger::info("Image would be transmitted via LoRa");
-        }
-        if (result.shouldAlert) {
-            Logger::info("Alert would be triggered");
+        // Actually capture and save the image
+        if (captureImage()) {
+            Logger::info("Motion-triggered image captured successfully");
+            
+            // Log additional actions that would be taken
+            if (result.shouldTransmit) {
+                Logger::info("Image would be transmitted via LoRa");
+                // TODO: Implement LoRa transmission
+            }
+            if (result.shouldAlert) {
+                Logger::info("Alert would be triggered");
+                // TODO: Implement alert system
+            }
+        } else {
+            Logger::error("Failed to capture motion-triggered image");
         }
     }
     
@@ -888,8 +972,12 @@ void SystemManager::motionDetectionTask(void* parameter) {
                     Logger::info("Basic PIR motion detected!");
                     lastMotionTime = now;
                     
-                    // Trigger basic camera capture or other actions
-                    // This would be implemented in a full system
+                    // Trigger basic camera capture
+                    if (system->captureImage()) {
+                        Logger::info("PIR-triggered image captured successfully");
+                    } else {
+                        Logger::error("Failed to capture PIR-triggered image");
+                    }
                 }
             }
             
@@ -927,4 +1015,102 @@ void SystemManager::networkCommTask(void* parameter) {
         
         vTaskDelayUntil(&lastWakeTime, frequency);
     }
+}
+
+// Camera operation methods
+
+bool SystemManager::captureImage() {
+    if (!m_cameraReady) {
+        Logger::error("Camera not ready for capture");
+        return false;
+    }
+    
+    Logger::info("Capturing image...");
+    
+    // Capture image to frame buffer
+    camera_fb_t* fb = esp_camera_fb_get();
+    if (fb == nullptr) {
+        Logger::error("Camera capture failed");
+        return false;
+    }
+    
+    Logger::info("Image captured successfully - %dx%d, %d bytes", 
+                 fb->width, fb->height, fb->len);
+    
+    // Save to SD card if storage is available
+    String filename = "";
+    if (m_storageReady) {
+        filename = saveImageToSD(fb);
+        if (filename.length() > 0) {
+            Logger::info("Image saved as: %s", filename.c_str());
+        } else {
+            Logger::warning("Failed to save image to storage");
+        }
+    } else {
+        Logger::warning("Storage not available - image not saved");
+    }
+    
+    // Return the frame buffer
+    esp_camera_fb_return(fb);
+    
+    return true;
+}
+
+String SystemManager::saveImageToSD(camera_fb_t* fb, const char* folder) {
+    if (!m_storageReady || fb == nullptr) {
+        return "";
+    }
+    
+    // Generate timestamp-based filename
+    struct tm timeinfo;
+    char filename[64];
+    char filepath[128];
+    
+    if (getLocalTime(&timeinfo)) {
+        snprintf(filename, sizeof(filename), "IMG_%04d%02d%02d_%02d%02d%02d.jpg",
+                timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    } else {
+        // Fallback to millis-based filename if time is not available
+        snprintf(filename, sizeof(filename), "IMG_%lu.jpg", millis());
+    }
+    
+    snprintf(filepath, sizeof(filepath), "%s/%s", folder, filename);
+    
+    // Try to save to SD card first
+    File file = SD_MMC.open(filepath, FILE_WRITE);
+    if (file) {
+        size_t written = file.write(fb->buf, fb->len);
+        file.close();
+        
+        if (written == fb->len) {
+            Logger::info("Image saved to SD card: %s (%d bytes)", filepath, written);
+            return String(filepath);
+        } else {
+            Logger::error("Failed to write complete image to SD card");
+            SD_MMC.remove(filepath); // Clean up partial file
+        }
+    } else {
+        Logger::warning("Failed to open file on SD card: %s", filepath);
+    }
+    
+    // Fallback to LittleFS if SD card fails
+    snprintf(filepath, sizeof(filepath), "/images/%s", filename);
+    file = LittleFS.open(filepath, FILE_WRITE);
+    if (file) {
+        size_t written = file.write(fb->buf, fb->len);
+        file.close();
+        
+        if (written == fb->len) {
+            Logger::info("Image saved to LittleFS: %s (%d bytes)", filepath, written);
+            return String(filepath);
+        } else {
+            Logger::error("Failed to write complete image to LittleFS");
+            LittleFS.remove(filepath); // Clean up partial file
+        }
+    } else {
+        Logger::error("Failed to open file on LittleFS: %s", filepath);
+    }
+    
+    return ""; // Failed to save
 }
