@@ -1,0 +1,252 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: wildlife_db
+    environment:
+      POSTGRES_DB: wildlife_camera
+      POSTGRES_USER: wildlife
+      POSTGRES_PASSWORD: wildlife123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wildlife -d wildlife_camera"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Celery task queue
+  redis:
+    image: redis:7-alpine
+    container_name: wildlife_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Flask Backend API
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wildlife_backend
+    environment:
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLASK_ENV=development
+      - DEBUG=true
+      - JWT_SECRET_KEY=your-secret-key-change-in-production
+      - UPLOAD_FOLDER=/app/uploads
+    volumes:
+      - ./backend:/app
+      - wildlife_uploads:/app/uploads
+      - wildlife_models:/app/models
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Celery Worker for background tasks
+  celery_worker:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wildlife_celery_worker
+    command: celery -A app.celery worker --loglevel=info --concurrency=2
+    environment:
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - UPLOAD_FOLDER=/app/uploads
+    volumes:
+      - ./backend:/app
+      - wildlife_uploads:/app/uploads
+      - wildlife_models:/app/models
+    depends_on:
+      - db
+      - redis
+      - backend
+    restart: unless-stopped
+
+  # Celery Beat for scheduled tasks
+  celery_beat:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wildlife_celery_beat
+    command: celery -A app.celery beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - wildlife_uploads:/app/uploads
+    depends_on:
+      - db
+      - redis
+      - backend
+    restart: unless-stopped
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: wildlife_frontend
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api
+      - REACT_APP_WEBSOCKET_URL=ws://localhost:5000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
+
+  # Nginx Reverse Proxy (Production)
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: wildlife_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - wildlife_uploads:/var/www/uploads
+    depends_on:
+      - backend
+      - frontend
+    profiles:
+      - production
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: wildlife_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    profiles:
+      - monitoring
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: wildlife_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+  # MinIO for S3-compatible object storage
+  minio:
+    image: minio/minio:latest
+    container_name: wildlife_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    profiles:
+      - storage
+
+  # Machine Learning Training Service
+  ml_trainer:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    container_name: wildlife_ml_trainer
+    environment:
+      - CUDA_VISIBLE_DEVICES=0  # Use GPU if available
+    volumes:
+      - ./ml:/app
+      - wildlife_models:/app/models
+      - ./datasets:/app/datasets
+    command: ["python", "train_model.py", "--config", "config.json"]
+    profiles:
+      - training
+
+  # Jupyter Notebook for ML development
+  jupyter:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile.jupyter
+    container_name: wildlife_jupyter
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_TOKEN=wildlife123
+    volumes:
+      - ./ml:/app
+      - ./datasets:/app/datasets
+      - wildlife_models:/app/models
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--allow-root", "--no-browser"]
+    profiles:
+      - development
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  wildlife_uploads:
+    driver: local
+  wildlife_models:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  default:
+    name: wildlife_network
+    driver: bridge
