@@ -13,8 +13,8 @@
 #include <memory>
 #include <esp_camera.h>
 #include "../hardware/board_detector.h"
-#include "../firmware/include/power/power_manager.h"
-#include "../src/detection/motion_coordinator.h"
+#include "../power/power_manager.h"
+#include "../detection/motion_coordinator.h"
 #include "../camera/camera_manager.h"
 
 /**

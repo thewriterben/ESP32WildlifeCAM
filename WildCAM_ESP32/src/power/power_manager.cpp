@@ -1,4 +1,6 @@
 #include "power_manager.h"
+#include "../../include/config.h"
+#include "../../include/pins.h"
 #include <esp_sleep.h>
 #include <esp_pm.h>
 #include <driver/rtc_io.h>
