@@ -65,6 +65,7 @@
 
 // Debug flags
 #define DEBUG_SERIAL 1
+#define DEBUG_ENABLED 1
 #define DEBUG_CAMERA 1
 #define DEBUG_NETWORK 1
 #define DEBUG_STORAGE 1
