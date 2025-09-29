@@ -28,12 +28,12 @@ import {
 } from '@mui/icons-material';
 
 import cameraService from '../services/cameraService';
+import imageService from '../services/imageService';
 import { useAlert } from '../contexts/AlertContext';
 
 const ImageGallery = () => {
   const [images, setImages] = useState([]);
   const [cameras, setCameras] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [filters, setFilters] = useState({
     camera_id: '',
@@ -50,61 +50,42 @@ const ImageGallery = () => {
   const { showAlert } = useAlert();
 
   useEffect(() => {
+    const loadCameras = async () => {
+      try {
+        const data = await cameraService.getCameras();
+        setCameras(data.cameras || []);
+      } catch (error) {
+        console.error('Error loading cameras:', error);
+        showAlert('Failed to load cameras', 'error');
+      }
+    };
+
+    const loadImages = async () => {
+      try {
+        const params = {
+          page: pagination.page,
+          per_page: pagination.per_page,
+          ...filters,
+        };
+        
+        const data = await imageService.getImages(params);
+        setImages(data.images || []);
+        setPagination(prev => ({
+          ...prev,
+          total: data.total || 0,
+          pages: data.pages || 0,
+        }));
+      } catch (error) {
+        console.error('Error loading images:', error);
+        showAlert('Failed to load images', 'error');
+      }
+    };
+
     loadCameras();
     loadImages();
-  }, [pagination.page, filters]);
+  }, [pagination.page, pagination.per_page, filters, showAlert]);
 
-  const loadCameras = async () => {
-    try {
-      const data = await cameraService.getCameras();
-      setCameras(data.cameras || []);
-    } catch (error) {
-      console.error('Failed to load cameras:', error);
-    }
-  };
 
-  const loadImages = async () => {
-    try {
-      setLoading(true);
-      
-      // Mock implementation - replace with actual API call
-      const mockImages = [
-        {
-          id: 1,
-          filename: 'deer_001.jpg',
-          camera_name: 'Forest Trail Camera 1',
-          timestamp: '2023-10-15T14:35:00Z',
-          detections: [
-            { species: 'White-tailed Deer', confidence: 0.92 }
-          ],
-          thumbnail_url: '/api/images/1/thumbnail'
-        },
-        {
-          id: 2,
-          filename: 'bear_001.jpg',
-          camera_name: 'Forest Trail Camera 1',
-          timestamp: '2023-10-15T08:22:00Z',
-          detections: [
-            { species: 'Black Bear', confidence: 0.87 }
-          ],
-          thumbnail_url: '/api/images/2/thumbnail'
-        },
-        // Add more mock data as needed
-      ];
-
-      setImages(mockImages);
-      setPagination(prev => ({
-        ...prev,
-        total: mockImages.length,
-        pages: Math.ceil(mockImages.length / prev.per_page)
-      }));
-    } catch (error) {
-      console.error('Failed to load images:', error);
-      showAlert('Failed to load images', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleImageClick = (image) => {
     setSelectedImage(image);

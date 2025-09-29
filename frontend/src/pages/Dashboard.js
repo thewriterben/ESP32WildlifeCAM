@@ -20,7 +20,7 @@ import {
 import {
   PhotoCamera,
   Pets,
-  BatteryCharged,
+  Battery90,
   SignalWifi4Bar,
   Refresh,
   Warning,
@@ -55,10 +55,30 @@ function Dashboard() {
   const { showAlert } = useAlert();
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Load analytics and camera data in parallel
+        const [analyticsResponse, camerasResponse] = await Promise.all([
+          analyticsService.getDashboardAnalytics(),
+          cameraService.getCameras()
+        ]);
+        
+        setAnalytics(analyticsResponse);
+        setCameras(camerasResponse.cameras || []);
+      } catch (error) {
+        showAlert('Failed to load dashboard data', 'error');
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const loadDashboardData = async () => {
+    loadData();
+  }, [showAlert]);
+
+  const refreshDashboardData = async () => {
     try {
       setLoading(true);
       
@@ -118,7 +138,7 @@ function Dashboard() {
         <Typography variant="h4" component="h1" gutterBottom>
           Wildlife Camera Dashboard
         </Typography>
-        <IconButton onClick={loadDashboardData} color="primary">
+        <IconButton onClick={refreshDashboardData} color="primary">
           <Refresh />
         </IconButton>
       </Box>
@@ -185,7 +205,7 @@ function Dashboard() {
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                  <BatteryCharged />
+                  <Battery90 />
                 </Avatar>
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
