@@ -38,6 +38,12 @@ temp/
 # Testing
 test_results/
 
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
 # Environment variables
 .env
 
