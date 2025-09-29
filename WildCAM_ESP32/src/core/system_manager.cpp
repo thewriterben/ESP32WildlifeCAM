@@ -6,9 +6,9 @@
  */
 
 #include "system_manager.h"
-#include "../src/utils/logger.h"
-#include "../config.h"
-#include "../src/detection/motion_coordinator.h"
+#include "../utils/logger.h"
+#include "../../include/config.h"
+#include "../detection/motion_coordinator.h"
 #include "../camera/camera_manager.h"
 #include <esp_system.h>
 #include <esp_camera.h>
