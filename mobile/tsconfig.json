@@ -1,0 +1,35 @@
+{
+  "extends": "@tsconfig/react-native/tsconfig.json",
+  "compilerOptions": {
+    "target": "es2017",
+    "lib": ["es2017", "es2015", "dom"],
+    "allowJs": true,
+    "jsx": "react-native",
+    "noEmit": true,
+    "isolatedModules": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "formatDetection": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"],
+      "@components/*": ["components/*"],
+      "@screens/*": ["screens/*"],
+      "@services/*": ["services/*"],
+      "@utils/*": ["utils/*"],
+      "@types/*": ["types/*"],
+      "@store/*": ["store/*"],
+      "@assets/*": ["../assets/*"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "babel.config.js",
+    "metro.config.js",
+    "jest.config.js"
+  ]
+}

@@ -1,0 +1,416 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with Multi-tenant Support
+  db:
+    image: postgres:15-alpine
+    container_name: wildlife_db_v31
+    environment:
+      POSTGRES_DB: wildlife_camera_v31
+      POSTGRES_USER: wildlife
+      POSTGRES_PASSWORD: wildlife123
+      POSTGRES_MULTIPLE_DATABASES: wildlife_camera_v31,wildlife_analytics,wildlife_ml
+    volumes:
+      - postgres_data_v31:/var/lib/postgresql/data
+      - ./backend/v3.1/migrations:/docker-entrypoint-initdb.d
+      - ./database/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wildlife -d wildlife_camera_v31"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+
+  # Redis for Caching and Real-time Data
+  redis:
+    image: redis:7-alpine
+    container_name: wildlife_redis_v31
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_v31:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Enhanced Backend API v3.1
+  backend_v31:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.v3.1
+    container_name: wildlife_backend_v31
+    environment:
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera_v31
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/1
+      - FLASK_ENV=production
+      - DEBUG=false
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
+      - UPLOAD_FOLDER=/app/uploads
+      - ML_MODELS_PATH=/app/models
+      - ANALYTICS_ENABLED=true
+      - MULTI_TENANT_ENABLED=true
+      - WEBSOCKET_ENABLED=true
+      - CONSERVATION_ALERTS_ENABLED=true
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - FCM_SERVER_KEY=${FCM_SERVER_KEY}
+    volumes:
+      - ./backend:/app
+      - wildlife_uploads_v31:/app/uploads
+      - wildlife_models_v31:/app/models
+      - ./logs:/app/logs
+    ports:
+      - "5001:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Enhanced Analytics Worker
+  analytics_worker:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.v3.1
+    container_name: wildlife_analytics_worker_v31
+    command: python -m celery -A app.celery worker --loglevel=info --concurrency=4 --queues=analytics,ml_processing
+    environment:
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera_v31
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/1
+      - UPLOAD_FOLDER=/app/uploads
+      - ML_MODELS_PATH=/app/models
+      - ANALYTICS_ENABLED=true
+      - TF_CPP_MIN_LOG_LEVEL=2
+    volumes:
+      - ./backend:/app
+      - wildlife_uploads_v31:/app/uploads
+      - wildlife_models_v31:/app/models
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+      - backend_v31
+    restart: unless-stopped
+
+  # ML Training Service
+  ml_trainer:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile.v3.1
+    container_name: wildlife_ml_trainer_v31
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - TF_FORCE_GPU_ALLOW_GROWTH=true
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera_v31
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - MODELS_OUTPUT_PATH=/app/models
+      - DATASETS_PATH=/app/datasets
+      - TRAINING_LOGS_PATH=/app/logs
+    volumes:
+      - ./ml:/app
+      - wildlife_models_v31:/app/models
+      - ./datasets:/app/datasets
+      - ./logs/ml:/app/logs
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    command: ["python", "-m", "celery", "-A", "training_worker", "worker", "--loglevel=info", "--concurrency=1", "--queues=model_training"]
+    depends_on:
+      - db
+      - redis
+    profiles:
+      - training
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Celery Beat Scheduler
+  celery_beat:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.v3.1
+    container_name: wildlife_celery_beat_v31
+    command: python -m celery -A app.celery beat --loglevel=info --schedule=/app/celerybeat-schedule
+    environment:
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera_v31
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/1
+    volumes:
+      - ./backend:/app
+      - celery_beat_data:/app/celerybeat-schedule
+    depends_on:
+      - db
+      - redis
+      - backend_v31
+    restart: unless-stopped
+
+  # WebSocket Server for Real-time Communications
+  websocket_server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.websocket
+    container_name: wildlife_websocket_v31
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_URL=redis://redis:6379/2
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera_v31
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
+    volumes:
+      - ./backend/websocket:/app
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+      - db
+    restart: unless-stopped
+
+  # React Frontend (Development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: wildlife_frontend_v31
+    environment:
+      - REACT_APP_API_URL=http://localhost:5001/api
+      - REACT_APP_WEBSOCKET_URL=ws://localhost:8080
+      - REACT_APP_VERSION=3.1.0
+      - REACT_APP_MULTI_TENANT=true
+      - REACT_APP_ANALYTICS_ENABLED=true
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend_v31
+    stdin_open: true
+    tty: true
+
+  # Nginx Load Balancer and Reverse Proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.v3.1
+    container_name: wildlife_nginx_v31
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.v3.1.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - wildlife_uploads_v31:/var/www/uploads
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - backend_v31
+      - frontend
+      - websocket_server
+    profiles:
+      - production
+
+  # Elasticsearch for Advanced Search and Analytics
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
+    container_name: wildlife_elasticsearch_v31
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    profiles:
+      - analytics
+
+  # Kibana for Analytics Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.9.0
+    container_name: wildlife_kibana_v31
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    profiles:
+      - analytics
+
+  # Prometheus for Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: wildlife_prometheus_v31
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.v3.1.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data_v31:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+    profiles:
+      - monitoring
+
+  # Grafana for Monitoring Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: wildlife_grafana_v31
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    volumes:
+      - grafana_data_v31:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+  # MinIO for S3-compatible Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: wildlife_minio_v31
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - minio_data_v31:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - storage
+
+  # Jupyter Notebook for ML Development and Analytics
+  jupyter:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile.jupyter
+    container_name: wildlife_jupyter_v31
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-wildlife123}
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera_v31
+    volumes:
+      - ./ml:/app
+      - ./datasets:/app/datasets
+      - wildlife_models_v31:/app/models
+      - ./notebooks:/app/notebooks
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--allow-root", "--no-browser", "--NotebookApp.token=${JUPYTER_TOKEN:-wildlife123}"]
+    profiles:
+      - development
+
+  # Node Exporter for System Metrics
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: wildlife_node_exporter_v31
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    profiles:
+      - monitoring
+
+  # Backup Service
+  backup:
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    container_name: wildlife_backup_v31
+    environment:
+      - DATABASE_URL=postgresql://wildlife:wildlife123@db:5432/wildlife_camera_v31
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}  # Daily at 2 AM
+      - S3_BUCKET=${BACKUP_S3_BUCKET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      - wildlife_uploads_v31:/app/uploads:ro
+      - wildlife_models_v31:/app/models:ro
+      - ./backups:/app/backups
+    depends_on:
+      - db
+    profiles:
+      - backup
+
+volumes:
+  postgres_data_v31:
+    driver: local
+  redis_data_v31:
+    driver: local
+  wildlife_uploads_v31:
+    driver: local
+  wildlife_models_v31:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  prometheus_data_v31:
+    driver: local
+  grafana_data_v31:
+    driver: local
+  minio_data_v31:
+    driver: local
+  celery_beat_data:
+    driver: local
+
+networks:
+  default:
+    name: wildlife_network_v31
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Health check configuration
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
