@@ -132,6 +132,40 @@
 #define BLOCKCHAIN_FAILSAFE_MODE           true    // Continue camera ops on blockchain failure
 
 // ===========================
+// VERSION 3.2 ENHANCEMENTS
+// ===========================
+
+// Smart contracts for data validation
+#define BLOCKCHAIN_ENABLE_SMART_CONTRACTS  true    // Enable smart contract execution
+#define BLOCKCHAIN_MAX_CONTRACT_SIZE       2048    // Maximum contract size in bytes
+#define BLOCKCHAIN_CONTRACT_GAS_LIMIT      10000   // Gas limit for contract execution
+#define BLOCKCHAIN_RESEARCHER_AUTH         true    // Enable researcher authentication
+
+// Data provenance tracking
+#define BLOCKCHAIN_ENABLE_PROVENANCE       true    // Enable data provenance tracking
+#define BLOCKCHAIN_PROVENANCE_DEPTH        10      // Maximum provenance chain depth
+#define BLOCKCHAIN_TRACK_MODIFICATIONS     true    // Track all data modifications
+#define BLOCKCHAIN_IMMUTABLE_OBSERVATIONS  true    // Make observations immutable
+
+// Proof-of-authenticity system
+#define BLOCKCHAIN_PROOF_OF_AUTHENTICITY   true    // Enable proof-of-authenticity
+#define BLOCKCHAIN_WITNESS_NODES           3       // Minimum witness nodes required
+#define BLOCKCHAIN_CONSENSUS_THRESHOLD     0.67f   // Consensus threshold (67%)
+#define BLOCKCHAIN_AUTHENTICATION_TIMEOUT  30000   // Authentication timeout (ms)
+
+// Enhanced transaction logging
+#define BLOCKCHAIN_LOG_ALL_UPLOADS         true    // Log all data uploads
+#define BLOCKCHAIN_LOG_MODIFICATIONS       true    // Log all modifications
+#define BLOCKCHAIN_LOG_ACCESS_PATTERNS     true    // Log data access patterns
+#define BLOCKCHAIN_AUDIT_TRAIL            true    // Maintain complete audit trail
+
+// Cryptographic enhancements
+#define BLOCKCHAIN_ENHANCED_HASHING        true    // Enhanced hashing algorithms
+#define BLOCKCHAIN_MULTI_SIGNATURE         false   // Multi-signature support (future)
+#define BLOCKCHAIN_ZERO_KNOWLEDGE_PROOFS   false   // Zero-knowledge proofs (future)
+#define BLOCKCHAIN_HOMOMORPHIC_ENCRYPTION  false   // Homomorphic encryption (future)
+
+// ===========================
 // VALIDATION CONSTANTS
 // ===========================
 

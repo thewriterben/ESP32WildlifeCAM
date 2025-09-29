@@ -1,9 +1,10 @@
 /**
  * @file wildlife_audio_classifier.h
- * @brief Enhanced Wildlife Audio Classification System
+ * @brief Enhanced Wildlife Audio Classification System v3.2
  * 
- * Extends the existing acoustic detection system with comprehensive wildlife
- * species identification and audio-visual fusion capabilities.
+ * Version 3.2 enhancements: Advanced audio detection, directional capture,
+ * machine learning classification, noise filtering, behavioral analysis,
+ * and comprehensive audio-visual data fusion capabilities.
  */
 
 #ifndef WILDLIFE_AUDIO_CLASSIFIER_H
@@ -28,36 +29,89 @@ enum class AudioConfidenceLevel {
 };
 
 /**
- * Wildlife species audio signatures
+ * Version 3.2: Directional audio capture modes
+ */
+enum class DirectionalCaptureMode {
+    OMNIDIRECTIONAL,    // Standard omnidirectional capture
+    DIRECTIONAL,        // Single-direction focused capture
+    BEAMFORMING,        // Adaptive beamforming (multi-mic)
+    NOISE_CANCELLING,   // Active noise cancellation
+    ADAPTIVE            // Adaptive directional switching
+};
+
+/**
+ * Version 3.2: Audio processing algorithms
+ */
+enum class AudioProcessingAlgorithm {
+    BASIC_FFT,          // Basic FFT analysis
+    MEL_SPECTROGRAM,    // Mel-frequency spectrogram
+    MFCC,               // Mel-frequency cepstral coefficients
+    SPECTRAL_CENTROID,  // Spectral centroid analysis
+    HARMONIC_ANALYSIS,  // Harmonic pattern analysis
+    NEURAL_NETWORK      // Neural network classification
+};
+
+/**
+ * Version 3.2: Behavioral audio patterns
+ */
+enum class AudioBehaviorPattern {
+    FEEDING,            // Feeding behavior sounds
+    MATING_CALL,        // Mating/courtship calls
+    TERRITORIAL,        // Territorial marking sounds
+    ALARM_CALL,         // Alarm or warning calls
+    SOCIAL_CALL,        // Social communication
+    MOVEMENT,           // Movement sounds (footsteps, rustling)
+    BREATHING,          // Breathing or snorting sounds
+    UNKNOWN_BEHAVIOR    // Unclassified behavior
+};
+
+/**
+ * Wildlife species audio signatures (Version 3.2 Enhanced)
  */
 struct SpeciesAudioSignature {
     String species_name;
-    float frequency_range_min;      // Hz
-    float frequency_range_max;      // Hz
-    float peak_frequency;           // Hz
-    float call_duration_min;        // ms
-    float call_duration_max;        // ms
-    float repetition_interval;      // ms
-    float amplitude_threshold;      // dB
+    String common_name;
+    float frequency_range_min;          // Hz
+    float frequency_range_max;          // Hz
+    float peak_frequency;               // Hz
+    float call_duration_min;            // ms
+    float call_duration_max;            // ms
+    float repetition_interval;          // ms
+    float amplitude_threshold;          // dB
     std::vector<float> harmonic_ratios;
+    
+    // Version 3.2 enhancements
+    AudioBehaviorPattern behavior_type;
+    float seasonal_activity_factor;     // 0.0-1.0 seasonal adjustment
+    float time_of_day_factor;          // 0.0-1.0 time adjustment
+    std::vector<float> mfcc_template;   // MFCC template for ML matching
+    String geographic_region;          // Geographic applicability
+    float confidence_threshold;        // Minimum confidence for detection
     
     SpeciesAudioSignature() 
         : species_name("unknown")
+        , common_name("Unknown Species")
         , frequency_range_min(100.0f)
         , frequency_range_max(8000.0f)
         , peak_frequency(2000.0f)
         , call_duration_min(100.0f)
         , call_duration_max(5000.0f)
         , repetition_interval(1000.0f)
-        , amplitude_threshold(-40.0f) {
+        , amplitude_threshold(-40.0f)
+        , behavior_type(AudioBehaviorPattern::UNKNOWN_BEHAVIOR)
+        , seasonal_activity_factor(1.0f)
+        , time_of_day_factor(1.0f)
+        , geographic_region("global")
+        , confidence_threshold(0.7f) {
     }
 };
 
 /**
- * Audio classification result
+ * Version 3.2: Enhanced audio classification result
  */
 struct AudioClassificationResult {
     String detected_species;
+    String common_name;
     float confidence;
     AudioConfidenceLevel confidence_level;
     float frequency_match;
@@ -69,8 +123,21 @@ struct AudioClassificationResult {
     bool is_mammal_call;
     float noise_level;
     
+    // Version 3.2 enhancements
+    AudioBehaviorPattern behavior_pattern;
+    DirectionalCaptureMode capture_mode;
+    AudioProcessingAlgorithm processing_algorithm;
+    float direction_angle;              // Direction of sound source (degrees)
+    float distance_estimate;            // Estimated distance to source (meters)
+    std::vector<float> frequency_spectrum; // Full frequency spectrum
+    std::vector<float> mfcc_features;   // MFCC feature vector
+    float environmental_noise_level;    // Background noise level
+    bool is_filtered;                   // Was noise filtering applied
+    String acoustic_fingerprint;       // Unique acoustic fingerprint hash
+    
     AudioClassificationResult() 
         : detected_species("none")
+        , common_name("No Detection")
         , confidence(0.0f)
         , confidence_level(AudioConfidenceLevel::VERY_LOW)
         , frequency_match(0.0f)
@@ -80,7 +147,15 @@ struct AudioClassificationResult {
         , is_wildlife(false)
         , is_bird_call(false)
         , is_mammal_call(false)
-        , noise_level(0.0f) {
+        , noise_level(0.0f)
+        , behavior_pattern(AudioBehaviorPattern::UNKNOWN_BEHAVIOR)
+        , capture_mode(DirectionalCaptureMode::OMNIDIRECTIONAL)
+        , processing_algorithm(AudioProcessingAlgorithm::BASIC_FFT)
+        , direction_angle(0.0f)
+        , distance_estimate(0.0f)
+        , environmental_noise_level(0.0f)
+        , is_filtered(false)
+        , acoustic_fingerprint("") {
     }
 };
 

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Wildlife CAM - Research Dashboard v3.2.0</title>
+    <link rel="stylesheet" href="research_dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.min.css" />
+</head>
+<body>
+    <!-- Header -->
+    <header class="research-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <i class="fas fa-camera"></i>
+                <h1>Wildlife Research Platform</h1>
+                <span class="version-badge">v3.2.0</span>
+            </div>
+            <div class="user-section">
+                <div class="researcher-info">
+                    <span class="researcher-name" id="researcherName">Dr. Jane Smith</span>
+                    <span class="institution" id="institution">Wildlife Conservation Institute</span>
+                </div>
+                <div class="online-status">
+                    <i class="fas fa-circle online" id="connectionStatus"></i>
+                    <span id="connectionText">Online</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <ul class="nav-menu">
+                <li class="nav-item active" data-section="overview">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Overview</span>
+                </li>
+                <li class="nav-item" data-section="live-stream">
+                    <i class="fas fa-video"></i>
+                    <span>Live Streams</span>
+                </li>
+                <li class="nav-item" data-section="detections">
+                    <i class="fas fa-search"></i>
+                    <span>Detections</span>
+                </li>
+                <li class="nav-item" data-section="annotations">
+                    <i class="fas fa-tags"></i>
+                    <span>Annotations</span>
+                </li>
+                <li class="nav-item" data-section="map">
+                    <i class="fas fa-map"></i>
+                    <span>Camera Map</span>
+                </li>
+                <li class="nav-item" data-section="analytics">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </li>
+                <li class="nav-item" data-section="blockchain">
+                    <i class="fas fa-link"></i>
+                    <span>Blockchain</span>
+                </li>
+                <li class="nav-item" data-section="federated">
+                    <i class="fas fa-network-wired"></i>
+                    <span>Federated Learning</span>
+                </li>
+                <li class="nav-item" data-section="collaboration">
+                    <i class="fas fa-users"></i>
+                    <span>Collaboration</span>
+                </li>
+                <li class="nav-item" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Overview Section -->
+            <section id="overview" class="content-section active">
+                <div class="section-header">
+                    <h2>Research Platform Overview</h2>
+                    <div class="real-time-indicator">
+                        <i class="fas fa-sync-alt spinning"></i>
+                        <span>Real-time Updates Active</span>
+                    </div>
+                </div>
+
+                <!-- Status Cards -->
+                <div class="status-cards">
+                    <div class="status-card">
+                        <div class="card-icon">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Active Cameras</h3>
+                            <span class="card-value" id="activeCameras">12</span>
+                            <span class="card-change positive">+2 today</span>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="card-icon">
+                            <i class="fas fa-paw"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Wildlife Detections</h3>
+                            <span class="card-value" id="wildlifeDetections">847</span>
+                            <span class="card-change positive">+23 today</span>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="card-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Active Researchers</h3>
+                            <span class="card-value" id="activeResearchers">8</span>
+                            <span class="card-change neutral">online now</span>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="card-icon">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Blockchain Integrity</h3>
+                            <span class="card-value" id="blockchainIntegrity">99.9%</span>
+                            <span class="card-change positive">verified</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="activity-section">
+                    <h3>Recent Wildlife Activity</h3>
+                    <div class="activity-feed" id="activityFeed">
+                        <!-- Activity items will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Quick Charts -->
+                <div class="charts-section">
+                    <div class="chart-container">
+                        <h3>Detection Trends (Last 24 Hours)</h3>
+                        <canvas id="detectionTrendsChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Species Distribution</h3>
+                        <canvas id="speciesDistributionChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Live Stream Section -->
+            <section id="live-stream" class="content-section">
+                <div class="section-header">
+                    <h2>Live Camera Streams</h2>
+                    <div class="stream-controls">
+                        <button class="btn btn-primary" onclick="refreshStreams()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="btn btn-secondary" onclick="toggleAllStreams()">
+                            <i class="fas fa-play"></i> Start All
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stream-grid" id="streamGrid">
+                    <!-- Live stream feeds will be populated here -->
+                </div>
+            </section>
+
+            <!-- Real-time Map Section -->
+            <section id="map" class="content-section">
+                <div class="section-header">
+                    <h2>Real-time Camera Map</h2>
+                    <div class="map-controls">
+                        <button class="btn btn-primary" onclick="centerMap()">
+                            <i class="fas fa-crosshairs"></i> Center
+                        </button>
+                        <select id="mapLayer" onchange="changeMapLayer()">
+                            <option value="satellite">Satellite</option>
+                            <option value="terrain">Terrain</option>
+                            <option value="street">Street</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="wildlifeMap" class="wildlife-map"></div>
+                <div class="map-legend">
+                    <div class="legend-item">
+                        <span class="legend-marker active-camera"></span>
+                        <span>Active Camera</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-marker recent-detection"></span>
+                        <span>Recent Detection</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-marker offline-camera"></span>
+                        <span>Offline Camera</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Collaboration Section -->
+            <section id="collaboration" class="content-section">
+                <div class="section-header">
+                    <h2>Research Collaboration</h2>
+                </div>
+
+                <div class="collaboration-panels">
+                    <!-- Active Researchers Panel -->
+                    <div class="collab-panel">
+                        <h3>Active Researchers</h3>
+                        <div class="researcher-list" id="researcherList">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Chat Panel -->
+                    <div class="collab-panel chat-panel">
+                        <h3>Research Chat</h3>
+                        <div class="chat-messages" id="chatMessages">
+                            <!-- Chat messages populated by JavaScript -->
+                        </div>
+                        <div class="chat-input">
+                            <input type="text" id="chatInput" placeholder="Type a message...">
+                            <button onclick="sendChatMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Panel -->
+                    <div class="collab-panel">
+                        <h3>Notifications</h3>
+                        <div class="notification-list" id="notificationList">
+                            <!-- Notifications populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Blockchain Section -->
+            <section id="blockchain" class="content-section">
+                <div class="section-header">
+                    <h2>Blockchain Data Integrity</h2>
+                </div>
+
+                <div class="blockchain-dashboard">
+                    <div class="blockchain-stats">
+                        <div class="stat-item">
+                            <h4>Total Blocks</h4>
+                            <span id="totalBlocks">1,247</span>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Verified Transactions</h4>
+                            <span id="verifiedTransactions">15,632</span>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Data Integrity</h4>
+                            <span id="dataIntegrity">100%</span>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Smart Contracts</h4>
+                            <span id="smartContracts">12</span>
+                        </div>
+                    </div>
+
+                    <div class="blockchain-activity">
+                        <h3>Recent Blockchain Activity</h3>
+                        <div class="blockchain-log" id="blockchainLog">
+                            <!-- Blockchain activity log -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Federated Learning Section -->
+            <section id="federated" class="content-section">
+                <div class="section-header">
+                    <h2>Federated Learning Network</h2>
+                </div>
+
+                <div class="federated-dashboard">
+                    <div class="fl-stats">
+                        <div class="stat-item">
+                            <h4>Network Nodes</h4>
+                            <span id="networkNodes">24</span>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Training Rounds</h4>
+                            <span id="trainingRounds">156</span>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Model Accuracy</h4>
+                            <span id="modelAccuracy">94.7%</span>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Active Training</h4>
+                            <span id="activeTraining">Species Classifier</span>
+                        </div>
+                    </div>
+
+                    <div class="fl-visualization">
+                        <h3>Network Topology</h3>
+                        <div id="networkVisualization" class="network-viz">
+                            <!-- Network visualization will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="research_dashboard.js"></script>
+</body>
+</html>

@@ -1,9 +1,17 @@
 /**
  * @file main.cpp
- * @brief ESP32WildlifeCAM Main Entry Point
+ * @brief ESP32WildlifeCAM Main Entry Point - Version 3.2.0
  * @author thewriterben
- * @date 2025-08-31
- * @version 2.5.0
+ * @date 2025-01-01
+ * @version 3.2.0
+ * 
+ * Version 3.2.0 - Advanced Wildlife Monitoring Platform
+ * 
+ * New Features:
+ * 1. Blockchain-based Data Verification
+ * 2. Real-time Collaborative Research Platform
+ * 3. Advanced Audio Detection and Classification
+ * 4. Federated Learning Across Camera Networks
  */
 
 #include <Arduino.h>
@@ -13,15 +21,29 @@
 #include "core/system_manager.h"
 #include "utils/logger.h"
 
+// Version 3.2.0 Component Includes
+#include "src/blockchain/SmartContractEngine.h"
+#include "src/blockchain/BlockchainIntegration.h"
+#include "src/research/CollaborativeResearchPlatform.h"
+#include "src/audio/wildlife_audio_classifier.h"
+#include "src/ai/FederatedLearningCoordinator.h"
+
 // Global system manager instance
 SystemManager* g_system = nullptr;
 
+// Version 3.2.0 Global component instances
+SmartContractEngine* g_smartContractEngine = nullptr;
+CollaborativeResearchPlatform* g_researchPlatform = nullptr;
+WildlifeAudioClassifier* g_audioClassifier = nullptr;
+FederatedLearningCoordinator* g_federatedCoordinator = nullptr;
+
 /**
- * Enhanced Safe Mode Implementation
+ * Version 3.2.0 Enhanced Safe Mode Implementation
  * Provides comprehensive error handling and safe operation when initialization fails
+ * Now includes blockchain integrity checks and research platform status
  */
 void enterSafeMode() {
-    Logger::error("=== ENTERING SAFE MODE ===");
+    Logger::error("=== ENTERING SAFE MODE v3.2.0 ===");
     
     // Initialize basic hardware for safe mode operation
     pinMode(LED_BUILTIN, OUTPUT);
@@ -35,6 +57,20 @@ void enterSafeMode() {
     Logger::error("Free heap: %d bytes", ESP.getFreeHeap());
     if (psramFound()) {
         Logger::error("PSRAM: %d bytes", ESP.getPsramSize());
+    }
+    
+    // Version 3.2.0: Check component states
+    if (g_smartContractEngine) {
+        Logger::error("Smart Contract Engine: %s", 
+                     g_smartContractEngine->isInitialized() ? "Initialized" : "Failed");
+    }
+    if (g_researchPlatform) {
+        Logger::error("Research Platform: %s", 
+                     g_researchPlatform->isInitialized() ? "Initialized" : "Failed");
+    }
+    if (g_federatedCoordinator) {
+        Logger::error("Federated Learning: %s", 
+                     g_federatedCoordinator->isInitialized() ? "Initialized" : "Failed");
     }
     
     // Shutdown non-essential peripherals for safety
@@ -162,6 +198,82 @@ void enterSafeMode() {
     }
 }
 
+/**
+ * Version 3.2.0 Enhanced System Initialization
+ * Initializes all Version 3.2.0 components in correct order
+ */
+bool initializeVersion32Components() {
+    Logger::info("Initializing Version 3.2.0 components...");
+    
+    // 1. Initialize Smart Contract Engine
+    g_smartContractEngine = new SmartContractEngine();
+    if (!g_smartContractEngine->initialize()) {
+        Logger::error("Failed to initialize Smart Contract Engine");
+        return false;
+    }
+    Logger::info("✓ Smart Contract Engine initialized");
+    
+    // 2. Initialize Collaborative Research Platform
+    g_researchPlatform = new CollaborativeResearchPlatform();
+    if (!g_researchPlatform->initialize(81)) { // WebSocket on port 81
+        Logger::error("Failed to initialize Collaborative Research Platform");
+        return false;
+    }
+    Logger::info("✓ Collaborative Research Platform initialized");
+    
+    // 3. Initialize Wildlife Audio Classifier
+    g_audioClassifier = new WildlifeAudioClassifier();
+    if (!g_audioClassifier->initialize()) {
+        Logger::error("Failed to initialize Wildlife Audio Classifier");
+        return false;
+    }
+    Logger::info("✓ Wildlife Audio Classifier initialized");
+    
+    // 4. Initialize Federated Learning Coordinator
+    g_federatedCoordinator = new FederatedLearningCoordinator();
+    if (!g_federatedCoordinator->initialize()) {
+        Logger::error("Failed to initialize Federated Learning Coordinator");
+        return false;
+    }
+    Logger::info("✓ Federated Learning Coordinator initialized");
+    
+    Logger::info("All Version 3.2.0 components initialized successfully!");
+    return true;
+}
+
+/**
+ * Version 3.2.0 Component Cleanup
+ * Properly shuts down all Version 3.2.0 components
+ */
+void cleanupVersion32Components() {
+    Logger::info("Cleaning up Version 3.2.0 components...");
+    
+    if (g_federatedCoordinator) {
+        g_federatedCoordinator->shutdown();
+        delete g_federatedCoordinator;
+        g_federatedCoordinator = nullptr;
+    }
+    
+    if (g_audioClassifier) {
+        delete g_audioClassifier;
+        g_audioClassifier = nullptr;
+    }
+    
+    if (g_researchPlatform) {
+        g_researchPlatform->shutdown();
+        delete g_researchPlatform;
+        g_researchPlatform = nullptr;
+    }
+    
+    if (g_smartContractEngine) {
+        g_smartContractEngine->shutdown();
+        delete g_smartContractEngine;
+        g_smartContractEngine = nullptr;
+    }
+    
+    Logger::info("Version 3.2.0 components cleanup complete");
+}
+
 void setup() {
     // Initialize serial for debugging
     Serial.begin(115200);
@@ -171,9 +283,16 @@ void setup() {
     
     // Print startup banner
     Logger::info("===================================");
-    Logger::info("ESP32WildlifeCAM v" VERSION);
+    Logger::info("ESP32WildlifeCAM v3.2.0");
+    Logger::info("Advanced Wildlife Monitoring Platform");
     Logger::info("Build: " __DATE__ " " __TIME__);
     Logger::info("Author: thewriterben");
+    Logger::info("===================================");
+    Logger::info("New in v3.2.0:");
+    Logger::info("- Blockchain-based Data Verification");
+    Logger::info("- Real-time Collaborative Research Platform");
+    Logger::info("- Advanced Audio Detection & Classification");
+    Logger::info("- Federated Learning Across Camera Networks");
     Logger::info("===================================");
     
     // Detect board type
@@ -191,17 +310,40 @@ void setup() {
         enterSafeMode();
     }
     
+    // Initialize Version 3.2.0 components
+    if (!initializeVersion32Components()) {
+        Logger::error("Failed to initialize Version 3.2.0 components!");
+        Logger::error("Entering safe mode...");
+        
+        // Cleanup what we can
+        cleanupVersion32Components();
+        
+        // Enter safe mode
+        enterSafeMode();
+    }
+    
     Logger::info("System initialization complete!");
     Logger::info("Free heap: %d bytes", ESP.getFreeHeap());
     if (psramFound()) {
         Logger::info("PSRAM: %d bytes", ESP.getPsramSize());
     }
+    
+    Logger::info("Version 3.2.0 Wildlife Monitoring Platform ready!");
 }
 
 void loop() {
     // Main system loop
     if (g_system) {
         g_system->update();
+    }
+    
+    // Version 3.2.0 component updates
+    if (g_researchPlatform && g_researchPlatform->isInitialized()) {
+        g_researchPlatform->update();
+    }
+    
+    if (g_federatedCoordinator && g_federatedCoordinator->isInitialized()) {
+        g_federatedCoordinator->update();
     }
     
     // Yield to other tasks

@@ -1,0 +1,748 @@
+/**
+ * ESP32 Wildlife CAM - Research Dashboard CSS v3.2.0
+ * Advanced Wildlife Monitoring Platform Styles
+ */
+
+/* Reset and Base Styles */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* Header Styles */
+.research-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1rem 2rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo-section i {
+    font-size: 2rem;
+    color: #2a5298;
+}
+
+.logo-section h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2a5298;
+}
+
+.version-badge {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.researcher-info {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+}
+
+.researcher-name {
+    font-weight: 600;
+    color: #2a5298;
+}
+
+.institution {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.online-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.online-status .online {
+    color: #4CAF50;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.logout-btn {
+    background: none;
+    border: 2px solid #e74c3c;
+    color: #e74c3c;
+    padding: 0.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+/* Dashboard Layout */
+.dashboard-container {
+    display: flex;
+    margin-top: 80px;
+    min-height: calc(100vh - 80px);
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 250px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem 0;
+    position: fixed;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+}
+
+.nav-menu {
+    list-style: none;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.nav-item:hover {
+    background: rgba(42, 82, 152, 0.1);
+    border-left-color: #2a5298;
+}
+
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(42, 82, 152, 0.1) 0%, transparent 100%);
+    border-left-color: #2a5298;
+    color: #2a5298;
+    font-weight: 600;
+}
+
+.nav-item i {
+    font-size: 1.2rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* Main Content Styles */
+.main-content {
+    flex: 1;
+    margin-left: 250px;
+    padding: 2rem;
+    overflow-x: hidden;
+}
+
+.content-section {
+    display: none;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.content-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.section-header h2 {
+    font-size: 2rem;
+    color: white;
+    font-weight: 300;
+}
+
+.real-time-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #4CAF50;
+    font-size: 0.9rem;
+}
+
+.spinning {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Status Cards */
+.status-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.status-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.status-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+}
+
+.card-icon {
+    background: linear-gradient(45deg, #2a5298, #1e3c72);
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.card-content h3 {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2a5298;
+    display: block;
+}
+
+.card-change {
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+.card-change.positive {
+    color: #4CAF50;
+}
+
+.card-change.negative {
+    color: #e74c3c;
+}
+
+.card-change.neutral {
+    color: #666;
+}
+
+/* Activity Feed */
+.activity-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.activity-section h3 {
+    color: #2a5298;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+}
+
+.activity-feed {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+}
+
+.activity-icon.detection {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+}
+
+.activity-icon.alert {
+    background: linear-gradient(45deg, #ff9800, #f57c00);
+}
+
+.activity-icon.system {
+    background: linear-gradient(45deg, #2196F3, #1976D2);
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-title {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.activity-description {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.activity-time {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+/* Charts Section */
+.charts-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.chart-container {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.chart-container h3 {
+    color: #2a5298;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+/* Buttons */
+.btn {
+    background: linear-gradient(45deg, #2a5298, #1e3c72);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(42, 82, 152, 0.4);
+}
+
+.btn.btn-secondary {
+    background: linear-gradient(45deg, #666, #555);
+}
+
+.btn.btn-success {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+}
+
+.btn.btn-danger {
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+}
+
+/* Stream Grid */
+.stream-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.stream-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.stream-header {
+    padding: 1rem;
+    background: linear-gradient(45deg, #2a5298, #1e3c72);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stream-video {
+    width: 100%;
+    height: 200px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+.stream-controls {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Map Styles */
+.wildlife-map {
+    height: 600px;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.map-legend {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: white;
+}
+
+.legend-marker {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.legend-marker.active-camera {
+    background: #4CAF50;
+}
+
+.legend-marker.recent-detection {
+    background: #ff9800;
+}
+
+.legend-marker.offline-camera {
+    background: #e74c3c;
+}
+
+/* Collaboration Styles */
+.collaboration-panels {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 2rem;
+}
+
+.collab-panel {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.collab-panel h3 {
+    color: #2a5298;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+}
+
+/* Chat Styles */
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-messages {
+    flex: 1;
+    height: 400px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.chat-message {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.chat-message.own {
+    background: linear-gradient(45deg, #2a5298, #1e3c72);
+    color: white;
+    margin-left: 2rem;
+}
+
+.message-author {
+    font-weight: 600;
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+}
+
+.message-time {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    float: right;
+}
+
+.chat-input {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 2px solid #ddd;
+    border-radius: 25px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.chat-input input:focus {
+    border-color: #2a5298;
+}
+
+.chat-input button {
+    background: linear-gradient(45deg, #2a5298, #1e3c72);
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.chat-input button:hover {
+    transform: scale(1.1);
+}
+
+/* Blockchain Dashboard */
+.blockchain-dashboard,
+.federated-dashboard {
+    display: grid;
+    gap: 2rem;
+}
+
+.blockchain-stats,
+.fl-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.stat-item h4 {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-item span {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2a5298;
+}
+
+.blockchain-activity,
+.fl-visualization {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.blockchain-log {
+    height: 300px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.85rem;
+    background: #1e1e1e;
+    color: #00ff00;
+    padding: 1rem;
+    border-radius: 10px;
+}
+
+.network-viz {
+    height: 400px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 100px;
+    right: 2rem;
+    z-index: 9999;
+}
+
+.toast {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    border-left: 4px solid #4CAF50;
+    animation: slideIn 0.3s ease-out;
+    max-width: 300px;
+}
+
+.toast.error {
+    border-left-color: #e74c3c;
+}
+
+.toast.warning {
+    border-left-color: #ff9800;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .charts-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .collaboration-panels {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-content {
+        padding: 0 1rem;
+    }
+    
+    .main-content {
+        padding: 1rem;
+    }
+    
+    .status-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
