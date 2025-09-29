@@ -29,7 +29,14 @@ enum BlockchainStatus {
     BLOCKCHAIN_ERROR_INVALID_CONFIG,     // Invalid configuration
     BLOCKCHAIN_ERROR_FILE_IO,            // File I/O error
     BLOCKCHAIN_ERROR_TIMEOUT,            // Operation timeout
-    BLOCKCHAIN_ERROR_DISABLED           // Blockchain disabled
+    BLOCKCHAIN_ERROR_DISABLED,           // Blockchain disabled
+    // Version 3.2 enhanced error codes
+    BLOCKCHAIN_ERROR_SMART_CONTRACT_FAILED,  // Smart contract execution failed
+    BLOCKCHAIN_ERROR_AUTH_FAILED,            // Researcher authentication failed
+    BLOCKCHAIN_ERROR_INSUFFICIENT_WITNESSES, // Not enough witness nodes
+    BLOCKCHAIN_ERROR_CONSENSUS_FAILED,       // Consensus not reached
+    BLOCKCHAIN_ERROR_PROVENANCE_BROKEN,      // Data provenance chain broken
+    BLOCKCHAIN_ERROR_IMMUTABLE_VIOLATION     // Attempted modification of immutable data
 };
 
 /**
@@ -73,6 +80,40 @@ enum HashFrequency {
     HASH_EVERY_FIFTH = 5,                // Hash every fifth capture
     HASH_EVERY_TENTH = 10,               // Hash every tenth capture
     HASH_TIME_BASED = 99                 // Time-based hashing
+};
+
+/**
+ * @brief Version 3.2 researcher authentication levels
+ */
+enum ResearcherAuthLevel {
+    AUTH_LEVEL_NONE = 0,                 // No authentication required
+    AUTH_LEVEL_BASIC = 1,                // Basic researcher credentials
+    AUTH_LEVEL_VERIFIED = 2,             // Verified researcher with institution
+    AUTH_LEVEL_ADMIN = 3,                // Administrative access
+    AUTH_LEVEL_SYSTEM = 4                // System-level access
+};
+
+/**
+ * @brief Smart contract execution states
+ */
+enum SmartContractState {
+    CONTRACT_STATE_CREATED = 0,          // Contract created but not deployed
+    CONTRACT_STATE_DEPLOYED = 1,         // Contract deployed and ready
+    CONTRACT_STATE_EXECUTING = 2,        // Contract currently executing
+    CONTRACT_STATE_COMPLETED = 3,        // Contract execution completed
+    CONTRACT_STATE_FAILED = 4,           // Contract execution failed
+    CONTRACT_STATE_SUSPENDED = 5         // Contract execution suspended
+};
+
+/**
+ * @brief Data provenance tracking states
+ */
+enum ProvenanceState {
+    PROVENANCE_ORIGINAL = 0,             // Original data source
+    PROVENANCE_DERIVED = 1,              // Derived from other data
+    PROVENANCE_MODIFIED = 2,             // Modified data
+    PROVENANCE_VALIDATED = 3,            // Validated by researchers
+    PROVENANCE_DISPUTED = 4              // Data under dispute
 };
 
 // ===========================
@@ -163,6 +204,107 @@ struct WildlifeContext {
         environmentalConditions(""), temperature(0.0), humidity(0.0),
         windSpeed(0.0), timeOfDay(""), season(""), isRareSpecies(false),
         isProtectedSpecies(false) {}
+};
+
+// ===========================
+// VERSION 3.2 ENHANCED STRUCTURES
+// ===========================
+
+/**
+ * @brief Researcher authentication information
+ */
+struct ResearcherAuth {
+    String researcherId;                 // Unique researcher identifier
+    String institutionId;                // Institution identifier
+    String credentials;                  // Encrypted credentials hash
+    ResearcherAuthLevel authLevel;       // Authentication level
+    uint32_t authTimestamp;              // Authentication timestamp
+    uint32_t expirationTimestamp;        // Credential expiration
+    String publicKey;                    // Public key for verification
+    bool isActive;                       // Authentication active status
+    String permissions;                  // JSON permissions string
+    
+    ResearcherAuth() : researcherId(""), institutionId(""), credentials(""),
+        authLevel(AUTH_LEVEL_NONE), authTimestamp(0), expirationTimestamp(0),
+        publicKey(""), isActive(false), permissions("{}") {}
+};
+
+/**
+ * @brief Smart contract definition and state
+ */
+struct SmartContract {
+    String contractId;                   // Unique contract identifier
+    String contractCode;                 // Contract bytecode/script
+    SmartContractState state;            // Current execution state
+    String inputData;                    // Input data for execution
+    String outputData;                   // Output data from execution
+    uint32_t gasUsed;                    // Gas consumed during execution
+    String executionError;               // Error message if failed
+    uint32_t createdTimestamp;           // Contract creation timestamp
+    uint32_t lastExecutionTimestamp;     // Last execution timestamp
+    String createdBy;                    // Creator researcher ID
+    
+    SmartContract() : contractId(""), contractCode(""), state(CONTRACT_STATE_CREATED),
+        inputData(""), outputData(""), gasUsed(0), executionError(""),
+        createdTimestamp(0), lastExecutionTimestamp(0), createdBy("") {}
+};
+
+/**
+ * @brief Data provenance tracking information
+ */
+struct DataProvenance {
+    String provenanceId;                 // Unique provenance identifier
+    String sourceDataHash;               // Hash of source data
+    String derivedDataHash;              // Hash of derived data
+    ProvenanceState state;               // Provenance state
+    String transformationDescription;     // Description of transformation
+    String researcherIds;                // JSON array of researcher IDs involved
+    uint32_t transformationTimestamp;    // When transformation occurred
+    String validationSignature;          // Validation signature
+    bool isImmutable;                    // Immutability flag
+    
+    DataProvenance() : provenanceId(""), sourceDataHash(""), derivedDataHash(""),
+        state(PROVENANCE_ORIGINAL), transformationDescription(""), researcherIds("[]"),
+        transformationTimestamp(0), validationSignature(""), isImmutable(false) {}
+};
+
+/**
+ * @brief Proof-of-authenticity verification result
+ */
+struct ProofOfAuthenticity {
+    String dataHash;                     // Hash of authenticated data
+    bool isAuthentic;                    // Authenticity verification result
+    float consensusScore;                // Consensus score (0.0-1.0)
+    uint32_t witnessCount;               // Number of witness nodes
+    String witnessNodes;                 // JSON array of witness node IDs
+    uint32_t verificationTimestamp;      // Verification timestamp
+    String proofSignature;               // Cryptographic proof signature
+    String challengeResponse;            // Challenge-response data
+    
+    ProofOfAuthenticity() : dataHash(""), isAuthentic(false), consensusScore(0.0),
+        witnessCount(0), witnessNodes("[]"), verificationTimestamp(0),
+        proofSignature(""), challengeResponse("") {}
+};
+
+/**
+ * @brief Enhanced blockchain metrics for Version 3.2
+ */
+struct EnhancedBlockchainMetrics {
+    // Base metrics
+    BlockchainMetrics baseMetrics;
+    
+    // Version 3.2 specific metrics
+    uint32_t smartContractsExecuted;     // Smart contracts executed
+    uint32_t researchersAuthenticated;   // Researchers authenticated
+    uint32_t provenanceTracked;          // Data provenance records
+    uint32_t authenticityProofs;         // Proof-of-authenticity verifications
+    float consensusSuccessRate;          // Consensus success rate
+    uint32_t immutableViolations;        // Attempted immutable violations
+    uint32_t authenticationFailures;     // Authentication failures
+    
+    EnhancedBlockchainMetrics() : smartContractsExecuted(0), researchersAuthenticated(0),
+        provenanceTracked(0), authenticityProofs(0), consensusSuccessRate(0.0),
+        immutableViolations(0), authenticationFailures(0) {}
 };
 
 // ===========================
