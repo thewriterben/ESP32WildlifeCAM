@@ -39,12 +39,24 @@
 #define IMAGE_PATH "/sdcard/WILDLIFE/IMAGES"
 #define LOG_PATH "/sdcard/WILDLIFE/LOGS"
 #define CONFIG_PATH "/sdcard/WILDLIFE/CONFIG"
+#define IMAGE_FOLDER "/WILDLIFE/IMAGES"
+#define LOG_FOLDER "/WILDLIFE/LOGS" 
+#define DATA_FOLDER "/WILDLIFE/DATA"
 
 // Power management
 #define BATTERY_MIN_VOLTAGE 3.0
 #define BATTERY_MAX_VOLTAGE 4.2
+#define BATTERY_FULL_VOLTAGE 4.2f         // Full battery voltage
+#define BATTERY_LOW_THRESHOLD 3.4f        // Low battery warning voltage
+#define BATTERY_CRITICAL_THRESHOLD 3.0f   // Critical battery voltage
 #define SOLAR_MIN_VOLTAGE 4.5
-#define DEEP_SLEEP_DURATION_S 300  // 5 minutes
+#define SOLAR_VOLTAGE_THRESHOLD 5.0f      // Minimum solar voltage for charging
+#define DEEP_SLEEP_DURATION_S 300         // 5 minutes
+#define DEEP_SLEEP_DURATION 300000        // 5 minutes in milliseconds
+#define MAX_CPU_FREQ_MHZ 240              // Maximum CPU frequency
+#define MIN_CPU_FREQ_MHZ 80               // Minimum CPU frequency for power saving
+#define BALANCED_CPU_FREQ_MHZ 160         // Balanced performance frequency
+#define ADAPTIVE_DUTY_CYCLE true          // Enable adaptive duty cycling by default
 
 // Motion detection
 #define PIR_TRIGGER_DELAY_MS 2000
@@ -53,6 +65,7 @@
 
 // Debug flags
 #define DEBUG_SERIAL 1
+#define DEBUG_ENABLED 1
 #define DEBUG_CAMERA 1
 #define DEBUG_NETWORK 1
 #define DEBUG_STORAGE 1

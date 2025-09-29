@@ -173,6 +173,23 @@ public:
     void resetStatistics();
 
     /**
+     * @brief Get current power mode
+     * @return Current power mode
+     */
+    PowerMode getCurrentPowerMode() const { return currentMode; }
+
+    /**
+     * @brief Check if solar charging is active
+     * @return true if solar charging
+     */
+    bool isSolarCharging();
+
+    /**
+     * @brief Optimize power consumption based on current state
+     */
+    void optimizePowerConsumption();
+
+    /**
      * @brief Check if system is charging
      * @return true if charging
      */
