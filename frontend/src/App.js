@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -11,7 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import CameraList from './pages/CameraList';
+import CameraManagement from './pages/CameraManagement';
 import CameraDetail from './pages/CameraDetail';
 import ImageGallery from './pages/ImageGallery';
 import Analytics from './pages/Analytics';
@@ -19,7 +19,6 @@ import SpeciesLibrary from './pages/SpeciesLibrary';
 import Settings from './pages/Settings';
 
 // Services
-import authService from './services/authService';
 import { AlertProvider, useAlert } from './contexts/AlertContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -117,7 +116,7 @@ function AppContent() {
                 path="/cameras" 
                 element={
                   <ProtectedRoute>
-                    <CameraList />
+                    <CameraManagement />
                   </ProtectedRoute>
                 } 
               />
