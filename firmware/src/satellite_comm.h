@@ -16,7 +16,12 @@ enum SatelliteModule {
     MODULE_NONE = 0,
     MODULE_IRIDIUM,
     MODULE_SWARM,
-    MODULE_ROCKBLOCK
+    MODULE_ROCKBLOCK,
+    // Version 4.0 LEO Constellation Support
+    MODULE_STARLINK,
+    MODULE_ONEWEB,
+    MODULE_KUIPER,
+    MODULE_TELESAT
 };
 
 class SatelliteComm {
@@ -29,6 +34,12 @@ public:
     void updateConfiguration(const SatelliteConfig& config);
     SatelliteConfig getConfiguration() const;
     
+    // Version 4.0 LEO Constellation Support
+    bool initializeLEOConstellation(const std::vector<SatelliteModule>& modules);
+    bool switchToOptimalSatellite();
+    std::vector<SatelliteModule> getAvailableConstellations() const;
+    bool enableMultiConstellationMode();
+    
     // Communication
     bool sendMessage(const String& message, SatelliteMessagePriority priority = SAT_PRIORITY_NORMAL);
     bool sendWildlifeAlert(const String& alertData);
@@ -36,6 +47,14 @@ public:
     bool sendStatusReport();
     bool sendStoredMessages();
     bool receiveConfigUpdate();
+    
+    // Version 4.0 Enhanced Communication
+    bool sendToGlobalNetwork(const String& data, const String& targetRegion = "");
+    bool receiveFromGlobalNetwork(String& data, String& sourceRegion);
+    bool broadcastConservationAlert(const String& alertData);
+    bool sendDroneCoordinationData(const String& fleetData);
+    bool downloadFirmwareUpdate(const String& version);
+    bool uploadBehaviorPredictionData(const String& predictionData);
     
     // Satellite status
     bool checkSatelliteAvailability();

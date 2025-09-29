@@ -1,17 +1,23 @@
 /**
  * @file main.cpp
- * @brief ESP32WildlifeCAM Main Entry Point - Version 3.2.0
+ * @brief ESP32WildlifeCAM Main Entry Point - Version 4.0.0
  * @author thewriterben
  * @date 2025-01-01
- * @version 3.2.0
+ * @version 4.0.0
  * 
- * Version 3.2.0 - Advanced Wildlife Monitoring Platform
+ * Version 4.0.0 - Autonomous Global Wildlife Monitoring Network
  * 
  * New Features:
- * 1. Blockchain-based Data Verification
- * 2. Real-time Collaborative Research Platform
- * 3. Advanced Audio Detection and Classification
- * 4. Federated Learning Across Camera Networks
+ * 1. Fully Autonomous Deployment with Drones
+ * 2. Satellite Communication Integration (LEO Constellations)
+ * 3. Advanced Behavior Prediction Algorithms
+ * 4. Global Wildlife Monitoring Network
+ * 5. Enhanced Satellite Support (Starlink, OneWeb, Kuiper, Telesat)
+ * 6. Autonomous Site Selection and Deployment
+ * 7. Global Conservation Threat Assessment
+ * 8. Real-time Biodiversity Monitoring
+ * 9. Wildlife Corridor Identification
+ * 10. Climate Refuge Detection and Monitoring
  */
 
 #include <Arduino.h>
@@ -21,21 +27,31 @@
 #include "core/system_manager.h"
 #include "utils/logger.h"
 
-// Version 3.2.0 Component Includes
+// Version 4.0.0 Component Includes
 #include "src/blockchain/SmartContractEngine.h"
 #include "src/blockchain/BlockchainIntegration.h"
 #include "src/research/CollaborativeResearchPlatform.h"
 #include "src/audio/wildlife_audio_classifier.h"
 #include "src/ai/FederatedLearningCoordinator.h"
 
+// Version 4.0.0 New Component Includes
+#include "firmware/src/autonomous/drone_fleet/drone_fleet_manager.h"
+#include "firmware/src/global_network/global_coordination_manager.h"
+#include "firmware/src/ai/predictive/enhanced_behavior_prediction.h"
+
 // Global system manager instance
 SystemManager* g_system = nullptr;
 
-// Version 3.2.0 Global component instances
+// Version 4.0.0 Global component instances
 SmartContractEngine* g_smartContractEngine = nullptr;
 CollaborativeResearchPlatform* g_researchPlatform = nullptr;
 WildlifeAudioClassifier* g_audioClassifier = nullptr;
 FederatedLearningCoordinator* g_federatedCoordinator = nullptr;
+
+// Version 4.0.0 New Global Components
+DroneFleetManager* g_droneFleetManager = nullptr;
+GlobalCoordinationManager* g_globalCoordinator = nullptr;
+EnhancedBehaviorPredictor* g_behaviorPredictor = nullptr;
 
 /**
  * Version 3.2.0 Enhanced Safe Mode Implementation
@@ -199,10 +215,54 @@ void enterSafeMode() {
 }
 
 /**
- * Version 3.2.0 Enhanced System Initialization
- * Initializes all Version 3.2.0 components in correct order
+ * Version 4.0.0 Enhanced System Initialization
+ * Initializes all Version 4.0.0 components in correct order
  */
-bool initializeVersion32Components() {
+bool initializeVersion40Components() {
+    Logger::info("Initializing Version 4.0.0 components...");
+    
+    // First initialize Version 3.2.0 components
+    if (!initializeVersion32Components()) {
+        Logger::error("Failed to initialize Version 3.2.0 components");
+        return false;
+    }
+    
+    // 1. Initialize Global Coordination Manager
+    g_globalCoordinator = new GlobalCoordinationManager();
+    if (!g_globalCoordinator->initialize(ESP.getChipId(), REGION_NORTH_AMERICA)) {
+        Logger::error("Failed to initialize Global Coordination Manager");
+        return false;
+    }
+    Logger::info("✓ Global Coordination Manager initialized");
+    
+    // 2. Initialize Drone Fleet Manager
+    g_droneFleetManager = new DroneFleetManager();
+    if (!g_droneFleetManager->initialize()) {
+        Logger::error("Failed to initialize Drone Fleet Manager");
+        return false;
+    }
+    Logger::info("✓ Drone Fleet Manager initialized");
+    
+    // 3. Initialize Enhanced Behavior Predictor
+    g_behaviorPredictor = new EnhancedBehaviorPredictor();
+    if (!g_behaviorPredictor->initialize()) {
+        Logger::error("Failed to initialize Enhanced Behavior Predictor");
+        return false;
+    }
+    Logger::info("✓ Enhanced Behavior Predictor initialized");
+    
+    // 4. Integrate components
+    if (g_system && g_system->getSatelliteComm()) {
+        g_droneFleetManager->integrateWithSatelliteComm(g_system->getSatelliteComm());
+        g_globalCoordinator->integrateWithSatelliteComm(g_system->getSatelliteComm());
+    }
+    
+    g_globalCoordinator->integrateWithDroneFleet(g_droneFleetManager);
+    g_behaviorPredictor->integrateWithGlobalNetwork(g_globalCoordinator);
+    
+    Logger::info("All Version 4.0.0 components initialized successfully!");
+    return true;
+}
     Logger::info("Initializing Version 3.2.0 components...");
     
     // 1. Initialize Smart Contract Engine
@@ -242,10 +302,32 @@ bool initializeVersion32Components() {
 }
 
 /**
- * Version 3.2.0 Component Cleanup
- * Properly shuts down all Version 3.2.0 components
+ * Version 4.0.0 Component Cleanup
+ * Properly shuts down all Version 4.0.0 components
  */
-void cleanupVersion32Components() {
+void cleanupVersion40Components() {
+    Logger::info("Cleaning up Version 4.0.0 components...");
+    
+    // Clean up Version 3.2.0 components first
+    cleanupVersion32Components();
+    
+    if (g_behaviorPredictor) {
+        delete g_behaviorPredictor;
+        g_behaviorPredictor = nullptr;
+    }
+    
+    if (g_globalCoordinator) {
+        delete g_globalCoordinator;
+        g_globalCoordinator = nullptr;
+    }
+    
+    if (g_droneFleetManager) {
+        delete g_droneFleetManager;
+        g_droneFleetManager = nullptr;
+    }
+    
+    Logger::info("Version 4.0.0 components cleanup complete");
+}
     Logger::info("Cleaning up Version 3.2.0 components...");
     
     if (g_federatedCoordinator) {
@@ -283,16 +365,17 @@ void setup() {
     
     // Print startup banner
     Logger::info("===================================");
-    Logger::info("ESP32WildlifeCAM v3.2.0");
-    Logger::info("Advanced Wildlife Monitoring Platform");
+    Logger::info("ESP32WildlifeCAM v4.0.0");
+    Logger::info("Autonomous Global Wildlife Monitoring Network");
     Logger::info("Build: " __DATE__ " " __TIME__);
     Logger::info("Author: thewriterben");
     Logger::info("===================================");
-    Logger::info("New in v3.2.0:");
-    Logger::info("- Blockchain-based Data Verification");
-    Logger::info("- Real-time Collaborative Research Platform");
-    Logger::info("- Advanced Audio Detection & Classification");
-    Logger::info("- Federated Learning Across Camera Networks");
+    Logger::info("New in v4.0.0:");
+    Logger::info("- Fully Autonomous Deployment with Drones"); 
+    Logger::info("- Satellite Communication Integration (LEO)");
+    Logger::info("- Advanced Behavior Prediction Algorithms");
+    Logger::info("- Global Wildlife Monitoring Network");
+    Logger::info("- Wildlife Corridor & Climate Refuge Detection");
     Logger::info("===================================");
     
     // Detect board type
@@ -310,13 +393,13 @@ void setup() {
         enterSafeMode();
     }
     
-    // Initialize Version 3.2.0 components
-    if (!initializeVersion32Components()) {
-        Logger::error("Failed to initialize Version 3.2.0 components!");
+    // Initialize Version 4.0.0 components
+    if (!initializeVersion40Components()) {
+        Logger::error("Failed to initialize Version 4.0.0 components!");
         Logger::error("Entering safe mode...");
         
         // Cleanup what we can
-        cleanupVersion32Components();
+        cleanupVersion40Components();
         
         // Enter safe mode
         enterSafeMode();
@@ -328,13 +411,26 @@ void setup() {
         Logger::info("PSRAM: %d bytes", ESP.getPsramSize());
     }
     
-    Logger::info("Version 3.2.0 Wildlife Monitoring Platform ready!");
+    Logger::info("Version 4.0.0 Autonomous Global Wildlife Monitoring Network ready!");
 }
 
 void loop() {
     // Main system loop
     if (g_system) {
         g_system->update();
+    }
+    
+    // Version 4.0.0 component updates
+    if (g_globalCoordinator) {
+        g_globalCoordinator->syncWithGlobalNetwork();
+    }
+    
+    if (g_droneFleetManager) {
+        g_droneFleetManager->optimizeFleetOperations();
+    }
+    
+    if (g_behaviorPredictor) {
+        g_behaviorPredictor->optimizePredictionAlgorithms();
     }
     
     // Version 3.2.0 component updates
