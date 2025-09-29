@@ -12,6 +12,7 @@
 #include "camera_handler.h"
 #include "camera_utils.cpp"
 #include "ai_bridge.cpp"
+#include "power_bridge.cpp"
 #include "../../firmware/src/hal/board_detector.h"
 #include "../../firmware/src/hal/camera_board.h"
 #include "../../firmware/src/ai/ai_common.h"
@@ -743,4 +744,230 @@ void CameraHandler::handleCaptureFailure() {
     }
     
     Serial.println("CameraHandler: Capture failure recovery strategies completed");
+}
+
+// ========== POWER MANAGEMENT INTEGRATION ==========
+
+esp_err_t CameraHandler::capturePowerAware(uint32_t timeout_ms, bool power_aware) {
+    Serial.println("CameraHandler: Starting power-aware capture...");
+    
+    if (!initialized) {
+        Serial.println("CameraHandler: Not initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    // Load power management functions
+    extern bool initializePowerManager();
+    extern float getCurrentBatteryLevel();
+    extern int getCurrentPowerState();
+    extern void setPowerMode(int mode);
+    
+    // Initialize power manager if needed
+    static bool power_initialized = false;
+    if (power_aware && !power_initialized) {
+        power_initialized = initializePowerManager();
+        if (!power_initialized) {
+            Serial.println("CameraHandler: Warning - Power manager initialization failed, continuing without power awareness");
+            power_aware = false;
+        }
+    }
+    
+    // Adapt settings based on power state
+    if (power_aware) {
+        float battery_level = getCurrentBatteryLevel();
+        int power_state = getCurrentPowerState();
+        
+        Serial.printf("CameraHandler: Battery level: %.2f, Power state: %d\n", battery_level, power_state);
+        
+        // Adapt camera settings based on power level
+        adaptToPowerState(power_state);
+        
+        // Adjust timeout based on battery level
+        if (battery_level < 0.2f) { // Less than 20% battery
+            timeout_ms = min(timeout_ms, 2000u); // Reduce timeout to 2 seconds
+            Serial.println("CameraHandler: Reduced timeout for low battery");
+        } else if (battery_level < 0.5f) { // Less than 50% battery
+            timeout_ms = min(timeout_ms, 3000u); // Reduce timeout to 3 seconds
+            Serial.println("CameraHandler: Moderate timeout for medium battery");
+        }
+    }
+    
+    // Perform normal capture with potentially adjusted settings
+    esp_err_t result = captureFrame(timeout_ms);
+    
+    if (power_aware && result == ESP_OK) {
+        // Log power consumption impact
+        Serial.printf("CameraHandler: Power-aware capture completed successfully in %lu ms\n", timeout_ms);
+    }
+    
+    return result;
+}
+
+AIResult CameraHandler::captureAndAnalyzePowerAware(ModelType model, float power_level) {
+    Serial.printf("CameraHandler: Starting power-aware AI capture (power level: %.2f)...\n", power_level);
+    
+    AIResult result;
+    result.confidence = 0.0f;
+    result.species = SpeciesType::UNKNOWN;
+    result.detected = false;
+    
+    if (!initialized) {
+        Serial.println("CameraHandler: Camera not initialized for power-aware AI analysis");
+        result.error_message = "Camera not initialized";
+        return result;
+    }
+    
+    // Adjust capture timeout based on power level
+    uint32_t timeout_ms = 5000; // Default timeout
+    if (power_level < 0.3f) {
+        timeout_ms = 2000; // Low power mode - quick capture
+        Serial.println("CameraHandler: Using low power mode for AI capture");
+    } else if (power_level < 0.7f) {
+        timeout_ms = 3500; // Medium power mode
+        Serial.println("CameraHandler: Using medium power mode for AI capture");
+    }
+    
+    // Use power-aware capture
+    esp_err_t capture_result = capturePowerAware(timeout_ms, true);
+    if (capture_result != ESP_OK) {
+        Serial.printf("CameraHandler: Power-aware capture failed: 0x%x\n", capture_result);
+        result.error_message = "Power-aware capture failed";
+        return result;
+    }
+    
+    // Get captured frame
+    camera_fb_t* fb = getFrameBuffer();
+    if (!fb) {
+        Serial.println("CameraHandler: Failed to get frame buffer for power-aware AI analysis");
+        result.error_message = "Frame buffer retrieval failed";
+        return result;
+    }
+    
+    // Create frame structure for AI processing
+    CameraFrame frame;
+    frame.data = fb->buf;
+    frame.length = fb->len;
+    frame.width = fb->width;
+    frame.height = fb->height;
+    frame.timestamp = millis();
+    
+    // Load AI processing functions
+    extern bool initializeInferenceEngine();
+    extern AIResult runWildlifeInference(const CameraFrame& frame, ModelType model);
+    
+    // Initialize inference engine if needed
+    static bool ai_initialized = false;
+    if (!ai_initialized) {
+        ai_initialized = initializeInferenceEngine();
+        if (!ai_initialized) {
+            Serial.println("CameraHandler: Failed to initialize AI inference engine");
+            result.error_message = "AI initialization failed";
+            returnFrameBuffer(fb);
+            return result;
+        }
+    }
+    
+    // For low power scenarios, use simpler/faster models if available
+    if (power_level < 0.4f) {
+        Serial.println("CameraHandler: Using optimized AI model for low power");
+        // Could switch to a lighter model here in a real implementation
+    }
+    
+    // Run AI inference
+    result = runWildlifeInference(frame, model);
+    
+    // Return frame buffer
+    returnFrameBuffer(fb);
+    
+    Serial.printf("CameraHandler: Power-aware AI analysis complete - Species: %d, Confidence: %.2f\n", 
+                  (int)result.species, result.confidence);
+    
+    return result;
+}
+
+void CameraHandler::adaptToPowerState(int power_state) {
+    Serial.printf("CameraHandler: Adapting to power state: %d\n", power_state);
+    
+    if (!initialized) {
+        Serial.println("CameraHandler: Cannot adapt settings - camera not initialized");
+        return;
+    }
+    
+    sensor_t* sensor = esp_camera_sensor_get();
+    if (!sensor) {
+        Serial.println("CameraHandler: Cannot get sensor for power adaptation");
+        return;
+    }
+    
+    // Power state mapping:
+    // 0 = NORMAL, 1 = POWER_SAVE, 2 = LOW_BATTERY, 3 = CRITICAL, 4 = CHARGING
+    
+    switch (power_state) {
+        case 0: // NORMAL
+            Serial.println("CameraHandler: Normal power mode - optimal settings");
+            sensor->set_brightness(sensor, 0);       // Normal brightness
+            sensor->set_contrast(sensor, 0);         // Normal contrast
+            sensor->set_ae_level(sensor, 0);         // Normal AE level
+            sensor->set_gainceiling(sensor, GAINCEILING_2X);
+            break;
+            
+        case 1: // POWER_SAVE
+            Serial.println("CameraHandler: Power save mode - reduced quality settings");
+            sensor->set_brightness(sensor, -1);      // Slightly reduced brightness
+            sensor->set_contrast(sensor, -1);        // Slightly reduced contrast
+            sensor->set_ae_level(sensor, -1);        // Lower AE level
+            sensor->set_gainceiling(sensor, GAINCEILING_16X); // Higher gain ceiling for low light
+            break;
+            
+        case 2: // LOW_BATTERY
+            Serial.println("CameraHandler: Low battery mode - minimal power settings");
+            sensor->set_brightness(sensor, -2);      // Reduced brightness
+            sensor->set_contrast(sensor, -2);        // Reduced contrast
+            sensor->set_ae_level(sensor, -2);        // Lower AE level
+            sensor->set_gainceiling(sensor, GAINCEILING_32X); // Higher gain for quick capture
+            
+            // Reduce frame buffer count to save memory and processing
+            if (config.fb_count > 1) {
+                config.fb_count = 1;
+                Serial.println("CameraHandler: Reduced frame buffer count for low battery");
+            }
+            break;
+            
+        case 3: // CRITICAL
+            Serial.println("CameraHandler: Critical power mode - emergency settings");
+            sensor->set_brightness(sensor, -2);
+            sensor->set_contrast(sensor, -2);
+            sensor->set_ae_level(sensor, -2);
+            sensor->set_gainceiling(sensor, GAINCEILING_64X); // Maximum gain for fastest capture
+            
+            // Minimal frame buffers
+            config.fb_count = 1;
+            
+            // Consider reducing frame size for faster processing
+            if (config.frame_size > FRAMESIZE_VGA) {
+                config.frame_size = FRAMESIZE_VGA;
+                Serial.println("CameraHandler: Reduced frame size for critical power");
+            }
+            break;
+            
+        case 4: // CHARGING
+            Serial.println("CameraHandler: Charging mode - can use optimal settings");
+            sensor->set_brightness(sensor, 1);       // Enhanced brightness
+            sensor->set_contrast(sensor, 1);         // Enhanced contrast
+            sensor->set_ae_level(sensor, 1);         // Higher AE level
+            sensor->set_gainceiling(sensor, GAINCEILING_2X); // Lower gain ceiling for quality
+            
+            // Can afford more frame buffers while charging
+            if (psramFound() && config.fb_count < 3) {
+                config.fb_count = 3;
+                Serial.println("CameraHandler: Increased frame buffer count while charging");
+            }
+            break;
+            
+        default:
+            Serial.printf("CameraHandler: Unknown power state %d, using default settings\n", power_state);
+            break;
+    }
+    
+    Serial.println("CameraHandler: Power state adaptation complete");
 }

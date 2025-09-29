@@ -27,6 +27,10 @@ struct AIResult;
 enum class ModelType;
 class InferenceEngine;
 
+// Forward declarations for power management
+class PowerManager;
+enum class PowerState;
+
 /**
  * @class CameraHandler
  * @brief Critical Camera Driver implementation for Step 1.4
@@ -147,6 +151,28 @@ public:
      * @brief Handle capture failure with recovery strategies
      */
     void handleCaptureFailure();
+    
+    /**
+     * @brief Capture frame with power management awareness
+     * @param timeout_ms Maximum time to wait for capture
+     * @param power_aware Enable power-conscious settings
+     * @return ESP_OK on success, error code otherwise
+     */
+    esp_err_t capturePowerAware(uint32_t timeout_ms = 5000, bool power_aware = true);
+    
+    /**
+     * @brief Capture and analyze with power management integration
+     * @param model Model type to use for analysis
+     * @param power_level Current power level (0.0-1.0)
+     * @return AI analysis result optimized for power consumption
+     */
+    AIResult captureAndAnalyzePowerAware(ModelType model, float power_level = 1.0f);
+    
+    /**
+     * @brief Adapt camera settings based on power state
+     * @param power_state Current power state from PowerManager
+     */
+    void adaptToPowerState(int power_state);
     
     /**
      * @brief Constructor
