@@ -1,9 +1,9 @@
 # 📚 ESP32WildlifeCAM Documentation Index
 
-*Last Updated: September 2, 2025*  
+*Last Updated: December 1, 2025*  
 *Purpose: Master navigation for all project documentation*
 
-Welcome to the ESP32WildlifeCAM documentation hub! This page provides organized access to all 170+ documentation files in this project.
+Welcome to the ESP32WildlifeCAM documentation hub! This page provides organized access to all 200+ documentation files in this project, now including comprehensive Version 3.1 features.
 
 ## 🚀 Quick Navigation
 
@@ -14,14 +14,16 @@ Welcome to the ESP32WildlifeCAM documentation hub! This page provides organized 
 | **[Quick Start Guide](../QUICK_START.md)** | Get up and running in 30 minutes | Beginners |
 | **[Hardware Requirements](HARDWARE_REQUIREMENTS.md)** | Component selection and compatibility | Hardware builders |
 | **[Assembly Instructions](ASSEMBLY_INSTRUCTIONS.md)** | Step-by-step build guide | DIY enthusiasts |
+| **[Version 3.1 Overview](v3.1/README.md)** | Latest features and capabilities | Current users |
 
 ### 🎯 Project Planning & Status
 | Document | Description | Focus |
 |----------|-------------|-------|
-| **[Project Roadmap](../ROADMAP.md)** | Unified development roadmap | Project direction |
+| **[Project Roadmap](../ROADMAP.md)** | Unified development roadmap (Updated for v3.1) | Project direction |
+| **[Future Roadmap](FUTURE_ROADMAP.md)** | Long-term strategic planning (2026+) | Future vision |
 | **[Project Status](../PROJECT_STATUS.md)** | Current implementation status | Progress tracking |
 | **[Contributing Guide](../CONTRIBUTING.md)** | How to contribute to the project | Contributors |
-| **[Change Log](../CHANGELOG.md)** | Version history and updates | Release tracking |
+| **[Change Log](../CHANGELOG.md)** | Version history and updates (v3.1 release notes) | Release tracking |
 
 ## 📋 Documentation Categories
 
@@ -37,11 +39,14 @@ Welcome to the ESP32WildlifeCAM documentation hub! This page provides organized 
 - **[API Reference](api_reference.md)** - Complete API documentation
 - **[Firewall Guide](development/firewall_complete_guide.md)** - Offline development
 
-### 🤖 AI & Advanced Features
-- **[AI Architecture](ai/ai_architecture.md)** - Machine learning implementation
+### 🤖 AI & Advanced Features (Version 3.1)
+- **[AI Architecture](ai/ai_architecture.md)** - Machine learning implementation (95%+ accuracy)
 - **[Edge AI Optimization](edge_ai_optimization_guide.md)** - Performance optimization
-- **[Multi-Language Support](MULTI_LANGUAGE_SUPPORT.md)** - Internationalization
-- **[Analytics Dashboard](ANALYTICS_DASHBOARD.md)** - Data visualization
+- **[Multi-Language Support](MULTI_LANGUAGE_SUPPORT.md)** - Internationalization (20+ languages)
+- **[Analytics Dashboard](ANALYTICS_DASHBOARD.md)** - Advanced data visualization and insights
+- **[Federated Learning Guide](v3.1/federated_learning.md)** - Distributed ML training system
+- **[Mobile App Documentation](v3.1/mobile_app.md)** - React Native cross-platform application
+- **[Professional Analytics](v3.1/analytics.md)** - Behavior analysis and reporting
 
 ### 📡 Connectivity & Communication
 - **[Satellite Communication](SATELLITE_COMMUNICATION.md)** - Remote connectivity

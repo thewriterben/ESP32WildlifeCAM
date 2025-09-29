@@ -12,9 +12,9 @@
 #include "include/pins.h"
 
 // Version information
-#define VERSION "2.5.0"
-#define VERSION_MAJOR 2
-#define VERSION_MINOR 5
+#define VERSION "3.1.0"
+#define VERSION_MAJOR 3
+#define VERSION_MINOR 1
 #define VERSION_PATCH 0
 
 // System configuration
