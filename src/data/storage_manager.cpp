@@ -6,6 +6,210 @@
 bool StorageManager::initialized = false;
 uint8_t StorageManager::warningThreshold = 85;
 
+bool StorageManager::initializeSDCard() {
+    LOG_INFO("Initializing SD Card...");
+    
+    // Initialize SD card in MMC mode (1-bit mode for ESP32-CAM)
+    if (!SD_MMC.begin("/sdcard", true)) { // true = 1-bit mode
+        LOG_ERROR("Failed to initialize SD card");
+        return false;
+    }
+    
+    // Check if card is properly mounted
+    uint64_t cardSize = SD_MMC.totalBytes();
+    if (cardSize == 0) {
+        LOG_ERROR("SD card size is 0 - card may not be properly inserted");
+        return false;
+    }
+    
+    LOG_INFO("SD Card initialized successfully");
+    LOG_INFO("SD Card size: " + String((unsigned long)(cardSize / (1024 * 1024))) + "MB");
+    
+    return true;
+}
+
+bool StorageManager::saveImage(camera_fb_t* fb, const String& filename) {
+    if (!initialized || !fb) {
+        LOG_ERROR("Storage manager not initialized or invalid frame buffer");
+        return false;
+    }
+    
+    if (!hasAdequateSpace(fb->len + 1024)) { // Add 1KB buffer
+        LOG_WARNING("Insufficient space for image, attempting cleanup");
+        performCleanup(false);
+        
+        if (!hasAdequateSpace(fb->len + 1024)) {
+            LOG_ERROR("Still insufficient space after cleanup");
+            return false;
+        }
+    }
+    
+    // Create full path
+    String fullPath = String(IMAGE_FOLDER) + "/" + filename;
+    
+    // Ensure directory exists
+    String dirPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
+    if (!SD_MMC.exists(dirPath.c_str())) {
+        // Create directory recursively
+        String tempPath = "";
+        int start = 0;
+        int end = dirPath.indexOf('/', start + 1);
+        
+        while (end != -1) {
+            tempPath = dirPath.substring(0, end);
+            if (!SD_MMC.exists(tempPath.c_str())) {
+                if (!SD_MMC.mkdir(tempPath.c_str())) {
+                    LOG_ERROR("Failed to create directory: " + tempPath);
+                }
+            }
+            start = end;
+            end = dirPath.indexOf('/', start + 1);
+        }
+        
+        // Create final directory
+        if (!SD_MMC.exists(dirPath.c_str())) {
+            if (!SD_MMC.mkdir(dirPath.c_str())) {
+                LOG_ERROR("Failed to create final directory: " + dirPath);
+                return false;
+            }
+        }
+    }
+    
+    // Save image file
+    File file = SD_MMC.open(fullPath.c_str(), FILE_WRITE);
+    if (!file) {
+        LOG_ERROR("Failed to create image file: " + fullPath);
+        return false;
+    }
+    
+    size_t bytesWritten = file.write(fb->buf, fb->len);
+    file.close();
+    
+    if (bytesWritten != fb->len) {
+        LOG_ERROR("Failed to write complete image data");
+        SD_MMC.remove(fullPath.c_str()); // Clean up partial file
+        return false;
+    }
+    
+    LOG_INFO("Image saved successfully: " + filename + " (" + String(bytesWritten) + " bytes)");
+    return true;
+}
+
+bool StorageManager::saveMetadata(const ImageMetadata& metadata) {
+    if (!initialized) {
+        return false;
+    }
+    
+    // Create metadata filename
+    String metadataFilename = metadata.timestamp + "_metadata.json";
+    String fullPath = String(DATA_FOLDER) + "/" + metadataFilename;
+    
+    // Ensure directory exists
+    if (!SD_MMC.exists(DATA_FOLDER)) {
+        if (!SD_MMC.mkdir(DATA_FOLDER)) {
+            LOG_ERROR("Failed to create data directory");
+            return false;
+        }
+    }
+    
+    // Create JSON metadata
+    String jsonData = "{\n";
+    jsonData += "  \"timestamp\": \"" + metadata.timestamp + "\",\n";
+    jsonData += "  \"batteryLevel\": " + String(metadata.batteryLevel, 2) + ",\n";
+    jsonData += "  \"temperature\": " + String(metadata.temperature, 1) + ",\n";
+    jsonData += "  \"humidity\": " + String(metadata.humidity, 1) + ",\n";
+    jsonData += "  \"aiDetection\": \"" + metadata.aiDetection + "\",\n";
+    jsonData += "  \"confidence\": " + String(metadata.confidence, 3) + ",\n";
+    jsonData += "  \"location\": \"" + metadata.location + "\"\n";
+    jsonData += "}\n";
+    
+    // Save metadata file
+    File file = SD_MMC.open(fullPath.c_str(), FILE_WRITE);
+    if (!file) {
+        LOG_ERROR("Failed to create metadata file: " + fullPath);
+        return false;
+    }
+    
+    size_t bytesWritten = file.print(jsonData);
+    file.close();
+    
+    if (bytesWritten == 0) {
+        LOG_ERROR("Failed to write metadata");
+        SD_MMC.remove(fullPath.c_str()); // Clean up empty file
+        return false;
+    }
+    
+    LOG_DEBUG("Metadata saved: " + metadataFilename);
+    return true;
+}
+
+bool StorageManager::isSDCardHealthy() {
+    if (!initialized) {
+        return false;
+    }
+    
+    // Test basic operations
+    uint64_t totalBytes = SD_MMC.totalBytes();
+    uint64_t usedBytes = SD_MMC.usedBytes();
+    
+    // Check if we can get valid size info
+    if (totalBytes == 0) {
+        LOG_WARNING("SD card reports 0 total bytes - may be unhealthy");
+        return false;
+    }
+    
+    // Test write operation with a small test file
+    String testFile = "/test_health.tmp";
+    File file = SD_MMC.open(testFile.c_str(), FILE_WRITE);
+    if (!file) {
+        LOG_WARNING("Cannot create test file - SD card may be write-protected or full");
+        return false;
+    }
+    
+    String testData = "health_check_" + String(millis());
+    file.print(testData);
+    file.close();
+    
+    // Test read operation
+    file = SD_MMC.open(testFile.c_str(), FILE_READ);
+    if (!file) {
+        LOG_WARNING("Cannot read test file - SD card may be unhealthy");
+        return false;
+    }
+    
+    String readData = file.readString();
+    file.close();
+    
+    // Cleanup test file
+    SD_MMC.remove(testFile.c_str());
+    
+    // Verify data integrity
+    if (readData != testData) {
+        LOG_WARNING("Data corruption detected in health check");
+        return false;
+    }
+    
+    LOG_DEBUG("SD card health check passed");
+    return true;
+}
+
+void StorageManager::cleanupOldFiles() {
+    if (!initialized) {
+        return;
+    }
+    
+    // Perform automatic cleanup based on storage usage
+    StorageStats stats = getStatistics();
+    
+    if (stats.usagePercentage > 85.0f) {
+        LOG_INFO("Storage usage high (" + String(stats.usagePercentage, 1) + "%), starting cleanup...");
+        performCleanup(true); // Aggressive cleanup
+    } else if (stats.usagePercentage > 70.0f) {
+        LOG_INFO("Storage usage moderate (" + String(stats.usagePercentage, 1) + "%), starting cleanup...");
+        performCleanup(false); // Normal cleanup
+    }
+}
+
 bool StorageManager::initialize() {
     if (initialized) {
         return true;
@@ -13,9 +217,9 @@ bool StorageManager::initialize() {
 
     LOG_INFO("Initializing storage manager...");
 
-    // Check if SD card is mounted
-    if (!SD_MMC.begin()) {
-        LOG_ERROR("SD card not available for storage management");
+    // Initialize SD card
+    if (!initializeSDCard()) {
+        LOG_ERROR("SD card initialization failed");
         return false;
     }
 

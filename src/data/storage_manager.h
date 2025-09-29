@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <SD_MMC.h>
+#include "esp_camera.h"
 #include "../include/config.h"
 
 /**
@@ -42,6 +43,51 @@ public:
      * @return true if initialization successful
      */
     static bool initialize();
+
+    /**
+     * @brief Initialize SD card
+     * @return true if initialization successful
+     */
+    static bool initializeSDCard();
+
+    /**
+     * @brief Save image to storage
+     * @param fb Camera frame buffer
+     * @param filename Target filename
+     * @return true if save successful
+     */
+    static bool saveImage(camera_fb_t* fb, const String& filename);
+
+    /**
+     * @brief Image metadata structure
+     */
+    struct ImageMetadata {
+        String timestamp;
+        float batteryLevel;
+        float temperature;
+        float humidity; 
+        String aiDetection;
+        float confidence;
+        String location;
+    };
+
+    /**
+     * @brief Save image metadata
+     * @param metadata Metadata to save
+     * @return true if save successful
+     */
+    static bool saveMetadata(const ImageMetadata& metadata);
+
+    /**
+     * @brief Check if SD card is healthy
+     * @return true if card is healthy
+     */
+    static bool isSDCardHealthy();
+
+    /**
+     * @brief Clean up old files automatically
+     */
+    static void cleanupOldFiles();
 
     /**
      * @brief Get current storage statistics

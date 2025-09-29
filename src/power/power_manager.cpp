@@ -218,6 +218,46 @@ void PowerManager::resetStatistics() {
     Serial.println("Power statistics reset");
 }
 
+PowerManager::PowerMode PowerManager::getCurrentPowerMode() const {
+    return currentMode;
+}
+
+bool PowerManager::isSolarCharging() {
+    return isCharging() && (solarVoltage >= SOLAR_VOLTAGE_THRESHOLD);
+}
+
+void PowerManager::optimizePowerConsumption() {
+    if (!initialized) {
+        return;
+    }
+    
+    // Calculate and apply optimal power mode based on current conditions
+    PowerMode optimalMode = calculateOptimalPowerMode();
+    if (optimalMode != currentMode) {
+        setPowerMode(optimalMode);
+    }
+    
+    // Disable unused peripherals based on battery level
+    if (batteryPercentage < 50.0f) {
+        disableUnusedPeripherals();
+    }
+    
+    // Configure GPIO for low power if in survival mode
+    if (currentMode == PowerMode::SURVIVAL || currentMode == PowerMode::HIBERNATION) {
+        configureGpioForLowPower();
+    }
+    
+    // Adjust ADC sampling frequency based on battery level
+    if (batteryPercentage < 25.0f) {
+        // Reduce battery check frequency to save power
+        if (millis() - lastBatteryCheck < 10000) { // Check every 10s instead of 5s
+            return;
+        }
+    }
+    
+    Serial.printf("Power consumption optimized for %.1f%% battery\n", batteryPercentage);
+}
+
 bool PowerManager::isCharging() {
     // Check if solar voltage is sufficient and battery is not full
     return (solarVoltage >= SOLAR_VOLTAGE_THRESHOLD) && 
