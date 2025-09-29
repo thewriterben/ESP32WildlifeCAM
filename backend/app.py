@@ -985,6 +985,72 @@ def get_detection_trends():
         logger.error(f"Detection trends error: {str(e)}")
         return jsonify({'error': 'Failed to generate trends analytics'}), 500
 
+# API Documentation endpoint
+@app.route('/api/docs', methods=['GET'])
+def api_documentation():
+    """Get API documentation."""
+    docs = {
+        'title': 'ESP32 Wildlife Camera API',
+        'version': '1.0.0',
+        'description': 'REST API for wildlife monitoring camera networks',
+        'base_url': request.host_url + 'api',
+        'endpoints': {
+            'authentication': {
+                'POST /auth/register': 'Register a new user',
+                'POST /auth/login': 'Login and get access token'
+            },
+            'cameras': {
+                'GET /cameras': 'List user\'s cameras',
+                'POST /cameras': 'Register a new camera',
+                'GET /cameras/{id}': 'Get camera details',
+                'PUT /cameras/{id}': 'Update camera configuration',
+                'DELETE /cameras/{id}': 'Delete camera'
+            },
+            'images': {
+                'GET /images': 'List camera images',
+                'POST /images': 'Upload camera image',
+                'GET /images/{id}': 'Get image details',
+                'GET /images/{id}/file': 'Download image file'
+            },
+            'detections': {
+                'GET /detections': 'List wildlife detections',
+                'GET /detections/{id}': 'Get detection details',
+                'PUT /detections/{id}/verify': 'Verify/correct detection'
+            },
+            'species': {
+                'GET /species': 'List all species',
+                'GET /species/{id}': 'Get species details'
+            },
+            'analytics': {
+                'GET /analytics/dashboard': 'Get dashboard analytics',
+                'GET /analytics/species/{id}': 'Get species analytics',
+                'GET /analytics/cameras/{id}/performance': 'Get camera performance',
+                'GET /analytics/trends': 'Get detection trends'
+            },
+            'system': {
+                'GET /health': 'Health check endpoint',
+                'GET /docs': 'API documentation'
+            }
+        },
+        'authentication': {
+            'type': 'Bearer Token (JWT)',
+            'header': 'Authorization: Bearer <token>',
+            'note': 'Most endpoints require authentication'
+        },
+        'websocket': {
+            'url': request.host_url.replace('http://', 'ws://').replace('https://', 'wss://'),
+            'events': {
+                'connect': 'Connect to real-time updates',
+                'join_camera_room': 'Subscribe to camera-specific updates',
+                'camera_registered': 'New camera registered',
+                'image_uploaded': 'New image uploaded',
+                'detection_complete': 'Wildlife detection completed'
+            }
+        }
+    }
+    
+    return jsonify(docs), 200
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint for monitoring."""

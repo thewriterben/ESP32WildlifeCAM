@@ -13,7 +13,7 @@ psycopg2-binary==2.9.7
 SQLAlchemy==2.0.21
 
 # Task queue
-celery[redis]==5.3.2
+celery[redis]==5.5.3
 redis==5.0.0
 
 # Image processing
