@@ -1,0 +1,210 @@
+# ESP32 Wildlife Camera ML Pipeline Configuration
+
+# Dataset Configuration
+dataset:
+  data_dir: "./datasets/wildlife"
+  output_dir: "./output"
+  
+  # Supported formats: "directory", "annotations", "wildlife_insights", "inaturalist"
+  format: "directory"
+  
+  # Species Configuration (15+ wildlife species)
+  species:
+    - deer
+    - bear
+    - fox
+    - wolf
+    - raccoon
+    - rabbit
+    - bird
+    - squirrel
+    - coyote
+    - bobcat
+    - elk
+    - moose
+    - wild_boar
+    - mountain_lion
+    - lynx
+    - unknown
+  
+  # Data splits
+  train_split: 0.7
+  validation_split: 0.2
+  test_split: 0.1
+
+# Model Configuration
+model:
+  # Model architecture: "MobileNetV2", "EfficientNetB0", "EfficientNetB1", "ResNet50"
+  architecture: "MobileNetV2"
+  
+  # Input configuration
+  input_shape: [224, 224, 3]
+  num_classes: 16
+  
+  # Transfer learning
+  use_transfer_learning: true
+  freeze_base_model: true
+  fine_tune_layers: 50
+  
+  # Model types: "classification", "detection", "behavior"
+  model_type: "classification"
+
+# Training Configuration
+training:
+  batch_size: 32
+  epochs: 100
+  learning_rate: 0.001
+  
+  # Optimization
+  optimizer: "adam"
+  loss_function: "categorical_crossentropy"
+  metrics: ["accuracy", "top_3_accuracy"]
+  
+  # Regularization
+  dropout_rate: 0.3
+  l2_regularization: 0.0001
+  
+  # Data augmentation
+  data_augmentation:
+    enabled: true
+    rotation_range: 20
+    width_shift_range: 0.2
+    height_shift_range: 0.2
+    horizontal_flip: true
+    zoom_range: 0.2
+    shear_range: 0.1
+    brightness_range: [0.8, 1.2]
+    
+  # Callbacks
+  early_stopping:
+    enabled: true
+    patience: 15
+    monitor: "val_loss"
+    restore_best_weights: true
+    
+  reduce_lr:
+    enabled: true
+    patience: 8
+    factor: 0.2
+    min_lr: 1e-7
+    monitor: "val_loss"
+    
+  model_checkpoint:
+    enabled: true
+    monitor: "val_accuracy"
+    save_best_only: true
+    save_weights_only: false
+
+# Edge Deployment Configuration
+edge_deployment:
+  target_device: "ESP32"
+  memory_limit_mb: 8
+  
+  # TensorFlow Lite conversion
+  tflite_conversion:
+    quantization: "int8"  # "none", "dynamic", "int8", "float16"
+    optimization_target: "size"  # "size", "latency", "accuracy"
+    representative_dataset_size: 100
+    
+  # ESP32 optimizations
+  esp32_optimizations:
+    tensor_arena_size_kb: 2048
+    enable_xnnpack: true
+    enable_micro_allocator: true
+    optimize_for_size: true
+
+# Evaluation Configuration
+evaluation:
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1_score
+    - confusion_matrix
+    - classification_report
+    - roc_auc
+    
+  # Performance benchmarking
+  benchmark:
+    inference_time: true
+    memory_usage: true
+    model_size: true
+    accuracy_threshold: 0.85  # 85% target accuracy
+    inference_time_target_ms: 2000  # 2 seconds max
+    
+  # Visualization
+  plots:
+    confusion_matrix: true
+    training_history: true
+    roc_curves: true
+    precision_recall_curves: true
+
+# Dataset Sources Configuration
+data_sources:
+  wildlife_insights:
+    enabled: false
+    api_key: ""
+    project_ids: []
+    
+  inaturalist:
+    enabled: false
+    api_key: ""
+    taxon_ids: []
+    
+  custom_datasets:
+    enabled: true
+    paths:
+      - "./datasets/custom_wildlife"
+      
+  microsoft_megadetector:
+    enabled: true
+    confidence_threshold: 0.8
+
+# Logging and Monitoring
+logging:
+  level: "INFO"
+  log_dir: "./logs"
+  tensorboard:
+    enabled: true
+    log_dir: "./logs/tensorboard"
+    
+  wandb:
+    enabled: false
+    project: "esp32-wildlife-cam"
+    entity: ""
+    
+  mlflow:
+    enabled: false
+    tracking_uri: ""
+    experiment_name: "wildlife-classification"
+
+# Hardware Configuration
+hardware:
+  gpu:
+    enabled: true
+    memory_limit_gb: 8
+    mixed_precision: true
+    
+  cpu:
+    num_workers: 4
+    parallel_calls: 4
+
+# Pipeline Configuration
+pipeline:
+  preprocessing:
+    normalize: true
+    resize_method: "bilinear"
+    center_crop: false
+    
+  augmentation_probability: 0.8
+  cache_preprocessed: true
+  prefetch_buffer_size: 2
+  
+  validation:
+    cross_validation_folds: 5
+    stratified_split: true
+    
+  model_versioning:
+    enabled: true
+    version_format: "v{major}.{minor}.{patch}"
+    auto_increment: true
