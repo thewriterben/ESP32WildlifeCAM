@@ -18,9 +18,14 @@
 #include <freertos/queue.h>
 #include "camera_config.h"
 
-// Forward declarations
+// Forward declarations for camera system
 class CameraBoard;
 struct GPIOMap;
+
+// Forward declarations for AI integration
+struct AIResult;
+enum class ModelType;
+class InferenceEngine;
 
 /**
  * @class CameraHandler
@@ -38,6 +43,12 @@ private:
     CameraBoard* board_instance;
     
 public:
+    /**
+     * @brief Initialize camera with default configuration (convenience method)
+     * @return true if initialization successful, false otherwise
+     */
+    bool init();
+    
     /**
      * @brief Initialize camera with user configuration
      * @param user_config Camera configuration parameters
@@ -105,6 +116,37 @@ public:
      * @return true if camera test passed, false otherwise
      */
     bool testCamera();
+    
+    /**
+     * @brief Capture and analyze frame using AI inference
+     * @param model Model type to use for analysis
+     * @return AI analysis result with species detection and confidence
+     */
+    AIResult captureAndAnalyze(ModelType model);
+    
+    /**
+     * @brief Save captured image to storage
+     * @param fb Frame buffer to save
+     * @param folder Destination folder path
+     * @return Filename of saved image or empty string on failure
+     */
+    String saveImage(camera_fb_t* fb, const char* folder = "/wildlife_images");
+    
+    /**
+     * @brief Setup advanced frame buffer queue system
+     * @return true if setup successful, false otherwise
+     */
+    bool setupFrameQueue();
+    
+    /**
+     * @brief Optimize memory usage for PSRAM and heap
+     */
+    void optimizeMemoryUsage();
+    
+    /**
+     * @brief Handle capture failure with recovery strategies
+     */
+    void handleCaptureFailure();
     
     /**
      * @brief Constructor

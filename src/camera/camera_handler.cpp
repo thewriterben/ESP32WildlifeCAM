@@ -11,10 +11,21 @@
 
 #include "camera_handler.h"
 #include "camera_utils.cpp"
+#include "ai_bridge.cpp"
 #include "../../firmware/src/hal/board_detector.h"
 #include "../../firmware/src/hal/camera_board.h"
+#include "../../firmware/src/ai/ai_common.h"
 #include <esp_system.h>
 #include <memory>
+
+// Forward declarations for AI integration
+struct CameraFrame {
+    uint8_t* data;
+    size_t length;
+    uint16_t width;
+    uint16_t height;
+    uint32_t timestamp;
+};
 
 // Constructor
 CameraHandler::CameraHandler() : 
@@ -28,8 +39,8 @@ CameraHandler::CameraHandler() :
     memset(&stats, 0, sizeof(CaptureStats));
     memset(&init_result, 0, sizeof(CameraInitResult));
     
-    // Create frame queue (size 3 for triple buffering)
-    frame_queue = xQueueCreate(3, sizeof(camera_fb_t*));
+    // Setup advanced frame queue system
+    setupFrameQueue();
     
     Serial.println("CameraHandler: Constructor initialized");
 }
@@ -44,6 +55,18 @@ CameraHandler::~CameraHandler() {
     }
     
     Serial.println("CameraHandler: Destructor completed");
+}
+
+bool CameraHandler::init() {
+    Serial.println("CameraHandler: Initializing with recommended configuration...");
+    
+    // Get recommended configuration based on hardware
+    CameraConfig recommended_config = CameraUtils::getRecommendedConfig();
+    
+    // Initialize with recommended configuration
+    esp_err_t result = initialize(recommended_config);
+    
+    return (result == ESP_OK);
 }
 
 esp_err_t CameraHandler::initialize(const CameraConfig& user_config) {
@@ -127,6 +150,9 @@ esp_err_t CameraHandler::initialize(const CameraConfig& user_config) {
         return sensor_result;
     }
     
+    // Optimize memory usage after successful initialization
+    optimizeMemoryUsage();
+    
     initialized = true;
     
     // Record successful initialization
@@ -154,6 +180,7 @@ esp_err_t CameraHandler::captureFrame(uint32_t timeout_ms) {
     if (!fb) {
         Serial.println("CameraHandler: Frame capture failed");
         updateCaptureStats(millis() - capture_start, 0, false);
+        handleCaptureFailure(); // Enhanced error handling
         return ESP_FAIL;
     }
     
@@ -164,6 +191,7 @@ esp_err_t CameraHandler::captureFrame(uint32_t timeout_ms) {
         Serial.printf("CameraHandler: Capture timeout (%lu ms > %lu ms)\n", capture_time, timeout_ms);
         esp_camera_fb_return(fb);
         updateCaptureStats(capture_time, 0, false);
+        handleCaptureFailure(); // Enhanced error handling
         return ESP_ERR_TIMEOUT;
     }
     
@@ -441,4 +469,278 @@ void CameraHandler::logDiagnosticInfo() const {
     Serial.printf("Average capture time: %lu ms\n", stats.avg_capture_time_ms);
     Serial.printf("Average image size: %d bytes\n", stats.avg_image_size);
     Serial.println("=== End Diagnostic Info ===");
+}
+
+// ========== AI INTEGRATION METHODS ==========
+
+AIResult CameraHandler::captureAndAnalyze(ModelType model) {
+    Serial.println("CameraHandler: Starting capture and AI analysis...");
+    
+    AIResult result;
+    result.confidence = 0.0f;
+    result.species = SpeciesType::UNKNOWN;
+    result.detected = false;
+    
+    if (!initialized) {
+        Serial.println("CameraHandler: Camera not initialized for AI analysis");
+        result.error_message = "Camera not initialized";
+        return result;
+    }
+    
+    // Capture frame with 5 second timeout
+    esp_err_t capture_result = captureFrame(5000);
+    if (capture_result != ESP_OK) {
+        Serial.printf("CameraHandler: Frame capture failed for AI analysis: 0x%x\n", capture_result);
+        result.error_message = "Frame capture failed";
+        return result;
+    }
+    
+    // Get captured frame
+    camera_fb_t* fb = getFrameBuffer();
+    if (!fb) {
+        Serial.println("CameraHandler: Failed to get frame buffer for AI analysis");
+        result.error_message = "Frame buffer retrieval failed";
+        return result;
+    }
+    
+    // Create frame structure for AI processing
+    CameraFrame frame;
+    frame.data = fb->buf;
+    frame.length = fb->len;
+    frame.width = fb->width;
+    frame.height = fb->height;
+    frame.timestamp = millis();
+    
+    // Load AI processing functions
+    extern bool initializeInferenceEngine();
+    extern AIResult runWildlifeInference(const CameraFrame& frame, ModelType model);
+    
+    // Initialize inference engine if needed
+    static bool ai_initialized = false;
+    if (!ai_initialized) {
+        ai_initialized = initializeInferenceEngine();
+        if (!ai_initialized) {
+            Serial.println("CameraHandler: Failed to initialize AI inference engine");
+            result.error_message = "AI initialization failed";
+            returnFrameBuffer(fb);
+            return result;
+        }
+    }
+    
+    // Run AI inference
+    result = runWildlifeInference(frame, model);
+    
+    // Return frame buffer
+    returnFrameBuffer(fb);
+    
+    Serial.printf("CameraHandler: AI analysis complete - Species: %d, Confidence: %.2f\n", 
+                  (int)result.species, result.confidence);
+    
+    return result;
+}
+
+String CameraHandler::saveImage(camera_fb_t* fb, const char* folder) {
+    if (!fb) {
+        Serial.println("CameraHandler: Cannot save null frame buffer");
+        return "";
+    }
+    
+    // Load storage manager functions
+    extern bool initializeStorageManager();
+    extern bool saveImageToStorage(camera_fb_t* fb, const String& filename);
+    
+    // Initialize storage if needed
+    static bool storage_initialized = false;
+    if (!storage_initialized) {
+        storage_initialized = initializeStorageManager();
+        if (!storage_initialized) {
+            Serial.println("CameraHandler: Failed to initialize storage manager");
+            return "";
+        }
+    }
+    
+    // Generate unique filename with timestamp
+    char timestamp[32];
+    snprintf(timestamp, sizeof(timestamp), "%lu", millis());
+    String filename = String(folder) + "/wildlife_" + String(timestamp) + ".jpg";
+    
+    // Save image using storage manager
+    if (saveImageToStorage(fb, filename)) {
+        Serial.printf("CameraHandler: Image saved successfully: %s\n", filename.c_str());
+        return filename;
+    } else {
+        Serial.println("CameraHandler: Failed to save image");
+        return "";
+    }
+}
+
+// ========== ADVANCED MEMORY MANAGEMENT ==========
+
+bool CameraHandler::setupFrameQueue() {
+    Serial.println("CameraHandler: Setting up advanced frame queue system...");
+    
+    // Check if queue already exists
+    if (frame_queue != nullptr) {
+        Serial.println("CameraHandler: Frame queue already exists, optimizing...");
+        
+        // Clear existing queue
+        camera_fb_t* fb;
+        while (xQueueReceive(frame_queue, &fb, 0) == pdTRUE) {
+            esp_camera_fb_return(fb);
+        }
+        vQueueDelete(frame_queue);
+    }
+    
+    // Calculate optimal queue size based on available memory
+    uint8_t optimal_queue_size = 3; // Default triple buffering
+    
+    if (psramFound()) {
+        size_t psram_free = ESP.getFreePsram();
+        Serial.printf("CameraHandler: PSRAM available: %d bytes\n", psram_free);
+        
+        // With PSRAM, we can afford more buffers
+        if (psram_free > 2 * 1024 * 1024) { // > 2MB
+            optimal_queue_size = 5;
+        } else if (psram_free > 1 * 1024 * 1024) { // > 1MB
+            optimal_queue_size = 4;
+        }
+    } else {
+        size_t heap_free = ESP.getFreeHeap();
+        Serial.printf("CameraHandler: Heap available: %d bytes\n", heap_free);
+        
+        // Without PSRAM, be more conservative
+        if (heap_free < 100 * 1024) { // < 100KB
+            optimal_queue_size = 1;
+        } else if (heap_free < 200 * 1024) { // < 200KB
+            optimal_queue_size = 2;
+        }
+    }
+    
+    // Create optimized queue
+    frame_queue = xQueueCreate(optimal_queue_size, sizeof(camera_fb_t*));
+    if (frame_queue == nullptr) {
+        Serial.println("CameraHandler: Failed to create frame queue");
+        return false;
+    }
+    
+    Serial.printf("CameraHandler: Frame queue created with %d slots\n", optimal_queue_size);
+    return true;
+}
+
+void CameraHandler::optimizeMemoryUsage() {
+    Serial.println("CameraHandler: Optimizing memory usage...");
+    
+    // Log current memory status
+    Serial.printf("Free heap before optimization: %d bytes\n", ESP.getFreeHeap());
+    if (psramFound()) {
+        Serial.printf("Free PSRAM before optimization: %d bytes\n", ESP.getFreePsram());
+    }
+    
+    // Force garbage collection
+    esp_err_t heap_result = heap_caps_check_integrity_all(true);
+    if (heap_result != ESP_OK) {
+        Serial.printf("CameraHandler: Heap integrity check failed: 0x%x\n", heap_result);
+    }
+    
+    // Configure camera frame buffer location based on available memory
+    if (initialized && psramFound()) {
+        Serial.println("CameraHandler: Optimizing for PSRAM usage");
+        
+        // Configure for PSRAM frame buffers
+        sensor_t* sensor = esp_camera_sensor_get();
+        if (sensor) {
+            // Use PSRAM for frame buffers to free up heap
+            config.fb_location = CAMERA_FB_IN_PSRAM;
+            
+            // Adjust frame buffer count based on PSRAM availability
+            size_t psram_free = ESP.getFreePsram();
+            if (psram_free > 4 * 1024 * 1024) { // > 4MB
+                config.fb_count = 3;
+            } else if (psram_free > 2 * 1024 * 1024) { // > 2MB
+                config.fb_count = 2;
+            } else {
+                config.fb_count = 1;
+            }
+            
+            Serial.printf("CameraHandler: Optimized frame buffer count: %d\n", config.fb_count);
+        }
+    } else {
+        Serial.println("CameraHandler: Optimizing for heap-only usage");
+        config.fb_location = CAMERA_FB_IN_DRAM;
+        config.fb_count = 1; // Conservative for heap-only systems
+    }
+    
+    // Log memory status after optimization
+    Serial.printf("Free heap after optimization: %d bytes\n", ESP.getFreeHeap());
+    if (psramFound()) {
+        Serial.printf("Free PSRAM after optimization: %d bytes\n", ESP.getFreePsram());
+    }
+}
+
+// ========== PRODUCTION ERROR HANDLING ==========
+
+void CameraHandler::handleCaptureFailure() {
+    Serial.println("CameraHandler: Handling capture failure with recovery strategies...");
+    
+    stats.failed_captures++;
+    
+    // Strategy 1: Check sensor status
+    if (initialized) {
+        sensor_t* sensor = esp_camera_sensor_get();
+        if (!sensor) {
+            Serial.println("CameraHandler: Sensor handle lost, attempting reinitialization...");
+            
+            // Attempt sensor recovery
+            esp_err_t recovery_result = configureSensor();
+            if (recovery_result == ESP_OK) {
+                Serial.println("CameraHandler: Sensor recovery successful");
+                return;
+            }
+        }
+    }
+    
+    // Strategy 2: Memory cleanup and defragmentation
+    Serial.println("CameraHandler: Performing memory cleanup...");
+    
+    // Clear frame queue
+    if (frame_queue != nullptr) {
+        camera_fb_t* fb;
+        while (xQueueReceive(frame_queue, &fb, 0) == pdTRUE) {
+            esp_camera_fb_return(fb);
+        }
+    }
+    
+    // Force memory cleanup
+    optimizeMemoryUsage();
+    
+    // Strategy 3: Check for consecutive failures
+    if (stats.failed_captures > 5) {
+        Serial.println("CameraHandler: Multiple consecutive failures detected");
+        
+        if (stats.failed_captures > 10) {
+            Serial.println("CameraHandler: Critical failure threshold reached, reinitializing camera...");
+            
+            // Full camera reinitialization
+            esp_camera_deinit();
+            delay(1000); // Allow hardware to reset
+            
+            esp_err_t reinit_result = esp_camera_init(&config);
+            if (reinit_result == ESP_OK) {
+                Serial.println("CameraHandler: Camera reinitialization successful");
+                configureSensor(); // Reconfigure sensor
+                stats.failed_captures = 0; // Reset failure counter
+            } else {
+                Serial.printf("CameraHandler: Camera reinitialization failed: 0x%x\n", reinit_result);
+            }
+        }
+    }
+    
+    // Strategy 4: Log comprehensive diagnostic information
+    logDiagnosticInfo();
+    Serial.printf("CameraHandler: Free heap: %d bytes\n", ESP.getFreeHeap());
+    if (psramFound()) {
+        Serial.printf("CameraHandler: Free PSRAM: %d bytes\n", ESP.getFreePsram());
+    }
+    
+    Serial.println("CameraHandler: Capture failure recovery strategies completed");
 }
